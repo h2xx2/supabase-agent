@@ -32,14 +32,16 @@ interface Agent {
     name: string;
     instructions: string;
     created_at: string;
+    agent_id: string;
+    alias_id: string;
 }
 
 const App: React.FC = () => {
     const [user, setUser] = useState<any>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [agents, setAgents] = useState<Agent[]>([]);
-    const [openAddDialog, setOpenAddDialog] = useState(false); // Состояние для диалога добавления
-    const [newAgent, setNewAgent] = useState({ name: '', instructions: '' }); // Состояние для новых данных агента
+    const [openAddDialog, setOpenAddDialog] = useState(false);
+    const [newAgent, setNewAgent] = useState({ name: '', instructions: '' });
 
     useEffect(() => {
         if (user) {
@@ -53,7 +55,7 @@ const App: React.FC = () => {
             .select('*')
             .eq('user_id', user.id);
         if (error) {
-            console.error('Error fetching agents:', error);
+            console.error('Ошибка при получении агентов:', error);
         } else {
             setAgents(data || []);
         }
@@ -74,7 +76,7 @@ const App: React.FC = () => {
 
     const handleCloseAddDialog = () => {
         setOpenAddDialog(false);
-        setNewAgent({ name: '', instructions: '' }); // Сброс формы
+        setNewAgent({ name: '', instructions: '' });
     };
 
     const handleAddAgent = async () => {
@@ -83,18 +85,69 @@ const App: React.FC = () => {
             return;
         }
 
-        const { error } = await supabase.from('Agents').insert({
-            user_id: user.id,
+        if (!user?.id) {
+            console.error('Пользователь не аутентифицирован');
+            return;
+        }
+
+        const requestBody = {
             name: newAgent.name,
             instructions: newAgent.instructions,
-            created_at: new Date().toISOString(),
-        });
+            user_id: user.id,
+        };
 
-        if (error) {
-            console.error('Error adding agent:', error);
-        } else {
-            fetchAgents();
+        try {
+            console.log('Отправляемый запрос:', requestBody);
+
+            const response = await fetch(import.meta.env.VITE_API_GATEWAY_URL || 'https://7663xw5ty5.execute-api.us-west-2.amazonaws.com/version/create-agent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            const responseText = await response.text();
+            console.log('Ответ от API Gateway:', {
+                status: response.status,
+                statusText: response.statusText,
+                body: responseText,
+            });
+
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('Ошибка парсинга ответа:', parseError);
+                throw new Error('Невалидный JSON в ответе от сервера');
+            }
+
+            if (!response.ok) {
+                console.error('Ошибка от Lambda:', result.error);
+                throw new Error(result.error || 'Ошибка при создании агента');
+            }
+
+            const { agentId } = result;
+
+            // Сохранение в Supabase
+            const { error } = await supabase.from('Agents').insert({
+                user_id: user.id,
+                name: newAgent.name,
+                instructions: newAgent.instructions,
+                agent_id: agentId,
+                // alias_id не сохраняется
+            });
+
+            if (error) {
+                console.error('Ошибка при сохранении Supabase:', error.message);
+                throw new Error(`Ошибка при создании агента в Supabase: ${error.message}`);
+            }
+
+            await fetchAgents();
             handleCloseAddDialog();
+        } catch (error) {
+            console.error('Ошибка при создании:', error);
         }
     };
 
@@ -107,7 +160,6 @@ const App: React.FC = () => {
                             <MenuIcon />
                         </IconButton>
                     )}
-
                     <Typography variant="h6" sx={{ flexGrow: 1 }}>
                         Мои Агенты
                     </Typography>
@@ -138,6 +190,7 @@ const App: React.FC = () => {
                                 <TableRow>
                                     <TableCell>Имя</TableCell>
                                     <TableCell>Инструкции</TableCell>
+                                    <TableCell>ID агента</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -145,13 +198,14 @@ const App: React.FC = () => {
                                     <TableRow key={agent.id}>
                                         <TableCell>{agent.name}</TableCell>
                                         <TableCell>{agent.instructions}</TableCell>
+                                        <TableCell>{agent.agent_id}</TableCell>
+                                        <TableCell>{agent.alias_id}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
                     </Box>
                 )}
-                {/* Диалог для добавления агента */}
                 <Dialog open={openAddDialog} onClose={handleCloseAddDialog}>
                     <DialogTitle>Добавить нового агента</DialogTitle>
                     <DialogContent>
