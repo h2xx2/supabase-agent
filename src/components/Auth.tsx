@@ -4,9 +4,10 @@ import { TextField, Button, Container, Typography, Box } from '@mui/material';
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
+    onSignOut: () => void; // Новый проп для выхода
 }
 
-const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
+const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [user, setUser] = useState(null);
@@ -41,15 +42,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const handleSignOut = async () => {
         const { error } = await supabase.auth.signOut();
         if (error) console.error('Sign Out Error:', error.message);
+        else onSignOut(); // Вызываем проп после успешного выхода
     };
 
     if (user) {
         return (
             <Box sx={{ textAlign: 'center', mt: 2 }}>
                 <Typography variant="h6">Добро пожаловать, {user.email}</Typography>
-                <Button variant="contained" color="secondary" onClick={handleSignOut} sx={{ mt: 2 }}>
-                    Выйти
-                </Button>
+                {/* Кнопка "Выйти" убрана, управление передано в App.tsx */}
             </Box>
         );
     }
