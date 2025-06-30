@@ -27,6 +27,16 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Auth from './components/Auth';
+import {
+    MainContainer,
+    ChatContainer,
+    MessageList,
+    Message,
+    MessageInput,
+    type MessageModel,
+} from '@chatscope/chat-ui-kit-react';
+import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
+import axios from 'axios';
 
 interface Agent {
     id: string;
@@ -47,6 +57,9 @@ const App: React.FC = () => {
     const [newAgent, setNewAgent] = useState({ name: '', instructions: '' });
     const [loadingAgentId, setLoadingAgentId] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [chatOpen, setChatOpen] = useState(false); // Состояние для чата
+    const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null); // Выбранный агент для чата
+    const [chatMessages, setChatMessages] = useState<MessageModel[]>([]);
 
     const fetchAgentStatus = useCallback(async (agentId: string) => {
         try {
@@ -64,10 +77,8 @@ const App: React.FC = () => {
             let result;
             try {
                 result = JSON.parse(responseText);
-                console.log('Первичный парсинг ответа:', result);
                 if (typeof result.body === 'string') {
                     result = JSON.parse(result.body);
-                    console.log('Вторичный парсинг body:', result);
                 }
                 const status = result.body?.status || result.status || 'UNKNOWN';
                 console.log(`Извлеченный статус для ${agentId}: ${status}`);
@@ -112,20 +123,16 @@ const App: React.FC = () => {
             const updatedAgents = await Promise.all(data.map(async (agent) => {
                 if (!agent.status || ['CREATING', 'NOT_PREPARED', 'PREPARING'].includes(agent.status.toUpperCase())) {
                     const status = await fetchAgentStatus(agent.agent_id);
-                    console.log(`Агент ${agent.agent_id}: текущий статус ${agent.status}, новый статус ${status}`);
-
                     if (status !== 'UNKNOWN') {
                         const { error: updateError, data: updateData } = await supabase
                             .from('Agents')
                             .update({ status })
                             .eq('agent_id', agent.agent_id)
                             .select();
-
                         if (updateError) {
                             console.error('Ошибка обновления статуса в Supabase:', updateError);
                             setErrorMessage(`Ошибка обновления статуса для агента ${agent.agent_id}: ${updateError.message}`);
                         } else if (updateData && updateData.length > 0) {
-                            console.log(`Статус агента ${agent.agent_id} обновлен на ${status} в базе данных`);
                             return { ...agent, ...updateData[0] };
                         }
                     }
@@ -162,34 +169,27 @@ const App: React.FC = () => {
             setErrorMessage('Имя и инструкции обязательны');
             return;
         }
-
         if (newAgent.instructions.length < 40) {
             setErrorMessage('Инструкции должны содержать минимум 40 символов');
             return;
         }
-
         const sanitizedName = newAgent.name.replace(/[^a-zA-Z0-9_-]/g, '');
         if (!sanitizedName) {
             setErrorMessage('Имя агента должно содержать только буквы, цифры, _ или -');
             return;
         }
-
         if (!user?.id) {
             setErrorMessage('Пользователь не аутентифицирован');
             return;
         }
-
         setLoadingAgentId(null);
         const requestBody = {
             name: sanitizedName,
             instructions: newAgent.instructions,
             user_id: user.id,
         };
-
         try {
-            console.log('Отправляемый запрос:', requestBody);
             setLoadingAgentId('new-agent');
-
             const response = await fetch(import.meta.env.VITE_API_GATEWAY_URL || 'https://7663xw5ty5.execute-api.us-west-2.amazonaws.com/version/create-agent', {
                 method: 'POST',
                 headers: {
@@ -198,34 +198,25 @@ const App: React.FC = () => {
                 },
                 body: JSON.stringify(requestBody),
             });
-
             const responseText = await response.text();
             let result;
             try {
                 result = JSON.parse(responseText);
-                console.log('Первичный парсинг:', result);
                 if (typeof result.body === 'string') {
                     result = JSON.parse(result.body);
-                    console.log('Вторичный парсинг body:', result);
                 }
             } catch (parseError) {
                 console.error('Ошибка парсинга:', parseError, responseText);
                 throw new Error('Невалидный JSON в ответе от сервера');
             }
-
             if (!response.ok) {
-                console.error('Ошибка от Lambda:', result.error);
                 throw new Error(result.error || 'Ошибка при создании агента');
             }
-
             const agentId = result.agentId;
             const status = result.status;
             if (!agentId) {
                 throw new Error('agentId отсутствует в ответе от сервера');
             }
-
-            console.log('Извлеченные данные:', { agentId, status });
-
             const { error } = await supabase.from('Agents').insert({
                 user_id: user.id,
                 name: sanitizedName,
@@ -234,12 +225,9 @@ const App: React.FC = () => {
                 alias_id: null,
                 status: status,
             });
-
             if (error) {
-                console.error('Ошибка при сохранении в Supabase:', error.message);
                 throw new Error(`Ошибка при создании агента в Supabase: ${error.message}`);
             }
-
             await fetchAgents();
             setLoadingAgentId(null);
             handleCloseAddDialog();
@@ -261,50 +249,35 @@ const App: React.FC = () => {
                 },
                 body: JSON.stringify({ agentId, agentName }),
             });
-
             const responseText = await response.text();
             let result;
             try {
                 result = JSON.parse(responseText);
-                console.log('Ответ от сервера при создании алиаса (первый парсинг):', result);
-
                 let body;
                 if (typeof result.body === 'string') {
                     body = JSON.parse(result.body);
-                    console.log('Ответ от сервера при создании алиаса (второй парсинг body):', body);
                 } else {
                     body = result.body;
                 }
-
                 const aliasId = body.aliasId;
-
                 if (!aliasId) {
                     throw new Error('aliasId отсутствует в ответе от сервера');
                 }
-
-                console.log(`Попытка обновления alias_id для agent_id ${agentId} на ${aliasId}`);
                 const { error, data } = await supabase
                     .from('Agents')
                     .update({ alias_id: aliasId })
                     .eq('agent_id', agentId)
                     .select();
-
                 if (error) {
-                    console.error('Ошибка при обновлении alias в Supabase:', error.message, error.details);
                     throw new Error(`Ошибка при сохранении alias в Supabase: ${error.message}`);
                 }
-
                 if (data && data.length > 0) {
-                    console.log('Успешное обновление alias_id в базе данных:', data[0]);
                     setAgents((prevAgents) =>
                         prevAgents.map((agent) =>
                             agent.agent_id === agentId ? { ...agent, ...data[0] } : agent
                         )
                     );
-                } else {
-                    console.warn('Обновленные данные не возвращены из Supabase');
                 }
-
                 setLoadingAgentId(null);
             } catch (parseError) {
                 console.error('Ошибка парсинга:', parseError, responseText);
@@ -318,6 +291,74 @@ const App: React.FC = () => {
         }
     };
 
+    // Функция отправки сообщения в чат
+    const sendChatMessage = async (text: string) => {
+        if (!text.trim() || !selectedAgent?.agent_id || !selectedAgent.alias_id) return;
+
+        const newMessage: MessageModel = {
+            message: text,
+            sentTime: new Date().toISOString(),
+            sender: 'user',
+            direction: 'outgoing',
+            position: 'single',
+        };
+
+        setChatMessages([...chatMessages, newMessage]);
+
+        try {
+            const response = await axios.post('https://7663xw5ty5.execute-api.us-west-2.amazonaws.com/version/send', {
+                message: text,
+                agentId: selectedAgent.agent_id,
+                aliasId: selectedAgent.alias_id,
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const data = typeof response.data.body === 'string'
+                ? JSON.parse(response.data.body)
+                : response.data;
+
+            const botReply = data.response || 'No response from server';
+
+            const botMessage: MessageModel = {
+                message: botReply,
+                sentTime: new Date().toISOString(),
+                sender: 'bot',
+                direction: 'incoming',
+                position: 'single',
+            };
+
+            setChatMessages((prev) => [...prev, botMessage]);
+        } catch (error: unknown) {
+            let errorMessageText = 'Unknown error';
+            if (axios.isAxiosError(error)) {
+                errorMessageText = error.response?.data?.error || error.message || 'Axios error';
+            } else if (error instanceof Error) {
+                errorMessageText = error.message;
+            }
+            console.error('Error sending message:', errorMessageText);
+
+            const errorMessage: MessageModel = {
+                message: `Error: ${errorMessageText}`,
+                sentTime: new Date().toISOString(),
+                sender: 'bot',
+                direction: 'incoming',
+                position: 'single',
+            };
+            setChatMessages((prev) => [...prev, errorMessage]);
+        }
+    };
+
+    // Обработчик открытия чата
+    const handleOpenChat = (agent: Agent) => {
+        if (agent.agent_id && agent.alias_id) {
+            setSelectedAgent(agent);
+            setChatMessages([]);
+            setChatOpen(true);
+        }
+    };
 
     return (
         <Box sx={{ display: 'flex' }}>
@@ -348,7 +389,7 @@ const App: React.FC = () => {
                     </ListItem>
                 </List>
             </Drawer>
-            <Container sx={{ mt: 10 }}>
+            <Container sx={{ mt: 10, flex: 1 }}>
                 <Auth onAuthChange={setUser} onSignOut={handleSignOut} />
                 {user ? (
                     <Box sx={{ mt: 4 }}>
@@ -382,15 +423,27 @@ const App: React.FC = () => {
                                                 {loadingAgentId === agent.agent_id || loadingAgentId === 'new-agent' ? (
                                                     <CircularProgress size={24} />
                                                 ) : (
-                                                    !agent.alias_id && agent.status === 'PREPARED' ? (
-                                                        <Button
-                                                            variant="contained"
-                                                            color="primary"
-                                                            onClick={() => createAlias(agent.agent_id, agent.name)}
-                                                        >
-                                                            Создать Alias
-                                                        </Button>
-                                                    ) : null
+                                                    <>
+                                                        {!agent.alias_id && agent.status === 'PREPARED' ? (
+                                                            <Button
+                                                                variant="contained"
+                                                                color="primary"
+                                                                onClick={() => createAlias(agent.agent_id, agent.name)}
+                                                                sx={{ mr: 1 }}
+                                                            >
+                                                                Создать Alias
+                                                            </Button>
+                                                        ) : null}
+                                                        {agent.agent_id && agent.alias_id && (
+                                                            <Button
+                                                                variant="contained"
+                                                                color="secondary"
+                                                                onClick={() => handleOpenChat(agent)}
+                                                            >
+                                                                Чат
+                                                            </Button>
+                                                        )}
+                                                    </>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -448,6 +501,38 @@ const App: React.FC = () => {
                     </DialogActions>
                 </Dialog>
             </Container>
+            {/* Чат-компонент справа */}
+            <Drawer
+                anchor="right"
+                open={chatOpen}
+                onClose={() => setChatOpen(false)}
+                sx={{
+                    '& .MuiDrawer-paper': {
+                        width: '35vw', // Уменьшенный размер
+                        maxWidth: '80vw',
+                    },
+                }}
+            >
+                {selectedAgent && (
+                    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                        <Typography variant="h6" sx={{ p: 2, borderBottom: 1, borderColor: 'grey.300' }}>
+                            Чат с {selectedAgent.name}
+                        </Typography>
+                        <ChatContainer style={{ flex: 1 }}>
+                            <MessageList>
+                                {chatMessages.map((msg, index) => (
+                                    <Message key={index} model={msg} />
+                                ))}
+                            </MessageList>
+                            <MessageInput
+                                placeholder="Введите сообщение..."
+                                onSend={sendChatMessage}
+                                attachButton={false}
+                            />
+                        </ChatContainer>
+                    </Box>
+                )}
+            </Drawer>
         </Box>
     );
 };
