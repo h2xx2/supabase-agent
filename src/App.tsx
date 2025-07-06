@@ -57,9 +57,11 @@ const App: React.FC = () => {
     const [newAgent, setNewAgent] = useState({ name: '', instructions: '' });
     const [loadingAgentId, setLoadingAgentId] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [chatOpen, setChatOpen] = useState(false); // Состояние для чата
-    const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null); // Выбранный агент для чата
+    const [chatOpen, setChatOpen] = useState(false);
+    const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
     const [chatMessages, setChatMessages] = useState<MessageModel[]>([]);
+    // Добавляем состояние для sessionId
+    const [sessionIds, setSessionIds] = useState<Record<string, string>>({});
 
     const fetchAgentStatus = useCallback(async (agentId: string) => {
         try {
@@ -291,7 +293,7 @@ const App: React.FC = () => {
         }
     };
 
-    // Функция отправки сообщения в чат
+    // Обновленная функция отправки сообщения в чат
     const sendChatMessage = async (text: string) => {
         if (!text.trim() || !selectedAgent?.agent_id || !selectedAgent.alias_id) return;
 
@@ -305,11 +307,19 @@ const App: React.FC = () => {
 
         setChatMessages([...chatMessages, newMessage]);
 
+        // Получаем или создаем sessionId для текущего агента
+        let sessionId = sessionIds[selectedAgent.agent_id];
+        if (!sessionId) {
+            sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; // Уникальный sessionId
+            setSessionIds((prev) => ({ ...prev, [selectedAgent.agent_id]: sessionId }));
+        }
+
         try {
             const response = await axios.post('https://7663xw5ty5.execute-api.us-west-2.amazonaws.com/version/send', {
                 message: text,
                 agentId: selectedAgent.agent_id,
                 aliasId: selectedAgent.alias_id,
+                sessionId: sessionId, // Передаем sessionId
             }, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -356,6 +366,12 @@ const App: React.FC = () => {
         if (agent.agent_id && agent.alias_id) {
             setSelectedAgent(agent);
             setChatMessages([]);
+            // Сбрасываем sessionId для нового чата, если нужно начать заново
+            setSessionIds((prev) => {
+                const newSessionIds = { ...prev };
+                delete newSessionIds[agent.agent_id]; // Сбрасываем sessionId для нового чата
+                return newSessionIds;
+            });
             setChatOpen(true);
         }
     };
@@ -501,14 +517,13 @@ const App: React.FC = () => {
                     </DialogActions>
                 </Dialog>
             </Container>
-            {/* Чат-компонент справа */}
             <Drawer
                 anchor="right"
                 open={chatOpen}
                 onClose={() => setChatOpen(false)}
                 sx={{
                     '& .MuiDrawer-paper': {
-                        width: '35vw', // Уменьшенный размер
+                        width: '35vw',
                         maxWidth: '80vw',
                     },
                 }}
