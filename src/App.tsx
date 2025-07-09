@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from './supabaseClient';
 import {
     AppBar,
     Toolbar,
@@ -60,40 +59,27 @@ const App: React.FC = () => {
     const [chatOpen, setChatOpen] = useState(false);
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
     const [chatMessages, setChatMessages] = useState<MessageModel[]>([]);
-    // Добавляем состояние для sessionId
     const [sessionIds, setSessionIds] = useState<Record<string, string>>({});
 
-    const fetchAgentStatus = useCallback(async (agentId: string) => {
-        try {
-            console.log('Запрос статуса для agentId:', agentId);
-            const response = await fetch(`https://7663xw5ty5.execute-api.us-west-2.amazonaws.com/version/get-agent-status`, {
-                method: 'POST',
+    const fetchAgentStatus = async (agentId: string): Promise<string> => {
+        const token = await getAuthToken();
+        const user_id = user?.id; // Убедись, что user доступен в этом контексте
+
+        if (!user_id) throw new Error('user_id отсутствует');
+
+        const response = await axios.post(
+            `${import.meta.env.VITE_API_GATEWAY_URL}/get-agent-status`,
+            { agentId, user_id },
+            {
                 headers: {
+                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
                 },
-                body: JSON.stringify({ agentId }),
-            });
-            if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status} - ${await response.text()}`);
-            const responseText = await response.text();
-            let result;
-            try {
-                result = JSON.parse(responseText);
-                if (typeof result.body === 'string') {
-                    result = JSON.parse(result.body);
-                }
-                const status = result.body?.status || result.status || 'UNKNOWN';
-                console.log(`Извлеченный статус для ${agentId}: ${status}`);
-                return status;
-            } catch (parseError) {
-                console.error('Ошибка парсинга:', parseError, 'Текст ответа:', responseText);
-                throw new Error('Невалидный JSON в ответе от сервера');
             }
-        } catch (error) {
-            console.error('Ошибка при получении статуса:', error);
-            return 'UNKNOWN';
-        }
-    }, []);
+        );
+
+        return response.data.status;
+    };
 
     useEffect(() => {
         if (user) {
@@ -112,43 +98,24 @@ const App: React.FC = () => {
     }, [user]);
 
     const fetchAgents = async () => {
-        const { data, error } = await supabase
-            .from('Agents')
-            .select('*')
-            .eq('user_id', user?.id);
-        if (error) {
-            console.error('Ошибка при получении агентов:', error.message);
-            setErrorMessage('Ошибка при загрузке агентов: ' + error.message);
-            return;
-        }
-        if (data) {
-            const updatedAgents = await Promise.all(data.map(async (agent) => {
-                if (!agent.status || ['CREATING', 'NOT_PREPARED', 'PREPARING'].includes(agent.status.toUpperCase())) {
-                    const status = await fetchAgentStatus(agent.agent_id);
-                    if (status !== 'UNKNOWN') {
-                        const { error: updateError, data: updateData } = await supabase
-                            .from('Agents')
-                            .update({ status })
-                            .eq('agent_id', agent.agent_id)
-                            .select();
-                        if (updateError) {
-                            console.error('Ошибка обновления статуса в Supabase:', updateError);
-                            setErrorMessage(`Ошибка обновления статуса для агента ${agent.agent_id}: ${updateError.message}`);
-                        } else if (updateData && updateData.length > 0) {
-                            return { ...agent, ...updateData[0] };
-                        }
-                    }
-                    return { ...agent, status };
+        try {
+            const token = await getAuthToken();
+            console.log('Fetching agents with token:', token);
+            const response = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/agents`,
+                { user_id: user?.id },
+                {
+                    headers: { 'Authorization': `Bearer ${token}` },
                 }
-                return agent;
-            }));
-            setAgents(updatedAgents);
+            );
+            setAgents(response.data.agents);
+        } catch (error) {
+            console.error('Ошибка при получении агентов:', error);
+            setErrorMessage('Ошибка при загрузке агентов');
         }
     };
 
-    const toggleDrawer = () => {
-        setDrawerOpen(!drawerOpen);
-    };
+
+    const toggleDrawer = () => setDrawerOpen(!drawerOpen);
 
     const handleSignOut = () => {
         setUser(null);
@@ -167,213 +134,124 @@ const App: React.FC = () => {
     };
 
     const handleAddAgent = async () => {
-        if (!newAgent.name.trim() || !newAgent.instructions.trim()) {
-            setErrorMessage('Имя и инструкции обязательны');
+        if (!newAgent.name.trim() || !newAgent.instructions.trim() || newAgent.instructions.length < 40) {
+            setErrorMessage('Имя и инструкции (мин. 40 символов) обязательны');
             return;
         }
-        if (newAgent.instructions.length < 40) {
-            setErrorMessage('Инструкции должны содержать минимум 40 символов');
-            return;
-        }
+
         const sanitizedName = newAgent.name.replace(/[^a-zA-Z0-9_-]/g, '');
         if (!sanitizedName) {
-            setErrorMessage('Имя агента должно содержать только буквы, цифры, _ или -');
+            setErrorMessage('Недопустимое имя агента');
             return;
         }
-        if (!user?.id) {
-            setErrorMessage('Пользователь не аутентифицирован');
-            return;
-        }
-        setLoadingAgentId(null);
-        const requestBody = {
-            name: sanitizedName,
-            instructions: newAgent.instructions,
-            user_id: user.id,
-        };
+
+        setLoadingAgentId('new-agent');
+        const token = await getAuthToken();
+
         try {
-            setLoadingAgentId('new-agent');
-            const response = await fetch(import.meta.env.VITE_API_GATEWAY_URL || 'https://7663xw5ty5.execute-api.us-west-2.amazonaws.com/version/create-agent', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
-            });
-            const responseText = await response.text();
-            let result;
-            try {
-                result = JSON.parse(responseText);
-                if (typeof result.body === 'string') {
-                    result = JSON.parse(result.body);
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/create-agent`,
+                JSON.stringify({
+                    name: sanitizedName,
+                    instructions: newAgent.instructions,
+                    user_id: user?.id,
+                }),
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
                 }
-            } catch (parseError) {
-                console.error('Ошибка парсинга:', parseError, responseText);
-                throw new Error('Невалидный JSON в ответе от сервера');
-            }
-            if (!response.ok) {
-                throw new Error(result.error || 'Ошибка при создании агента');
-            }
-            const agentId = result.agentId;
-            const status = result.status;
-            if (!agentId) {
-                throw new Error('agentId отсутствует в ответе от сервера');
-            }
-            const { error } = await supabase.from('Agents').insert({
-                user_id: user.id,
-                name: sanitizedName,
-                instructions: newAgent.instructions,
-                agent_id: agentId,
-                alias_id: null,
-                status: status,
-            });
-            if (error) {
-                throw new Error(`Ошибка при создании агента в Supabase: ${error.message}`);
-            }
+            );
+
+            const createdAgentId = response.data.agentId; // предполагается, что API возвращает agentId
+            if (!createdAgentId) throw new Error('agentId не получен из ответа');
+
+            // ⏳ Ждать пока статус станет PREPARED
+            const waitForPrepared = async (agentId: string, retries = 20, delayMs = 4000) => {
+                for (let i = 0; i < retries; i++) {
+                    const status = await fetchAgentStatus(agentId);
+                    console.log(`Статус агента ${agentId}: ${status}`);
+                    if (status === 'PREPARED') {
+                        return true; // Статус готов
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, delayMs));
+                }
+                return false; // Статус не стал PREPARED за отведённое время
+            };
+
+
+            await waitForPrepared();
             await fetchAgents();
             setLoadingAgentId(null);
             handleCloseAddDialog();
+
         } catch (error) {
-            console.error('Ошибка при создании:', error);
-            setErrorMessage(error.message || 'Произошла ошибка при создании агента');
+            console.error('Ошибка при создании агента:', error);
+            setErrorMessage('Ошибка при создании агента');
             setLoadingAgentId(null);
         }
     };
+
 
     const createAlias = async (agentId: string, agentName: string) => {
+        setLoadingAgentId(agentId);
+        const token = await getAuthToken();
         try {
-            setLoadingAgentId(agentId);
-            const response = await fetch(`https://7663xw5ty5.execute-api.us-west-2.amazonaws.com/version/create-alias`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({ agentId, agentName }),
-            });
-            const responseText = await response.text();
-            let result;
-            try {
-                result = JSON.parse(responseText);
-                let body;
-                if (typeof result.body === 'string') {
-                    body = JSON.parse(result.body);
-                } else {
-                    body = result.body;
-                }
-                const aliasId = body.aliasId;
-                if (!aliasId) {
-                    throw new Error('aliasId отсутствует в ответе от сервера');
-                }
-                const { error, data } = await supabase
-                    .from('Agents')
-                    .update({ alias_id: aliasId })
-                    .eq('agent_id', agentId)
-                    .select();
-                if (error) {
-                    throw new Error(`Ошибка при сохранении alias в Supabase: ${error.message}`);
-                }
-                if (data && data.length > 0) {
-                    setAgents((prevAgents) =>
-                        prevAgents.map((agent) =>
-                            agent.agent_id === agentId ? { ...agent, ...data[0] } : agent
-                        )
-                    );
-                }
-                setLoadingAgentId(null);
-            } catch (parseError) {
-                console.error('Ошибка парсинга:', parseError, responseText);
-                setErrorMessage('Ошибка обработки ответа от сервера');
-                setLoadingAgentId(null);
-            }
+            console.log('Creating alias with token:', token); // Отладка
+            const response = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/create-alias`, {
+                agentId, agentName,
+            }, { headers: { 'Authorization': `Bearer ${token}` } });
+            await fetchAgents();
+            setLoadingAgentId(null);
         } catch (error) {
-            console.error('Ошибка в createAlias:', error);
-            setErrorMessage(error.message || 'Произошла ошибка при создании алиаса');
+            console.error('Ошибка при создании алиаса:', error);
+            setErrorMessage('Ошибка при создании алиаса');
             setLoadingAgentId(null);
         }
     };
 
-    // Обновленная функция отправки сообщения в чат
     const sendChatMessage = async (text: string) => {
         if (!text.trim() || !selectedAgent?.agent_id || !selectedAgent.alias_id) return;
-
-        const newMessage: MessageModel = {
-            message: text,
-            sentTime: new Date().toISOString(),
-            sender: 'user',
-            direction: 'outgoing',
-            position: 'single',
-        };
-
+        const newMessage: MessageModel = { message: text, sentTime: new Date().toISOString(), sender: 'user', direction: 'outgoing', position: 'single' };
         setChatMessages([...chatMessages, newMessage]);
-
-        // Получаем или создаем sessionId для текущего агента
-        let sessionId = sessionIds[selectedAgent.agent_id];
-        if (!sessionId) {
-            sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; // Уникальный sessionId
-            setSessionIds((prev) => ({ ...prev, [selectedAgent.agent_id]: sessionId }));
-        }
-
+        let sessionId = sessionIds[selectedAgent.agent_id] || `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        setSessionIds((prev) => ({ ...prev, [selectedAgent.agent_id]: sessionId }));
+        const token = await getAuthToken();
         try {
-            const response = await axios.post('https://7663xw5ty5.execute-api.us-west-2.amazonaws.com/version/send', {
-                message: text,
-                agentId: selectedAgent.agent_id,
-                aliasId: selectedAgent.alias_id,
-                sessionId: sessionId, // Передаем sessionId
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            const data = typeof response.data.body === 'string'
-                ? JSON.parse(response.data.body)
-                : response.data;
-
-            const botReply = data.response || 'No response from server';
-
-            const botMessage: MessageModel = {
-                message: botReply,
-                sentTime: new Date().toISOString(),
-                sender: 'bot',
-                direction: 'incoming',
-                position: 'single',
-            };
-
+            console.log('Sending message with token:', token); // Отладка
+            const response = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/send`, {
+                message: text, agentId: selectedAgent.agent_id, aliasId: selectedAgent.alias_id, sessionId,
+            }, { headers: { 'Authorization': `Bearer ${token}` } });
+            const botMessage: MessageModel = { message: response.data.response, sentTime: new Date().toISOString(), sender: 'bot', direction: 'incoming', position: 'single' };
             setChatMessages((prev) => [...prev, botMessage]);
-        } catch (error: unknown) {
-            let errorMessageText = 'Unknown error';
-            if (axios.isAxiosError(error)) {
-                errorMessageText = error.response?.data?.error || error.message || 'Axios error';
-            } else if (error instanceof Error) {
-                errorMessageText = error.message;
-            }
-            console.error('Error sending message:', errorMessageText);
-
-            const errorMessage: MessageModel = {
-                message: `Error: ${errorMessageText}`,
-                sentTime: new Date().toISOString(),
-                sender: 'bot',
-                direction: 'incoming',
-                position: 'single',
-            };
+        } catch (error) {
+            console.error('Ошибка при отправке сообщения:', error);
+            const errorMessage: MessageModel = { message: `Error: ${error.message}`, sentTime: new Date().toISOString(), sender: 'bot', direction: 'incoming', position: 'single' };
             setChatMessages((prev) => [...prev, errorMessage]);
         }
     };
 
-    // Обработчик открытия чата
     const handleOpenChat = (agent: Agent) => {
         if (agent.agent_id && agent.alias_id) {
             setSelectedAgent(agent);
             setChatMessages([]);
-            // Сбрасываем sessionId для нового чата, если нужно начать заново
             setSessionIds((prev) => {
                 const newSessionIds = { ...prev };
-                delete newSessionIds[agent.agent_id]; // Сбрасываем sessionId для нового чата
+                delete newSessionIds[agent.agent_id];
                 return newSessionIds;
             });
             setChatOpen(true);
         }
+    };
+
+    const getAuthToken = async (): Promise<string> => {
+        const token = localStorage.getItem('authToken');
+        console.log('Current auth token:', token, 'at', new Date().toISOString());
+        if (!token) {
+            console.warn('No auth token found in localStorage');
+        }
+        return token || 'temporary-token'; // Заглушка, замените на реальную логику
     };
 
     return (
@@ -389,7 +267,7 @@ const App: React.FC = () => {
                         Мои Агенты
                     </Typography>
                     {user && (
-                        <Button color="inherit" onClick={() => supabase.auth.signOut().then(handleSignOut)}>
+                        <Button color="inherit" onClick={handleSignOut}>
                             Выйти
                         </Button>
                     )}
