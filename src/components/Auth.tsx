@@ -12,6 +12,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
     const [password, setPassword] = useState('');
     const [user, setUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
 
     useEffect(() => {
         const storedToken = localStorage.getItem('authToken');
@@ -20,24 +21,15 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                 if (validUser) {
                     setUser(validUser);
                     onAuthChange(validUser);
+                } else {
+                    localStorage.removeItem('authToken');
                 }
-            }).catch(err => console.error('Validation error:', err));
+            }).catch((err: any) => {
+                console.error('Validation error:', err);
+                localStorage.removeItem('authToken');
+            });
         }
-
-        const interval = setInterval(() => {
-            if (storedToken) {
-                validateToken(storedToken).then((validUser) => {
-                    if (!validUser && user) {
-                        setUser(null);
-                        onAuthChange(null);
-                        localStorage.removeItem('authToken');
-                    }
-                }).catch(err => console.error('Interval validation error:', err));
-            }
-        }, 60000);
-
-        return () => clearInterval(interval);
-    }, [onAuthChange, user]);
+    }, [onAuthChange]);
 
     const validateToken = async (token: string): Promise<any> => {
         try {
@@ -49,12 +41,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
             const data = typeof outerData.body === 'string' ? JSON.parse(outerData.body) : outerData.body;
 
             return data?.user || null;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Token validation error:', error);
             return null;
         }
     };
-
 
     const handleSignUp = async () => {
         setError(null);
@@ -74,6 +65,12 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
             const { user, token } = parsedBody;
 
             if (user) {
+                if (parsedBody.requires_email_confirmation || !token) {
+                    setEmailConfirmationRequired(true);
+                    setError('Пожалуйста, подтвердите свой аккаунт по email. После подтверждения выполните вход.');
+                    return;
+                }
+
                 setUser(user);
                 if (token) {
                     localStorage.setItem('authToken', token);
@@ -82,7 +79,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
             } else {
                 setError('Регистрация прошла, но пользователь не найден');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Sign Up Error:', error);
             setError('Ошибка регистрации. Проверьте данные или попробуйте позже.');
         }
@@ -90,6 +87,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
 
     const handleSignIn = async () => {
         setError(null);
+        setEmailConfirmationRequired(false);
         if (!email.trim() || !password.trim()) {
             setError('Пожалуйста, заполните email и пароль');
             return;
@@ -111,7 +109,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
             } else {
                 setError('Некорректный ответ от сервера');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Sign In Error:', error);
             setError('Ошибка входа. Проверьте данные или попробуйте позже.');
         }
@@ -125,7 +123,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
             setUser(null);
             localStorage.removeItem('authToken');
             onSignOut();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Sign Out Error:', error);
         }
     };
@@ -134,7 +132,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
         return (
             <Box sx={{ textAlign: 'center', mt: 2 }}>
                 <Typography variant="h6">Добро пожаловать, {user.email}</Typography>
-                <Button variant="contained" onClick={handleSignOut} sx={{ mt: 2 }}>Выйти</Button>
+                <Button variant="contained" color="secondary" onClick={handleSignOut} sx={{ mt: 2 }}>
+                    Выйти
+                </Button>
             </Box>
         );
     }
@@ -144,6 +144,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
             <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Typography variant="h4" align="center">Авторизация</Typography>
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                {emailConfirmationRequired && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                        Пожалуйста, подтвердите свой аккаунт по email, отправленному на {email}. После подтверждения выполните вход.
+                    </Alert>
+                )}
                 <TextField
                     label="Email"
                     value={email}
