@@ -1,8 +1,79 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
+  font-size: 16px !important; /* Consistent base size */
+  touch-action: pan-y;
+  box-sizing: border-box;
+}
+
+.cs-message-input,
+.cs-message-input__content-editor,
+.cs-message-input__content-editor-wrapper,
+.cs-message-input__content-editor-container,
+.cs-message-input textarea {
+  font-size: 16px !important; /* Changed from 20px to avoid zoom/shift on iOS */
+  -webkit-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
+  touch-action: manipulation !important;
+  line-height: 1.5 !important;
+  padding-right: 60px !important;
+  box-sizing: border-box;
+}
+
+.cs-message-input__content-editor {
+  flex-grow: 1;
+  background-color: #c6e3fa;
+  font-family: Helvetica Neue, Segoe UI, Helvetica, Arial, sans-serif;
+  font-size: 16px; /* Changed */
+  outline: 0;
+  border: 0 none;
+  color: rgba(0, 0, 0, 0.87);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cs-message-input__content-editor:focus,
+.cs-message-input textarea:focus {
+  outline: none;
+  font-size: 16px !important;
+}
+
+.cs-message-input__content-editor-container {
+  font-size: 16px !important; /* Changed from 20px */
+  line-height: 1.5 !important;
+  box-sizing: border-box;
+  position: relative;
+  background-color: #c6e3fa;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+  overflow-y: auto;
+  min-height: 1.35em;
+  max-height: 5.4em;
+  padding: 0;
+  scroll-padding: 0;
+}
+
+.cs-message-list {
+  -webkit-text-size-adjust: 100% !important;
+  touch-action: pan-y !important;
+  overflow-y: auto !important;
+}
+
+body.no-scroll {
+  overflow: hidden !important;
+}
+
+.cs-message-input__send-button {
+  position: relative !important;
+  z-index: 1402 !important;
+  margin-left: 8px !important;
 }
 
 .logo {
@@ -11,9 +82,11 @@
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }

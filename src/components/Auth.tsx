@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TextField, Button, Container, Typography, Box, Alert } from '@mui/material';
+import { TextField, Button, Container, Typography, Box, Alert, useMediaQuery, useTheme } from '@mui/material';
 import axios from 'axios';
 
 interface AuthProps {
@@ -13,6 +13,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
     const [user, setUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
+
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+    const deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
 
     useEffect(() => {
         const storedToken = localStorage.getItem('authToken');
@@ -130,9 +135,23 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
 
     if (user) {
         return (
-            <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Typography variant="h6">Добро пожаловать, {user.email}</Typography>
-                <Button variant="contained" color="secondary" onClick={handleSignOut} sx={{ mt: 2 }}>
+            <Box sx={{ textAlign: 'center', mt: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4 }}>
+                <Typography
+                    variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
+                    sx={{ mb: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3, fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.5rem' }}
+                >
+                    Добро пожаловать, {user.email}
+                </Typography>
+                <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={handleSignOut}
+                    sx={{
+                        fontSize: deviceType === 'mobile' ? '0.875rem' : deviceType === 'tablet' ? '0.9375rem' : '1rem',
+                        px: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3,
+                        py: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.25 : 1.5,
+                    }}
+                >
                     Выйти
                 </Button>
             </Box>
@@ -140,12 +159,36 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
     }
 
     return (
-        <Container maxWidth="sm">
-            <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Typography variant="h4" align="center">Авторизация</Typography>
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Container maxWidth={deviceType === 'mobile' ? 'sm' : 'md'} sx={{ px: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4 }}>
+            <Box sx={{ mt: deviceType === 'mobile' ? 4 : deviceType === 'tablet' ? 5 : 6, display: 'flex', flexDirection: 'column', gap: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3, alignItems: 'center' }}>
+                <Typography
+                    variant={deviceType === 'mobile' ? 'h4' : deviceType === 'tablet' ? 'h3' : 'h3'}
+                    align="center"
+                    sx={{ fontSize: deviceType === 'mobile' ? '2.125rem' : deviceType === 'tablet' ? '2.5rem' : '3rem' }}
+                >
+                    Авторизация
+                </Typography>
+                {error && (
+                    <Alert
+                        severity="error"
+                        sx={{
+                            mb: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3,
+                            fontSize: deviceType === 'mobile' ? '0.875rem' : deviceType === 'tablet' ? '0.9375rem' : '1rem',
+                            width: deviceType === 'mobile' ? '100%' : deviceType === 'tablet' ? '50vw' : '25vw',
+                        }}
+                    >
+                        {error}
+                    </Alert>
+                )}
                 {emailConfirmationRequired && (
-                    <Alert severity="info" sx={{ mb: 2 }}>
+                    <Alert
+                        severity="info"
+                        sx={{
+                            mb: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3,
+                            fontSize: deviceType === 'mobile' ? '0.875rem' : deviceType === 'tablet' ? '0.9375rem' : '1rem',
+                            width: deviceType === 'mobile' ? '100%' : deviceType === 'tablet' ? '50vw' : '25vw',
+                        }}
+                    >
                         Пожалуйста, подтвердите свой аккаунт по email, отправленному на {email}. После подтверждения выполните вход.
                     </Alert>
                 )}
@@ -155,6 +198,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                     onChange={(e) => setEmail(e.target.value)}
                     fullWidth
                     required
+                    sx={{
+                        maxWidth: deviceType === 'mobile' ? '100%' : deviceType === 'tablet' ? '50vw' : '25vw',
+                        '& .MuiInputBase-input': { fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.0625rem' : '1.125rem' },
+                        '& .MuiInputLabel-root': { fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.0625rem' : '1.125rem' },
+                    }}
                 />
                 <TextField
                     label="Пароль"
@@ -163,10 +211,35 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                     onChange={(e) => setPassword(e.target.value)}
                     fullWidth
                     required
+                    sx={{
+                        maxWidth: deviceType === 'mobile' ? '100%' : deviceType === 'tablet' ? '50vw' : '25vw',
+                        '& .MuiInputBase-input': { fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.0625rem' : '1.125rem' },
+                        '& .MuiInputLabel-root': { fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.0625rem' : '1.125rem' },
+                    }}
                 />
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                    <Button variant="contained" onClick={handleSignIn}>Войти</Button>
-                    <Button variant="outlined" onClick={handleSignUp}>Регистрация</Button>
+                <Box sx={{ display: 'flex', gap: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3, justifyContent: 'center', mt: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3 }}>
+                    <Button
+                        variant="contained"
+                        onClick={handleSignIn}
+                        sx={{
+                            fontSize: deviceType === 'mobile' ? '0.875rem' : deviceType === 'tablet' ? '0.9375rem' : '1rem',
+                            px: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3,
+                            py: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.25 : 1.5,
+                        }}
+                    >
+                        Войти
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        onClick={handleSignUp}
+                        sx={{
+                            fontSize: deviceType === 'mobile' ? '0.875rem' : deviceType === 'tablet' ? '0.9375rem' : '1rem',
+                            px: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3,
+                            py: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.25 : 1.5,
+                        }}
+                    >
+                        Регистрация
+                    </Button>
                 </Box>
             </Box>
         </Container>
