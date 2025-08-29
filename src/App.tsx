@@ -493,6 +493,25 @@ const App: React.FC = () => {
         }
     };
 
+    const revokeChat = async (agent: Agent) => {
+        setLoadingAgentId(agent.id);
+        try {
+            const token = await getAuthToken();
+            await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/revoke-chat`,
+                { agentId: agent.agent_id, user_id: user?.id },
+                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+            );
+            setAgents(agents.map(a => a.id === agent.id ? { ...a, public_url: undefined } : a));
+            await fetchAgents();
+        } catch (error: any) {
+            console.error('Ошибка при revoke чата:', error);
+            setErrorMessage(`Ошибка при revoke чата: ${error.message || 'Неизвестная ошибка'}`);
+        } finally {
+            setLoadingAgentId(null);
+        }
+    };
+
     return (
         <><GlobalStyles styles={{
             'html, body': {
@@ -518,151 +537,271 @@ const App: React.FC = () => {
                     backgroundColor: '#fff',
                 }}
             >
-            <AppBar position="fixed" sx={{width: '100%'}}>
-                <Toolbar>
-                    {user && (
-                        <IconButton color="inherit" onClick={toggleDrawer} edge="start" sx={{mr: 2}}>
-                            <MenuIcon/>
-                        </IconButton>
-                    )}
-                    <Typography variant="h6" sx={{
-                        flexGrow: 1,
-                        fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
-                        textAlign: 'left'
-                    }}>
-                        Мои Агенты
-                    </Typography>
-                    {user && (
-                        <Button color="inherit" onClick={handleSignOut}
-                                sx={{fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem'}}>
-                            Выйти
-                        </Button>
-                    )}
-                </Toolbar>
-            </AppBar>
-
-            <Drawer open={drawerOpen} onClose={toggleDrawer} sx={{
-                '& .MuiDrawer-paper': {
-                    width: deviceType === 'mobile' ? '70vw' : deviceType === 'tablet' ? '50vw' : 250,
-                    boxSizing: 'border-box'
-                }
-            }}>
-                <List>
-                    <ListItem component="button" onClick={handleOpenAddDialog}>
-                        <ListItemText primary="Добавить агента" sx={{textAlign: 'left'}}/>
-                    </ListItem>
-                    <ListItem component="button" onClick={toggleDrawer}>
-                        <ListItemText primary="Закрыть" sx={{textAlign: 'left'}}/>
-                    </ListItem>
-                </List>
-            </Drawer>
-
-            <Container sx={{
-                mt: 10,
-                flex: 1,
-                maxWidth: deviceType === 'mobile' ? '100% !important' : deviceType === 'tablet' ? '90% !important' : '80% !important',
-                px: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 2 : 3,
-                boxSizing: 'border-box',
-                overflowX: 'hidden',
-            }}>
-                {!user ? (
-                    <Auth onAuthChange={setUser} onSignOut={handleSignOut}/>
-                ) : (
-                    <Box sx={{
-                        mt: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4,
-                        width: '100%',
-                        overflowX: 'hidden'
-                    }}>
-                        <Typography variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
-                                    sx={{textAlign: 'left'}}>
-                            Ваши агенты
-                        </Typography>
-                        {errorMessage && (
-                            <Alert severity="error" sx={{
-                                mb: 2,
-                                width: '100%',
-                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                textAlign: 'left'
-                            }}>
-                                {errorMessage}
-                            </Alert>
+                <AppBar position="fixed" sx={{width: '100%'}}>
+                    <Toolbar>
+                        {user && (
+                            <IconButton color="inherit" onClick={toggleDrawer} edge="start" sx={{mr: 2}}>
+                                <MenuIcon/>
+                            </IconButton>
                         )}
-                        <Box sx={{width: '100%', overflowX: 'hidden'}}>
-                            <Table sx={{
-                                width: '100%',
-                                tableLayout: 'fixed',
-                                wordBreak: 'break-word',
-                                overflowX: 'hidden'
-                            }}>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell sx={{
-                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                            width: deviceType === 'mobile' ? '100%' : '80%',
-                                            textAlign: 'left'
-                                        }}>
-                                            Агент
-                                        </TableCell>
-                                        {deviceType !== 'mobile' && (
+                        <Typography variant="h6" sx={{
+                            flexGrow: 1,
+                            fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
+                            textAlign: 'left'
+                        }}>
+                            Мои Агенты
+                        </Typography>
+                        {user && (
+                            <Button color="inherit" onClick={handleSignOut}
+                                    sx={{fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem'}}>
+                                Выйти
+                            </Button>
+                        )}
+                    </Toolbar>
+                </AppBar>
+
+                <Drawer open={drawerOpen} onClose={toggleDrawer} sx={{
+                    '& .MuiDrawer-paper': {
+                        width: deviceType === 'mobile' ? '70vw' : deviceType === 'tablet' ? '50vw' : 250,
+                        boxSizing: 'border-box'
+                    }
+                }}>
+                    <List>
+                        <ListItem component="button" onClick={handleOpenAddDialog}>
+                            <ListItemText primary="Добавить агента" sx={{textAlign: 'left'}}/>
+                        </ListItem>
+                        <ListItem component="button" onClick={toggleDrawer}>
+                            <ListItemText primary="Закрыть" sx={{textAlign: 'left'}}/>
+                        </ListItem>
+                    </List>
+                </Drawer>
+
+                <Container sx={{
+                    mt: 10,
+                    flex: 1,
+                    maxWidth: deviceType === 'mobile' ? '100% !important' : deviceType === 'tablet' ? '90% !important' : '80% !important',
+                    px: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 2 : 3,
+                    boxSizing: 'border-box',
+                    overflowX: 'hidden',
+                }}>
+                    {!user ? (
+                        <Auth onAuthChange={setUser} onSignOut={handleSignOut}/>
+                    ) : (
+                        <Box sx={{
+                            mt: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4,
+                            width: '100%',
+                            overflowX: 'hidden'
+                        }}>
+                            <Typography variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
+                                        sx={{textAlign: 'left'}}>
+                                Ваши агенты
+                            </Typography>
+                            {errorMessage && (
+                                <Alert severity="error" sx={{
+                                    mb: 2,
+                                    width: '100%',
+                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
+                                    textAlign: 'left'
+                                }}>
+                                    {errorMessage}
+                                </Alert>
+                            )}
+                            <Box sx={{width: '100%', overflowX: 'hidden'}}>
+                                <Table sx={{
+                                    width: '100%',
+                                    tableLayout: 'fixed',
+                                    wordBreak: 'break-word',
+                                    overflowX: 'hidden'
+                                }}>
+                                    <TableHead>
+                                        <TableRow>
                                             <TableCell sx={{
-                                                fontSize: deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                width: '20%',
-                                                textAlign: 'center'
+                                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                width: deviceType === 'mobile' ? '100%' : '80%',
+                                                textAlign: 'left'
                                             }}>
-                                                Действия
+                                                Агент
                                             </TableCell>
-                                        )}
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {agents.length > 0 ? (
-                                        agents.map((agent) => (
-                                            <React.Fragment key={agent.id}>
-                                                <TableRow>
-                                                    <TableCell sx={{
-                                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                        py: 1,
-                                                        verticalAlign: 'top',
-                                                        textAlign: 'left'
-                                                    }}>
-                                                        <Box sx={{
-                                                            display: 'flex',
-                                                            flexDirection: deviceType === 'mobile' ? 'column' : 'row',
-                                                            gap: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.5 : 2,
-                                                            alignItems: deviceType === 'mobile' ? 'flex-start' : 'flex-start'
+                                            {deviceType !== 'mobile' && (
+                                                <TableCell sx={{
+                                                    fontSize: deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                    width: '20%',
+                                                    textAlign: 'center'
+                                                }}>
+                                                    Действия
+                                                </TableCell>
+                                            )}
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {agents.length > 0 ? (
+                                            agents.map((agent) => (
+                                                <React.Fragment key={agent.id}>
+                                                    <TableRow>
+                                                        <TableCell sx={{
+                                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                            py: 1,
+                                                            verticalAlign: 'top',
+                                                            textAlign: 'left'
                                                         }}>
                                                             <Box sx={{
-                                                                flex: 1,
-                                                                width: deviceType === 'mobile' ? '100%' : '80%'
+                                                                display: 'flex',
+                                                                flexDirection: deviceType === 'mobile' ? 'column' : 'row',
+                                                                gap: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.5 : 2,
+                                                                alignItems: deviceType === 'mobile' ? 'flex-start' : 'flex-start'
                                                             }}>
-                                                                <Typography sx={{
-                                                                    fontWeight: 'bold',
-                                                                    fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
-                                                                    textAlign: 'left'
+                                                                <Box sx={{
+                                                                    flex: 1,
+                                                                    width: deviceType === 'mobile' ? '100%' : '80%'
                                                                 }}>
-                                                                    {agent.name}
-                                                                </Typography>
-                                                                <Typography sx={{
-                                                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                                    color: 'text.secondary',
-                                                                    mt: 0.5,
-                                                                    wordBreak: 'break-word',
-                                                                    textAlign: 'left'
-                                                                }}>
-                                                                    {agent.instructions}
-                                                                </Typography>
+                                                                    <Typography sx={{
+                                                                        fontWeight: 'bold',
+                                                                        fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
+                                                                        textAlign: 'left'
+                                                                    }}>
+                                                                        {agent.name}
+                                                                    </Typography>
+                                                                    <Typography sx={{
+                                                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                        color: 'text.secondary',
+                                                                        mt: 0.5,
+                                                                        wordBreak: 'break-word',
+                                                                        textAlign: 'left'
+                                                                    }}>
+                                                                        {agent.instructions}
+                                                                    </Typography>
+                                                                    <Typography sx={{
+                                                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                        color: 'text.secondary',
+                                                                        mt: 0.5,
+                                                                        textAlign: 'left'
+                                                                    }}>
+                                                                        <strong>Вызовы в месяц:</strong> {agent.call_count || 0}
+                                                                    </Typography>
+                                                                    <Typography sx={{
+                                                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                        color: 'text.secondary',
+                                                                        mt: 0.5,
+                                                                        textAlign: 'left'
+                                                                    }}>
+                                                                        <strong>Вызовы в год:</strong> {agent.call_count_year || 0}
+                                                                    </Typography>
+                                                                </Box>
+                                                                {deviceType === 'mobile' && (
+                                                                    <Box sx={{
+                                                                        display: 'flex',
+                                                                        flexDirection: 'row',
+                                                                        gap: deviceType === 'mobile' ? 1 : 1.5,
+                                                                        mt: 1,
+                                                                        flexWrap: 'wrap',
+                                                                        justifyContent: 'flex-start'
+                                                                    }}>
+                                                                        {loadingAgentId === agent.agent_id || loadingAgentId === 'new-agent' ? (
+                                                                            <CircularProgress size={20}/>
+                                                                        ) : (
+                                                                            <>
+                                                                                {!agent.alias_id && agent.status === 'PREPARED' && (
+                                                                                    <Button
+                                                                                        variant="contained"
+                                                                                        color="primary"
+                                                                                        onClick={() => createAlias(agent.agent_id, agent.name)}
+                                                                                        sx={{
+                                                                                            fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
+                                                                                            px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                            py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                            minWidth: 80,
+                                                                                            height: 32
+                                                                                        }}
+                                                                                    >
+                                                                                        Создать Alias
+                                                                                    </Button>
+                                                                                )}
+                                                                                {agent.agent_id && agent.alias_id && (
+                                                                                    <>
+                                                                                        <Button
+                                                                                            variant="contained"
+                                                                                            color="primary"
+                                                                                            onClick={() => handleOpenChat(agent)}
+                                                                                            sx={{
+                                                                                                fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
+                                                                                                px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                                py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                                minWidth: 80,
+                                                                                                height: 32
+                                                                                            }}
+                                                                                        >
+                                                                                            Чат
+                                                                                        </Button>
+                                                                                        {!agent.public_url ? (
+                                                                                            <Button
+                                                                                                variant="contained"
+                                                                                                color="secondary"
+                                                                                                onClick={() => deployChat(agent)}
+                                                                                                sx={{
+                                                                                                    fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
+                                                                                                    px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                                    py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                                    minWidth: 80,
+                                                                                                    height: 32
+                                                                                                }}
+                                                                                            >
+                                                                                                Deploy
+                                                                                            </Button>
+                                                                                        ) : (
+                                                                                            <Button
+                                                                                                variant="contained"
+                                                                                                color="error"
+                                                                                                onClick={() => revokeChat(agent)}
+                                                                                                sx={{
+                                                                                                    fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
+                                                                                                    px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                                    py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                                    minWidth: 80,
+                                                                                                    height: 32
+                                                                                                }}
+                                                                                            >
+                                                                                                Revoke
+                                                                                            </Button>
+                                                                                        )}
+                                                                                    </>
+                                                                                )}
+                                                                                {agent.alias_id && (
+                                                                                    <Button
+                                                                                        variant="contained"
+                                                                                        color="warning"
+                                                                                        onClick={() => handleOpenEditDialog(agent)}
+                                                                                        sx={{
+                                                                                            fontSize: deviceType === 'mobile' ? '0.8rem' : '0.8rem',
+                                                                                            px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                            py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                            minWidth: 80,
+                                                                                            height: 32
+                                                                                        }}
+                                                                                    >
+                                                                                        Редактировать
+                                                                                    </Button>
+                                                                                )}
+                                                                            </>
+                                                                        )}
+                                                                    </Box>
+                                                                )}
                                                             </Box>
-                                                            {deviceType === 'mobile' && (
+                                                        </TableCell>
+                                                        {deviceType !== 'mobile' && (
+                                                            <TableCell sx={{
+                                                                fontSize: deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                py: 1,
+                                                                verticalAlign: 'top',
+                                                                textAlign: 'center'
+                                                            }}>
                                                                 <Box sx={{
                                                                     display: 'flex',
-                                                                    flexDirection: 'row',
-                                                                    gap: deviceType === 'mobile' ? 1 : 1.5,
-                                                                    mt: 1,
-                                                                    flexWrap: 'wrap',
-                                                                    justifyContent: 'flex-start'
+                                                                    flexDirection: 'column',
+                                                                    gap: deviceType === 'tablet' ? 1.25 : 1.5,
+                                                                    alignItems: 'center'
                                                                 }}>
                                                                     {loadingAgentId === agent.agent_id || loadingAgentId === 'new-agent' ? (
-                                                                        <CircularProgress size={20}/>
+                                                                        <CircularProgress size={24}/>
                                                                     ) : (
                                                                         <>
                                                                             {!agent.alias_id && agent.status === 'PREPARED' && (
@@ -671,11 +810,10 @@ const App: React.FC = () => {
                                                                                     color="primary"
                                                                                     onClick={() => createAlias(agent.agent_id, agent.name)}
                                                                                     sx={{
-                                                                                        fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
-                                                                                        px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                        py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                        minWidth: 80,
-                                                                                        height: 32
+                                                                                        fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
+                                                                                        px: deviceType === 'tablet' ? 1.5 : 2,
+                                                                                        py: deviceType === 'tablet' ? 0.75 : 1,
+                                                                                        width: deviceType === 'tablet' ? 140 : 160
                                                                                     }}
                                                                                 >
                                                                                     Создать Alias
@@ -688,91 +826,50 @@ const App: React.FC = () => {
                                                                                         color="primary"
                                                                                         onClick={() => handleOpenChat(agent)}
                                                                                         sx={{
-                                                                                            fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
-                                                                                            px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                            py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                            minWidth: 80,
-                                                                                            height: 32
+                                                                                            fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
+                                                                                            px: deviceType === 'tablet' ? 1.5 : 2,
+                                                                                            py: deviceType === 'tablet' ? 0.75 : 1,
+                                                                                            width: deviceType === 'tablet' ? 140 : 160
                                                                                         }}
                                                                                     >
                                                                                         Чат
                                                                                     </Button>
-                                                                                    {!agent.public_url && (
+                                                                                    {!agent.public_url ? (
                                                                                         <Button
                                                                                             variant="contained"
                                                                                             color="secondary"
                                                                                             onClick={() => deployChat(agent)}
                                                                                             sx={{
-                                                                                                fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
-                                                                                                px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                                py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                                minWidth: 80,
-                                                                                                height: 32
+                                                                                                fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
+                                                                                                px: deviceType === 'tablet' ? 1.5 : 2,
+                                                                                                py: deviceType === 'tablet' ? 0.75 : 1,
+                                                                                                width: deviceType === 'tablet' ? 140 : 160
                                                                                             }}
                                                                                         >
                                                                                             Deploy
                                                                                         </Button>
+                                                                                    ) : (
+                                                                                        <Button
+                                                                                            variant="contained"
+                                                                                            color="error"
+                                                                                            onClick={() => revokeChat(agent)}
+                                                                                            sx={{
+                                                                                                fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
+                                                                                                px: deviceType === 'tablet' ? 1.5 : 2,
+                                                                                                py: deviceType === 'tablet' ? 0.75 : 1,
+                                                                                                width: deviceType === 'tablet' ? 140 : 160
+                                                                                            }}
+                                                                                        >
+                                                                                            Revoke
+                                                                                        </Button>
                                                                                     )}
                                                                                 </>
                                                                             )}
-                                                                            <Button
-                                                                                variant="contained"
-                                                                                color="warning"
-                                                                                onClick={() => handleOpenEditDialog(agent)}
-                                                                                sx={{
-                                                                                    fontSize: deviceType === 'mobile' ? '0.8rem' : '0.8rem',
-                                                                                    px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                    py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                    minWidth: 80,
-                                                                                    height: 32
-                                                                                }}
-                                                                            >
-                                                                                Редактировать
-                                                                            </Button>
-                                                                        </>
-                                                                    )}
-                                                                </Box>
-                                                            )}
-                                                        </Box>
-                                                    </TableCell>
-                                                    {deviceType !== 'mobile' && (
-                                                        <TableCell sx={{
-                                                            fontSize: deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                            py: 1,
-                                                            verticalAlign: 'top',
-                                                            textAlign: 'center'
-                                                        }}>
-                                                            <Box sx={{
-                                                                display: 'flex',
-                                                                flexDirection: 'column',
-                                                                gap: deviceType === 'tablet' ? 1.25 : 1.5,
-                                                                alignItems: 'center'
-                                                            }}>
-                                                                {loadingAgentId === agent.agent_id || loadingAgentId === 'new-agent' ? (
-                                                                    <CircularProgress size={24}/>
-                                                                ) : (
-                                                                    <>
-                                                                        {!agent.alias_id && agent.status === 'PREPARED' && (
-                                                                            <Button
-                                                                                variant="contained"
-                                                                                color="primary"
-                                                                                onClick={() => createAlias(agent.agent_id, agent.name)}
-                                                                                sx={{
-                                                                                    fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
-                                                                                    px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                                    py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                                    width: deviceType === 'tablet' ? 140 : 160
-                                                                                }}
-                                                                            >
-                                                                                Создать Alias
-                                                                            </Button>
-                                                                        )}
-                                                                        {agent.agent_id && agent.alias_id && (
-                                                                            <>
+                                                                            {agent.alias_id && (
                                                                                 <Button
                                                                                     variant="contained"
-                                                                                    color="primary"
-                                                                                    onClick={() => handleOpenChat(agent)}
+                                                                                    color="warning"
+                                                                                    onClick={() => handleOpenEditDialog(agent)}
                                                                                     sx={{
                                                                                         fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
                                                                                         px: deviceType === 'tablet' ? 1.5 : 2,
@@ -780,490 +877,461 @@ const App: React.FC = () => {
                                                                                         width: deviceType === 'tablet' ? 140 : 160
                                                                                     }}
                                                                                 >
-                                                                                    Чат
+                                                                                    Редактировать
                                                                                 </Button>
-                                                                                {!agent.public_url && (
-                                                                                    <Button
-                                                                                        variant="contained"
-                                                                                        color="secondary"
-                                                                                        onClick={() => deployChat(agent)}
-                                                                                        sx={{
-                                                                                            fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
-                                                                                            px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                                            py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                                            width: deviceType === 'tablet' ? 140 : 160
-                                                                                        }}
-                                                                                    >
-                                                                                        Deploy
-                                                                                    </Button>
-                                                                                )}
-                                                                            </>
-                                                                        )}
-                                                                        <Button
-                                                                            variant="contained"
-                                                                            color="warning"
-                                                                            onClick={() => handleOpenEditDialog(agent)}
-                                                                            sx={{
-                                                                                fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
-                                                                                px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                                py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                                width: deviceType === 'tablet' ? 140 : 160
-                                                                            }}
-                                                                        >
-                                                                            Редактировать
-                                                                        </Button>
-                                                                    </>
-                                                                )}
-                                                            </Box>
-                                                        </TableCell>
-                                                    )}
-                                                </TableRow>
-                                                {agent.public_url && (
-                                                    <TableRow>
-                                                        <TableCell colSpan={deviceType === 'mobile' ? 1 : 2} sx={{
-                                                            backgroundColor: '#f5f5f5',
-                                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                            py: 1,
-                                                            wordBreak: 'break-word',
-                                                            textAlign: 'left'
-                                                        }}>
-                                                            <Typography variant="body2" sx={{
+                                                                            )}
+                                                                        </>
+                                                                    )}
+                                                                </Box>
+                                                            </TableCell>
+                                                        )}
+                                                    </TableRow>
+                                                    {agent.public_url && (
+                                                        <TableRow>
+                                                            <TableCell colSpan={deviceType === 'mobile' ? 1 : 2} sx={{
+                                                                backgroundColor: '#f5f5f5',
                                                                 fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                py: 1,
+                                                                wordBreak: 'break-word',
                                                                 textAlign: 'left'
                                                             }}>
-                                                                <strong>Публичная ссылка:</strong>{' '}
-                                                                <a href={agent.public_url} target="_blank"
-                                                                   rel="noopener noreferrer">
-                                                                    {agent.public_url}
-                                                                </a>
-                                                            </Typography>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-                                            </React.Fragment>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={deviceType === 'mobile' ? 1 : 2}
-                                                       sx={{textAlign: 'left'}}>
-                                                Нет агентов
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
+                                                                <Typography variant="body2" sx={{
+                                                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                    textAlign: 'left'
+                                                                }}>
+                                                                    <strong>Публичная ссылка:</strong>{' '}
+                                                                    <a href={agent.public_url} target="_blank"
+                                                                       rel="noopener noreferrer">
+                                                                        {agent.public_url}
+                                                                    </a>
+                                                                </Typography>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </React.Fragment>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={deviceType === 'mobile' ? 1 : 2}
+                                                           sx={{textAlign: 'left'}}>
+                                                    Нет агентов
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </Box>
                         </Box>
-                    </Box>
-                )}
+                    )}
 
-                <Dialog open={openAddDialog} onClose={handleCloseAddDialog} fullWidth
-                        maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>
-                    <DialogTitle sx={{
-                        fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.25rem',
-                        textAlign: 'left'
-                    }}>
-                        Добавить нового агента
-                    </DialogTitle>
-                    <DialogContent sx={{textAlign: 'left', overflowX: 'hidden'}}>
-                        {errorMessage && (
-                            <Alert severity="error" sx={{
-                                mb: 2,
-                                width: '100%',
-                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                textAlign: 'left'
-                            }}>
-                                {errorMessage}
-                            </Alert>
-                        )}
-                        <Typography variant="h6" sx={{
-                            mb: 2,
-                            fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
+                    <Dialog open={openAddDialog} onClose={handleCloseAddDialog} fullWidth
+                            maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>
+                        <DialogTitle sx={{
+                            fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.25rem',
                             textAlign: 'left'
                         }}>
-                            Общие настройки
-                        </Typography>
-                        <TextField
-                            autoFocus
-                            margin="dense"
-                            label="Имя"
-                            type="text"
-                            fullWidth
-                            value={newAgent.name}
-                            onChange={(e) => setNewAgent({...newAgent, name: e.target.value})}
-                            helperText="Используйте только буквы, цифры, _ или -"
-                            sx={{
-                                mb: 2,
-                                '& .MuiInputBase-input': {
+                            Добавить нового агента
+                        </DialogTitle>
+                        <DialogContent sx={{textAlign: 'left', overflowX: 'hidden'}}>
+                            {errorMessage && (
+                                <Alert severity="error" sx={{
+                                    mb: 2,
+                                    width: '100%',
                                     fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
                                     textAlign: 'left'
-                                }
-                            }}/>
-                        <TextField
-                            margin="dense"
-                            label="Инструкции"
-                            type="text"
-                            fullWidth
-                            multiline
-                            rows={deviceType === 'mobile' ? 3 : 4}
-                            value={newAgent.instructions}
-                            onChange={(e) => setNewAgent({...newAgent, instructions: e.target.value})}
-                            helperText="Минимальная длина 40 символов"
-                            sx={{
+                                }}>
+                                    {errorMessage}
+                                </Alert>
+                            )}
+                            <Typography variant="h6" sx={{
                                 mb: 2,
-                                '& .MuiInputBase-input': {
-                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                    textAlign: 'left'
-                                }
-                            }}/>
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: deviceType === 'mobile' ? 'column' : 'row',
-                            gap: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.5 : 2,
-                            mb: 2,
-                            justifyContent: 'flex-start'
-                        }}>
-                            <FormControlLabel
-                                control={<Checkbox checked={enableHttpAction}
-                                                   onChange={(e) => setEnableHttpAction(e.target.checked)}/>}
-                                label="Включить HTTP-action"
-                                sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
-                            <FormControlLabel
-                                control={<Checkbox checked={enableEmailAction}
-                                                   onChange={(e) => setEnableEmailAction(e.target.checked)}/>}
-                                label="Включить Email-action"
-                                sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
-                        </Box>
-                        <Divider sx={{my: 2}}/>
-                        <Typography variant="h6" sx={{
-                            mb: 2,
-                            fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
-                            textAlign: 'left'
-                        }}>
-                            База знаний (необязательно)
-                        </Typography>
-                        <input
-                            type="file"
-                            accept=".pdf,.txt"
-                            onChange={(e) => setNewFile(e.target.files ? e.target.files[0] : null)}
-                            style={{
-                                margin: '16px 0',
-                                width: '100%',
-                                boxSizing: 'border-box',
-                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'
-                            }}/>
-                        <Typography variant="caption" color="textSecondary" sx={{
-                            fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.8rem',
-                            textAlign: 'left'
-                        }}>
-                            Загрузите файл (PDF или TXT) для создания базы знаний. Если файл не выбран, база знаний не
-                            будет создана.
-                        </Typography>
-                    </DialogContent>
-                    <DialogActions sx={{justifyContent: 'center'}}>
-                        <Button onClick={handleCloseAddDialog} color="primary"
-                                sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
-                            Отмена
-                        </Button>
-                        <Button onClick={handleAddAgent} color="primary"
-                                sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
-                            Добавить
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-
-                <Dialog open={openEditDialog} onClose={handleCloseEditDialog} fullWidth
-                        maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>
-                    <DialogTitle sx={{
-                        fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.25rem',
-                        textAlign: 'left'
-                    }}>
-                        Редактировать агента
-                    </DialogTitle>
-                    <DialogContent sx={{textAlign: 'left', overflowX: 'hidden'}}>
-                        {errorMessage && (
-                            <Alert severity="error" sx={{
-                                mb: 2,
-                                width: '100%',
-                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
+                                fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
                                 textAlign: 'left'
                             }}>
-                                {errorMessage}
-                            </Alert>
-                        )}
-                        {editAgent && (
-                            <>
-                                <Typography variant="h6" sx={{
+                                Общие настройки
+                            </Typography>
+                            <TextField
+                                autoFocus
+                                margin="dense"
+                                label="Имя"
+                                type="text"
+                                fullWidth
+                                value={newAgent.name}
+                                onChange={(e) => setNewAgent({...newAgent, name: e.target.value})}
+                                helperText="Используйте только буквы, цифры, _ или -"
+                                sx={{
                                     mb: 2,
-                                    fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
-                                    textAlign: 'left'
-                                }}>
-                                    Общие настройки
-                                </Typography>
-                                <TextField
-                                    autoFocus
-                                    margin="dense"
-                                    label="Имя"
-                                    type="text"
-                                    fullWidth
-                                    value={editAgent.name}
-                                    onChange={(e) => setEditAgent({...editAgent, name: e.target.value})}
-                                    helperText="Используйте только буквы, цифры, _ или -"
-                                    sx={{
-                                        mb: 2,
-                                        '& .MuiInputBase-input': {
-                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                            textAlign: 'left'
-                                        }
-                                    }}/>
-                                <TextField
-                                    margin="dense"
-                                    label="Инструкции"
-                                    type="text"
-                                    fullWidth
-                                    multiline
-                                    rows={deviceType === 'mobile' ? 3 : 4}
-                                    value={editAgent.instructions}
-                                    onChange={(e) => setEditAgent({...editAgent, instructions: e.target.value})}
-                                    helperText="Минимальная длина 40 символов"
-                                    sx={{
-                                        mb: 2,
-                                        '& .MuiInputBase-input': {
-                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                            textAlign: 'left'
-                                        }
-                                    }}/>
-                                <Box sx={{
-                                    display: 'flex',
-                                    flexDirection: deviceType === 'mobile' ? 'column' : 'row',
-                                    gap: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.5 : 2,
-                                    mb: 2,
-                                    justifyContent: 'flex-start'
-                                }}>
-                                    <FormControlLabel
-                                        control={<Checkbox
-                                            checked={editEnableHttpAction}
-                                            onChange={(e) => setEditEnableHttpAction(e.target.checked)}/>}
-                                        label="Включить HTTP-action"
-                                        sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
-                                    <FormControlLabel
-                                        control={<Checkbox
-                                            checked={editEnableEmailAction}
-                                            onChange={(e) => setEditEnableEmailAction(e.target.checked)}/>}
-                                        label="Включить Email-action"
-                                        sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
-                                </Box>
-                                <Divider sx={{my: 2}}/>
-                                <Typography variant="h6" sx={{
-                                    mb: 2,
-                                    fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
-                                    textAlign: 'left'
-                                }}>
-                                    База знаний (необязательно)
-                                </Typography>
-                                {initialKnowledgeBaseFile && (
-                                    <Alert severity="info" sx={{
-                                        mb: 2,
-                                        width: '100%',
+                                    '& .MuiInputBase-input': {
                                         fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
                                         textAlign: 'left'
-                                    }}>
-                                        {initialKnowledgeBaseFile}. Вы можете загрузить новый файл для обновления или
-                                        оставить без изменений.
-                                    </Alert>
-                                )}
+                                    }
+                                }}/>
+                            <TextField
+                                margin="dense"
+                                label="Инструкции"
+                                type="text"
+                                fullWidth
+                                multiline
+                                rows={deviceType === 'mobile' ? 3 : 4}
+                                value={newAgent.instructions}
+                                onChange={(e) => setNewAgent({...newAgent, instructions: e.target.value})}
+                                helperText="Минимальная длина 40 символов"
+                                sx={{
+                                    mb: 2,
+                                    '& .MuiInputBase-input': {
+                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
+                                        textAlign: 'left'
+                                    }
+                                }}/>
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: deviceType === 'mobile' ? 'column' : 'row',
+                                gap: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.5 : 2,
+                                mb: 2,
+                                justifyContent: 'flex-start'
+                            }}>
                                 <FormControlLabel
-                                    control={<Checkbox checked={deleteKnowledgeBase} onChange={(e) => {
-                                        setDeleteKnowledgeBase(e.target.checked);
-                                        if (e.target.checked) setEditFile(null);
-                                    }}/>}
-                                    label="Удалить базу знаний"
+                                    control={<Checkbox checked={enableHttpAction}
+                                                       onChange={(e) => setEnableHttpAction(e.target.checked)}/>}
+                                    label="Включить HTTP-action"
                                     sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
-                                {!deleteKnowledgeBase && (
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.txt"
-                                        onChange={(e) => setEditFile(e.target.files ? e.target.files[0] : null)}
-                                        style={{
-                                            margin: '16px 0',
-                                            width: '100%',
-                                            boxSizing: 'border-box',
-                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'
-                                        }}
-                                        disabled={deleteKnowledgeBase}/>
-                                )}
-                                <Typography variant="caption" color="textSecondary" sx={{
-                                    fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.8rem',
+                                <FormControlLabel
+                                    control={<Checkbox checked={enableEmailAction}
+                                                       onChange={(e) => setEnableEmailAction(e.target.checked)}/>}
+                                    label="Включить Email-action"
+                                    sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
+                            </Box>
+                            <Divider sx={{my: 2}}/>
+                            <Typography variant="h6" sx={{
+                                mb: 2,
+                                fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
+                                textAlign: 'left'
+                            }}>
+                                База знаний (необязательно)
+                            </Typography>
+                            <input
+                                type="file"
+                                accept=".pdf,.txt"
+                                onChange={(e) => setNewFile(e.target.files ? e.target.files[0] : null)}
+                                style={{
+                                    margin: '16px 0',
+                                    width: '100%',
+                                    boxSizing: 'border-box',
+                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'
+                                }}/>
+                            <Typography variant="caption" color="textSecondary" sx={{
+                                fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.8rem',
+                                textAlign: 'left'
+                            }}>
+                                Загрузите файл (PDF или TXT) для создания базы знаний. Если файл не выбран, база знаний не
+                                будет создана.
+                            </Typography>
+                        </DialogContent>
+                        <DialogActions sx={{justifyContent: 'center'}}>
+                            <Button onClick={handleCloseAddDialog} color="primary"
+                                    sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
+                                Отмена
+                            </Button>
+                            <Button onClick={handleAddAgent} color="primary"
+                                    sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
+                                Добавить
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+
+                    <Dialog open={openEditDialog} onClose={handleCloseEditDialog} fullWidth
+                            maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>
+                        <DialogTitle sx={{
+                            fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.25rem',
+                            textAlign: 'left'
+                        }}>
+                            Редактировать агента
+                        </DialogTitle>
+                        <DialogContent sx={{textAlign: 'left', overflowX: 'hidden'}}>
+                            {errorMessage && (
+                                <Alert severity="error" sx={{
+                                    mb: 2,
+                                    width: '100%',
+                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
                                     textAlign: 'left'
                                 }}>
-                                    {deleteKnowledgeBase
-                                        ? 'Выбрано удаление базы знаний. Выбор файла невозможен.'
-                                        : 'Загрузите новый файл (PDF или TXT) для обновления базы знаний. Если файл не выбран, текущая база знаний останется без изменений.'}
-                                </Typography>
-                            </>
-                        )}
-                    </DialogContent>
-                    <DialogActions sx={{justifyContent: 'center'}}>
-                        <Button onClick={handleCloseEditDialog} color="primary"
-                                sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
-                            Отмена
-                        </Button>
-                        <Button onClick={handleEditAgent} color="primary"
-                                sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
-                            Сохранить
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                                    {errorMessage}
+                                </Alert>
+                            )}
+                            {editAgent && (
+                                <>
+                                    <Typography variant="h6" sx={{
+                                        mb: 2,
+                                        fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
+                                        textAlign: 'left'
+                                    }}>
+                                        Общие настройки
+                                    </Typography>
+                                    <TextField
+                                        autoFocus
+                                        margin="dense"
+                                        label="Имя"
+                                        type="text"
+                                        fullWidth
+                                        value={editAgent.name}
+                                        onChange={(e) => setEditAgent({...editAgent, name: e.target.value})}
+                                        helperText="Используйте только буквы, цифры, _ или -"
+                                        sx={{
+                                            mb: 2,
+                                            '& .MuiInputBase-input': {
+                                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
+                                                textAlign: 'left'
+                                            }
+                                        }}/>
+                                    <TextField
+                                        margin="dense"
+                                        label="Инструкции"
+                                        type="text"
+                                        fullWidth
+                                        multiline
+                                        rows={deviceType === 'mobile' ? 3 : 4}
+                                        value={editAgent.instructions}
+                                        onChange={(e) => setEditAgent({...editAgent, instructions: e.target.value})}
+                                        helperText="Минимальная длина 40 символов"
+                                        sx={{
+                                            mb: 2,
+                                            '& .MuiInputBase-input': {
+                                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
+                                                textAlign: 'left'
+                                            }
+                                        }}/>
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexDirection: deviceType === 'mobile' ? 'column' : 'row',
+                                        gap: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.5 : 2,
+                                        mb: 2,
+                                        justifyContent: 'flex-start'
+                                    }}>
+                                        <FormControlLabel
+                                            control={<Checkbox
+                                                checked={editEnableHttpAction}
+                                                onChange={(e) => setEditEnableHttpAction(e.target.checked)}/>}
+                                            label="Включить HTTP-action"
+                                            sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
+                                        <FormControlLabel
+                                            control={<Checkbox
+                                                checked={editEnableEmailAction}
+                                                onChange={(e) => setEditEnableEmailAction(e.target.checked)}/>}
+                                            label="Включить Email-action"
+                                            sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
+                                    </Box>
+                                    <Divider sx={{my: 2}}/>
+                                    <Typography variant="h6" sx={{
+                                        mb: 2,
+                                        fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
+                                        textAlign: 'left'
+                                    }}>
+                                        База знаний (необязательно)
+                                    </Typography>
+                                    {initialKnowledgeBaseFile && (
+                                        <Alert severity="info" sx={{
+                                            mb: 2,
+                                            width: '100%',
+                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
+                                            textAlign: 'left'
+                                        }}>
+                                            {initialKnowledgeBaseFile}. Вы можете загрузить новый файл для обновления или
+                                            оставить без изменений.
+                                        </Alert>
+                                    )}
+                                    <FormControlLabel
+                                        control={<Checkbox checked={deleteKnowledgeBase} onChange={(e) => {
+                                            setDeleteKnowledgeBase(e.target.checked);
+                                            if (e.target.checked) setEditFile(null);
+                                        }}/>}
+                                        label="Удалить базу знаний"
+                                        sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
+                                    {!deleteKnowledgeBase && (
+                                        <input
+                                            type="file"
+                                            accept=".pdf,.txt"
+                                            onChange={(e) => setEditFile(e.target.files ? e.target.files[0] : null)}
+                                            style={{
+                                                margin: '16px 0',
+                                                width: '100%',
+                                                boxSizing: 'border-box',
+                                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'
+                                            }}
+                                            disabled={deleteKnowledgeBase}/>
+                                    )}
+                                    <Typography variant="caption" color="textSecondary" sx={{
+                                        fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.8rem',
+                                        textAlign: 'left'
+                                    }}>
+                                        {deleteKnowledgeBase
+                                            ? 'Выбрано удаление базы знаний. Выбор файла невозможен.'
+                                            : 'Загрузите новый файл (PDF или TXT) для обновления базы знаний. Если файл не выбран, текущая база знаний останется без изменений.'}
+                                    </Typography>
+                                </>
+                            )}
+                        </DialogContent>
+                        <DialogActions sx={{justifyContent: 'center'}}>
+                            <Button onClick={handleCloseEditDialog} color="primary"
+                                    sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
+                                Отмена
+                            </Button>
+                            <Button onClick={handleEditAgent} color="primary"
+                                    sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
+                                Сохранить
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
 
-                {chatOpen && selectedAgent && (
-                    <>
-                        {/* Полупрозрачный фон для закрытия чата на ПК */}
-                        <Box
-                            sx={{
-                                display: { xs: 'none', md: 'block' },
-                                position: 'fixed',
-                                top: 0,
-                                left: 0,
-                                width: '100vw',
-                                height: '100vh',
-                                backgroundColor: 'rgba(0,0,0,0.5)',
-                                overscrollBehavior: 'contain',
-                                touchAction: 'none',
-                                overflow: 'hidden',
-                                WebkitOverflowScrolling: 'touch',
-                                zIndex: 1300,
-                            }}
-                            onClick={() => setChatOpen(false)}
-                        />
-
-                        {/* Контейнер чата */}
-                        <Box
-                            role="dialog"
-                            aria-label={`Чат с ${selectedAgent?.name}`}
-                            sx={{
-                                position: 'fixed',
-                                zIndex: 1400,
-                                bottom: 0,
-                                right: 0,
-                                top: 'auto',
-                                width: { xs: '100vw', md: '36vw' },
-                                maxWidth: { md: 800 },
-                                height: {
-                                    xs: `${viewportHeight}px`,
-                                    md: '100vh',
-                                },
-                                backgroundColor: '#fff',
-                                boxShadow: 3,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                overflow: 'hidden',
-                                transition: { md: 'transform 0.3s ease-in-out' },
-                                WebkitTextSizeAdjust: '100%',
-                                touchAction: 'pan-y',
-                                overscrollBehavior: 'contain',  // Ограничиваем "перетягивание" для всего чата
-                            }}
-                        >
-                            {/* Заголовок */}
+                    {chatOpen && selectedAgent && (
+                        <>
+                            {/* Полупрозрачный фон для закрытия чата на ПК */}
                             <Box
                                 sx={{
-                                    flexShrink: 0,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    p: deviceType === 'mobile' ? 1 : 2,
-                                    borderBottom: 1,
-                                    borderColor: 'grey.300',
-                                    overscrollBehavior: 'contain', // Запретить "перетягивание" здесь
-                                    touchAction: 'none',           // Отключить прокрутку и жесты на заголовке
-                                }}
-                            >
-                                <IconButton onClick={() => setChatOpen(false)} sx={{ mr: 1 }}>
-                                    <CloseIcon />
-                                </IconButton>
-                                <Typography
-                                    variant="h6"
-                                    sx={{
-                                        fontSize:
-                                            deviceType === 'mobile'
-                                                ? '1rem'
-                                                : deviceType === 'tablet'
-                                                    ? '1.125rem'
-                                                    : '1.25rem',
-                                        flexGrow: 1,
-                                        textAlign: 'left',
-                                    }}
-                                >
-                                    Чат с {selectedAgent.name}
-                                </Typography>
-                            </Box>
-
-                            {/* Список сообщений */}
-                            <MessageList
-                                ref={messageListRef}
-                                style={{
-                                    height: messageListHeight > 0 ? messageListHeight : 0,
-                                    overflowY: 'auto',
-                                    overflowX: 'hidden',
-                                    padding: deviceType === 'mobile' ? '8px' : '10px',
-                                    paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '0px',
-                                    WebkitTextSizeAdjust: '100%',
-                                    touchAction: 'pan-y',
-                                    overscrollBehavior: 'none',  // Разрешаем прокрутку сообщений, но без "перетягивания"
-                                }}
-                            >
-                                {chatMessages.map((msg, index) => (
-                                    <Message key={index} model={msg} />
-                                ))}
-                            </MessageList>
-
-                            {/* Поле ввода */}
-                            <Box
-                                sx={{
-                                    flexShrink: 0,
-                                    background: '#fff',
-                                    borderTop: 1,
-                                    borderColor: 'grey.200',
-                                    padding: deviceType === 'mobile' ? '8px env(safe-area-inset-right, 8px) 8px env(safe-area-inset-left, 8px)' : '10px',
-                                    paddingBottom: deviceType === 'mobile' ? 'env(safe-area-inset-bottom, 12px)' : '12px', // Увеличиваем отступ снизу
-                                    transition: 'none',
-                                    zIndex: 1500,
+                                    display: { xs: 'none', md: 'block' },
+                                    position: 'fixed',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100vw',
+                                    height: '100vh',
+                                    backgroundColor: 'rgba(0,0,0,0.5)',
                                     overscrollBehavior: 'contain',
                                     touchAction: 'none',
-                                    boxSizing: 'border-box',
+                                    overflow: 'hidden',
+                                    WebkitOverflowScrolling: 'touch',
+                                    zIndex: 1300,
+                                }}
+                                onClick={() => setChatOpen(false)}
+                            />
+
+                            {/* Контейнер чата */}
+                            <Box
+                                role="dialog"
+                                aria-label={`Чат с ${selectedAgent?.name}`}
+                                sx={{
+                                    position: 'fixed',
+                                    zIndex: 1400,
+                                    bottom: 0,
+                                    right: 0,
+                                    top: 'auto',
+                                    width: { xs: '100vw', md: '36vw' },
+                                    maxWidth: { md: 800 },
+                                    height: {
+                                        xs: `${viewportHeight}px`,
+                                        md: '100vh',
+                                    },
+                                    backgroundColor: '#fff',
+                                    boxShadow: 3,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    overflow: 'hidden',
+                                    transition: { md: 'transform 0.3s ease-in-out' },
+                                    WebkitTextSizeAdjust: '100%',
+                                    touchAction: 'pan-y',
+                                    overscrollBehavior: 'contain',  // Ограничиваем "перетягивание" для всего чата
                                 }}
                             >
-                                <MessageInput
-                                    ref={inputRef}
-                                    placeholder="Введите сообщение..."
-                                    onSend={sendChatMessage}
-                                    attachButton={false}
-                                    onFocus={() => {
-                                        if (inputRef.current) {
-                                            const textarea = inputRef.current.querySelector('textarea');
-                                            if (textarea) {
-                                                textarea.style.fontSize = '16px';
-                                                textarea.style.padding = deviceType === 'mobile' ? '8px 12px' : '10px 14px'; // Добавляем внутренние отступы
-                                            }
-                                            setTimeout(() => {
-                                                inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                            }, 100);
-                                        }
+                                {/* Заголовок */}
+                                <Box
+                                    sx={{
+                                        flexShrink: 0,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        p: deviceType === 'mobile' ? 1 : 2,
+                                        borderBottom: 1,
+                                        borderColor: 'grey.300',
+                                        overscrollBehavior: 'contain', // Запретить "перетягивание" здесь
+                                        touchAction: 'none',           // Отключить прокрутку и жесты на заголовке
                                     }}
+                                >
+                                    <IconButton onClick={() => setChatOpen(false)} sx={{ mr: 1 }}>
+                                        <CloseIcon />
+                                    </IconButton>
+                                    <Typography
+                                        variant="h6"
+                                        sx={{
+                                            fontSize:
+                                                deviceType === 'mobile'
+                                                    ? '1rem'
+                                                    : deviceType === 'tablet'
+                                                        ? '1.125rem'
+                                                        : '1.25rem',
+                                            flexGrow: 1,
+                                            textAlign: 'left',
+                                        }}
+                                    >
+                                        Чат с {selectedAgent.name}
+                                    </Typography>
+                                </Box>
+
+                                {/* Список сообщений */}
+                                <MessageList
+                                    ref={messageListRef}
                                     style={{
-                                        width: '100%',
-                                        fontSize: '16px',
-                                        WebkitTextSizeAdjust: '100% !important',
-                                        textSizeAdjust: '100% !important',
-                                        touchAction: 'manipulation',
-                                        lineHeight: '1.5',
-                                        borderRadius: '8px', // Для более мягкого вида
-                                        padding: deviceType === 'mobile' ? '8px 12px' : '10px 14px', // Дополнительные отступы для поля
+                                        height: messageListHeight > 0 ? messageListHeight : 0,
+                                        overflowY: 'auto',
+                                        overflowX: 'hidden',
+                                        padding: deviceType === 'mobile' ? '8px' : '10px',
+                                        paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '0px',
+                                        WebkitTextSizeAdjust: '100%',
+                                        touchAction: 'pan-y',
+                                        overscrollBehavior: 'none',  // Разрешаем прокрутку сообщений, но без "перетягивания"
                                     }}
-                                />
+                                >
+                                    {chatMessages.map((msg, index) => (
+                                        <Message key={index} model={msg} />
+                                    ))}
+                                </MessageList>
+
+                                {/* Поле ввода */}
+                                <Box
+                                    sx={{
+                                        flexShrink: 0,
+                                        background: '#fff',
+                                        borderTop: 1,
+                                        borderColor: 'grey.200',
+                                        padding: deviceType === 'mobile' ? '8px env(safe-area-inset-right, 8px) 8px env(safe-area-inset-left, 8px)' : '10px',
+                                        paddingBottom: deviceType === 'mobile' ? 'env(safe-area-inset-bottom, 12px)' : '12px', // Увеличиваем отступ снизу
+                                        transition: 'none',
+                                        zIndex: 1500,
+                                        overscrollBehavior: 'contain',
+                                        touchAction: 'none',
+                                        boxSizing: 'border-box',
+                                    }}
+                                >
+                                    <MessageInput
+                                        ref={inputRef}
+                                        placeholder="Введите сообщение..."
+                                        onSend={sendChatMessage}
+                                        attachButton={false}
+                                        onFocus={() => {
+                                            if (inputRef.current) {
+                                                const textarea = inputRef.current.querySelector('textarea');
+                                                if (textarea) {
+                                                    textarea.style.fontSize = '16px';
+                                                    textarea.style.padding = deviceType === 'mobile' ? '8px 12px' : '10px 14px'; // Добавляем внутренние отступы
+                                                }
+                                                setTimeout(() => {
+                                                    inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                                                }, 100);
+                                            }
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            fontSize: '16px',
+                                            WebkitTextSizeAdjust: '100% !important',
+                                            textSizeAdjust: '100% !important',
+                                            touchAction: 'manipulation',
+                                            lineHeight: '1.5',
+                                            borderRadius: '8px', // Для более мягкого вида
+                                            padding: deviceType === 'mobile' ? '8px 12px' : '10px 14px', // Дополнительные отступы для поля
+                                        }}
+                                    />
+                                </Box>
                             </Box>
-                        </Box>
-                    </>
-                )}
-            </Container>
-        </Box></>
+                        </>
+                    )}
+                </Container>
+            </Box></>
     );
 };
 
