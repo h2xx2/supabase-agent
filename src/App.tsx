@@ -7,6 +7,8 @@ import {
     Drawer,
     List,
     ListItem,
+    ListItemButton,
+    ListItemIcon,
     ListItemText,
     Container,
     IconButton,
@@ -30,8 +32,10 @@ import {
     useMediaQuery,
     useTheme,
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
+import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import LogoutIcon from '@mui/icons-material/Logout';
+import MenuIcon from '@mui/icons-material/Menu';
 import Auth from './components/Auth';
 import {
     MessageList,
@@ -210,7 +214,7 @@ const App: React.FC = () => {
             return response.data.agents || [];
         } catch (error: any) {
             console.error('Ошибка при получении агентов:', error);
-            setErrorMessage('Ошибка при загрузке агентов');
+            setErrorMessage('Could not get agents');
             return [];
         }
     };
@@ -553,8 +557,9 @@ const App: React.FC = () => {
                         </Typography>
                         {user && (
                             <Button color="inherit" onClick={handleSignOut}
+                                    startIcon={<LogoutIcon />}
                                     sx={{fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem'}}>
-                                Exit
+                                Logout
                             </Button>
                         )}
                     </Toolbar>
@@ -566,12 +571,14 @@ const App: React.FC = () => {
                         boxSizing: 'border-box'
                     }
                 }}>
-                    <List>
-                        <ListItem component="button" onClick={handleOpenAddDialog}>
-                            <ListItemText primary="Add agent" sx={{textAlign: 'left'}}/>
-                        </ListItem>
-                        <ListItem component="button" onClick={toggleDrawer}>
-                            <ListItemText primary="Close" sx={{textAlign: 'left'}}/>
+                    <List dense>
+                        <ListItem onClick={handleOpenAddDialog} disablePadding>
+                            <ListItemButton>
+                                <ListItemIcon>
+                                    <AddIcon />
+                                </ListItemIcon>
+                                <ListItemText primary="Add agent" sx={{textAlign: 'left'}}/>
+                            </ListItemButton>
                         </ListItem>
                     </List>
                 </Drawer>
