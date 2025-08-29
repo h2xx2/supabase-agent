@@ -914,7 +914,7 @@ const App: React.FC = () => {
                                             <TableRow>
                                                 <TableCell colSpan={deviceType === 'mobile' ? 1 : 2}
                                                            sx={{textAlign: 'left'}}>
-                                                    Нет агентов
+                                                    No agents
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -958,7 +958,7 @@ const App: React.FC = () => {
                                 fullWidth
                                 value={newAgent.name}
                                 onChange={(e) => setNewAgent({...newAgent, name: e.target.value})}
-                                helperText="Use only words, digits, _ or -"
+                                helperText="Use only letters, digits, _ or -"
                                 sx={{
                                     mb: 2,
                                     '& .MuiInputBase-input': {
@@ -1142,7 +1142,7 @@ const App: React.FC = () => {
                                             setDeleteKnowledgeBase(e.target.checked);
                                             if (e.target.checked) setEditFile(null);
                                         }}/>}
-                                        label="Удалить базу знаний"
+                                        label="Delete knowledge base"
                                         sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
                                     {!deleteKnowledgeBase && (
                                         <input
@@ -1171,11 +1171,11 @@ const App: React.FC = () => {
                         <DialogActions sx={{justifyContent: 'center'}}>
                             <Button onClick={handleCloseEditDialog} color="primary"
                                     sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
-                                Отмена
+                                Cancel
                             </Button>
                             <Button onClick={handleEditAgent} color="primary"
                                     sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
-                                Сохранить
+                                Save
                             </Button>
                         </DialogActions>
                     </Dialog>
