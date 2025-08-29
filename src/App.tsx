@@ -676,7 +676,7 @@ const App: React.FC = () => {
                                                                         mt: 0.5,
                                                                         textAlign: 'left'
                                                                     }}>
-                                                                        <strong>Month calls count:</strong> {agent.call_count || 0}
+                                                                        <strong>Month requests count:</strong> {agent.call_count || 0}
                                                                     </Typography>
                                                                     <Typography sx={{
                                                                         fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
@@ -684,7 +684,7 @@ const App: React.FC = () => {
                                                                         mt: 0.5,
                                                                         textAlign: 'left'
                                                                     }}>
-                                                                        <strong>Year calls count:</strong> {agent.call_count_year || 0}
+                                                                        <strong>Year requests count:</strong> {agent.call_count_year || 0}
                                                                     </Typography>
                                                                 </Box>
                                                                 {deviceType === 'mobile' && (
