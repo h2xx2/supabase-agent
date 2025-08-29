@@ -55,7 +55,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
     const handleSignUp = async () => {
         setError(null);
         if (!email.trim() || !password.trim()) {
-            setError('Пожалуйста, заполните email и пароль');
+            setError('Please fill in the email and password.');
             return;
         }
         try {
@@ -72,7 +72,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
             if (user) {
                 if (parsedBody.requires_email_confirmation || !token) {
                     setEmailConfirmationRequired(true);
-                    setError('Пожалуйста, подтвердите свой аккаунт по email. После подтверждения выполните вход.');
+                    setError('Please confirm your account by email. After confirmation, log in.');
                     return;
                 }
 
@@ -82,11 +82,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                 }
                 onAuthChange(user);
             } else {
-                setError('Регистрация прошла, но пользователь не найден');
+                setError('Registration has been completed, but the user has not been found.');
             }
         } catch (error: any) {
             console.error('Sign Up Error:', error);
-            setError('Ошибка регистрации. Проверьте данные или попробуйте позже.');
+            setError('Registration error. Check the data or try again later.');
         }
     };
 
@@ -94,7 +94,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
         setError(null);
         setEmailConfirmationRequired(false);
         if (!email.trim() || !password.trim()) {
-            setError('Пожалуйста, заполните email и пароль');
+            setError('Please fill in the email and password.');
             return;
         }
         try {
@@ -112,11 +112,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                 localStorage.setItem('authToken', token);
                 onAuthChange(user);
             } else {
-                setError('Некорректный ответ от сервера');
+                setError('Incorrect response from the server');
             }
         } catch (error: any) {
             console.error('Sign In Error:', error);
-            setError('Ошибка входа. Проверьте данные или попробуйте позже.');
+            setError('Login error. Check the data or try again later.');
         }
     };
 
@@ -140,7 +140,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                     variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
                     sx={{ mb: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3, fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.5rem' }}
                 >
-                    Добро пожаловать, {user.email}
+                    Welcome, {user.email}
                 </Typography>
                 <Button
                     variant="contained"
@@ -152,7 +152,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                         py: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.25 : 1.5,
                     }}
                 >
-                    Выйти
+                    Exit
                 </Button>
             </Box>
         );
@@ -166,7 +166,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                     align="center"
                     sx={{ fontSize: deviceType === 'mobile' ? '2.125rem' : deviceType === 'tablet' ? '2.5rem' : '3rem' }}
                 >
-                    Авторизация
+                    Authorization
                 </Typography>
                 {error && (
                     <Alert
@@ -189,7 +189,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                             width: deviceType === 'mobile' ? '100%' : deviceType === 'tablet' ? '50vw' : '25vw',
                         }}
                     >
-                        Пожалуйста, подтвердите свой аккаунт по email, отправленному на {email}. После подтверждения выполните вход.
+                        Please verify your account by sending an email to {email}. After confirmation, log in.
                     </Alert>
                 )}
                 <TextField
@@ -205,7 +205,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                     }}
                 />
                 <TextField
-                    label="Пароль"
+                    label="Password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -227,7 +227,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                             py: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.25 : 1.5,
                         }}
                     >
-                        Войти
+                        Enter
                     </Button>
                     <Button
                         variant="outlined"
@@ -238,7 +238,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                             py: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.25 : 1.5,
                         }}
                     >
-                        Регистрация
+                        Registration
                     </Button>
                 </Box>
             </Box>
