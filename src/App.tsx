@@ -549,12 +549,12 @@ const App: React.FC = () => {
                             fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
                             textAlign: 'left'
                         }}>
-                            Мои Агенты
+                            My Agents
                         </Typography>
                         {user && (
                             <Button color="inherit" onClick={handleSignOut}
                                     sx={{fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem'}}>
-                                Выйти
+                                Exit
                             </Button>
                         )}
                     </Toolbar>
@@ -568,10 +568,10 @@ const App: React.FC = () => {
                 }}>
                     <List>
                         <ListItem component="button" onClick={handleOpenAddDialog}>
-                            <ListItemText primary="Добавить агента" sx={{textAlign: 'left'}}/>
+                            <ListItemText primary="Add agent" sx={{textAlign: 'left'}}/>
                         </ListItem>
                         <ListItem component="button" onClick={toggleDrawer}>
-                            <ListItemText primary="Закрыть" sx={{textAlign: 'left'}}/>
+                            <ListItemText primary="Close" sx={{textAlign: 'left'}}/>
                         </ListItem>
                     </List>
                 </Drawer>
@@ -594,7 +594,7 @@ const App: React.FC = () => {
                         }}>
                             <Typography variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
                                         sx={{textAlign: 'left'}}>
-                                Ваши агенты
+                                Your agents
                             </Typography>
                             {errorMessage && (
                                 <Alert severity="error" sx={{
@@ -620,7 +620,7 @@ const App: React.FC = () => {
                                                 width: deviceType === 'mobile' ? '100%' : '80%',
                                                 textAlign: 'left'
                                             }}>
-                                                Агент
+                                                Agent
                                             </TableCell>
                                             {deviceType !== 'mobile' && (
                                                 <TableCell sx={{
@@ -628,7 +628,7 @@ const App: React.FC = () => {
                                                     width: '20%',
                                                     textAlign: 'center'
                                                 }}>
-                                                    Действия
+                                                    Actions
                                                 </TableCell>
                                             )}
                                         </TableRow>
@@ -676,7 +676,7 @@ const App: React.FC = () => {
                                                                         mt: 0.5,
                                                                         textAlign: 'left'
                                                                     }}>
-                                                                        <strong>Вызовы в месяц:</strong> {agent.call_count || 0}
+                                                                        <strong>Month calls count:</strong> {agent.call_count || 0}
                                                                     </Typography>
                                                                     <Typography sx={{
                                                                         fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
@@ -684,7 +684,7 @@ const App: React.FC = () => {
                                                                         mt: 0.5,
                                                                         textAlign: 'left'
                                                                     }}>
-                                                                        <strong>Вызовы в год:</strong> {agent.call_count_year || 0}
+                                                                        <strong>Year calls count:</strong> {agent.call_count_year || 0}
                                                                     </Typography>
                                                                 </Box>
                                                                 {deviceType === 'mobile' && (
@@ -778,7 +778,7 @@ const App: React.FC = () => {
                                                                                             height: 32
                                                                                         }}
                                                                                     >
-                                                                                        Редактировать
+                                                                                        Edit
                                                                                     </Button>
                                                                                 )}
                                                                             </>
@@ -816,7 +816,7 @@ const App: React.FC = () => {
                                                                                         width: deviceType === 'tablet' ? 140 : 160
                                                                                     }}
                                                                                 >
-                                                                                    Создать Alias
+                                                                                    Create Alias
                                                                                 </Button>
                                                                             )}
                                                                             {agent.agent_id && agent.alias_id && (
@@ -832,7 +832,7 @@ const App: React.FC = () => {
                                                                                             width: deviceType === 'tablet' ? 140 : 160
                                                                                         }}
                                                                                     >
-                                                                                        Чат
+                                                                                        Chat
                                                                                     </Button>
                                                                                     {!agent.public_url ? (
                                                                                         <Button
@@ -877,7 +877,7 @@ const App: React.FC = () => {
                                                                                         width: deviceType === 'tablet' ? 140 : 160
                                                                                     }}
                                                                                 >
-                                                                                    Редактировать
+                                                                                    Edit
                                                                                 </Button>
                                                                             )}
                                                                         </>
@@ -899,7 +899,7 @@ const App: React.FC = () => {
                                                                     fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
                                                                     textAlign: 'left'
                                                                 }}>
-                                                                    <strong>Публичная ссылка:</strong>{' '}
+                                                                    <strong>Public link:</strong>{' '}
                                                                     <a href={agent.public_url} target="_blank"
                                                                        rel="noopener noreferrer">
                                                                         {agent.public_url}
@@ -930,7 +930,7 @@ const App: React.FC = () => {
                             fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.25rem',
                             textAlign: 'left'
                         }}>
-                            Добавить нового агента
+                            Add new agent
                         </DialogTitle>
                         <DialogContent sx={{textAlign: 'left', overflowX: 'hidden'}}>
                             {errorMessage && (
@@ -948,17 +948,17 @@ const App: React.FC = () => {
                                 fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
                                 textAlign: 'left'
                             }}>
-                                Общие настройки
+                                General settings
                             </Typography>
                             <TextField
                                 autoFocus
                                 margin="dense"
-                                label="Имя"
+                                label="Name"
                                 type="text"
                                 fullWidth
                                 value={newAgent.name}
                                 onChange={(e) => setNewAgent({...newAgent, name: e.target.value})}
-                                helperText="Используйте только буквы, цифры, _ или -"
+                                helperText="Use only words, digits, _ or -"
                                 sx={{
                                     mb: 2,
                                     '& .MuiInputBase-input': {
@@ -968,14 +968,14 @@ const App: React.FC = () => {
                                 }}/>
                             <TextField
                                 margin="dense"
-                                label="Инструкции"
+                                label="Instructions"
                                 type="text"
                                 fullWidth
                                 multiline
                                 rows={deviceType === 'mobile' ? 3 : 4}
                                 value={newAgent.instructions}
                                 onChange={(e) => setNewAgent({...newAgent, instructions: e.target.value})}
-                                helperText="Минимальная длина 40 символов"
+                                helperText="Minimum length 40 characters"
                                 sx={{
                                     mb: 2,
                                     '& .MuiInputBase-input': {
@@ -993,12 +993,12 @@ const App: React.FC = () => {
                                 <FormControlLabel
                                     control={<Checkbox checked={enableHttpAction}
                                                        onChange={(e) => setEnableHttpAction(e.target.checked)}/>}
-                                    label="Включить HTTP-action"
+                                    label="Enable HTTP-action"
                                     sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
                                 <FormControlLabel
                                     control={<Checkbox checked={enableEmailAction}
                                                        onChange={(e) => setEnableEmailAction(e.target.checked)}/>}
-                                    label="Включить Email-action"
+                                    label="Enable Email-action"
                                     sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
                             </Box>
                             <Divider sx={{my: 2}}/>
@@ -1007,7 +1007,7 @@ const App: React.FC = () => {
                                 fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
                                 textAlign: 'left'
                             }}>
-                                База знаний (необязательно)
+                                Knowledge base (optional)
                             </Typography>
                             <input
                                 type="file"
@@ -1023,18 +1023,17 @@ const App: React.FC = () => {
                                 fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.8rem',
                                 textAlign: 'left'
                             }}>
-                                Загрузите файл (PDF или TXT) для создания базы знаний. Если файл не выбран, база знаний не
-                                будет создана.
+                                Upload a file (PDF or TXT) to create a knowledge base. If the file is not selected, the knowledge base will not be created.
                             </Typography>
                         </DialogContent>
                         <DialogActions sx={{justifyContent: 'center'}}>
                             <Button onClick={handleCloseAddDialog} color="primary"
                                     sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
-                                Отмена
+                                Cancel
                             </Button>
                             <Button onClick={handleAddAgent} color="primary"
                                     sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
-                                Добавить
+                                Add
                             </Button>
                         </DialogActions>
                     </Dialog>
@@ -1045,7 +1044,7 @@ const App: React.FC = () => {
                             fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.25rem',
                             textAlign: 'left'
                         }}>
-                            Редактировать агента
+                            Edit agent
                         </DialogTitle>
                         <DialogContent sx={{textAlign: 'left', overflowX: 'hidden'}}>
                             {errorMessage && (
@@ -1065,17 +1064,17 @@ const App: React.FC = () => {
                                         fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
                                         textAlign: 'left'
                                     }}>
-                                        Общие настройки
+                                        General settings
                                     </Typography>
                                     <TextField
                                         autoFocus
                                         margin="dense"
-                                        label="Имя"
+                                        label="Name"
                                         type="text"
                                         fullWidth
                                         value={editAgent.name}
                                         onChange={(e) => setEditAgent({...editAgent, name: e.target.value})}
-                                        helperText="Используйте только буквы, цифры, _ или -"
+                                        helperText="Use only letters, numbers, _ or -"
                                         sx={{
                                             mb: 2,
                                             '& .MuiInputBase-input': {
@@ -1085,14 +1084,14 @@ const App: React.FC = () => {
                                         }}/>
                                     <TextField
                                         margin="dense"
-                                        label="Инструкции"
+                                        label="Instructions"
                                         type="text"
                                         fullWidth
                                         multiline
                                         rows={deviceType === 'mobile' ? 3 : 4}
                                         value={editAgent.instructions}
                                         onChange={(e) => setEditAgent({...editAgent, instructions: e.target.value})}
-                                        helperText="Минимальная длина 40 символов"
+                                        helperText="Minimum length 40 characters"
                                         sx={{
                                             mb: 2,
                                             '& .MuiInputBase-input': {
@@ -1111,13 +1110,13 @@ const App: React.FC = () => {
                                             control={<Checkbox
                                                 checked={editEnableHttpAction}
                                                 onChange={(e) => setEditEnableHttpAction(e.target.checked)}/>}
-                                            label="Включить HTTP-action"
+                                            label="Enable HTTP-action"
                                             sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
                                         <FormControlLabel
                                             control={<Checkbox
                                                 checked={editEnableEmailAction}
                                                 onChange={(e) => setEditEnableEmailAction(e.target.checked)}/>}
-                                            label="Включить Email-action"
+                                            label="Enable Email-action"
                                             sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
                                     </Box>
                                     <Divider sx={{my: 2}}/>
@@ -1126,7 +1125,7 @@ const App: React.FC = () => {
                                         fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
                                         textAlign: 'left'
                                     }}>
-                                        База знаний (необязательно)
+                                        Knowledge base (optional)
                                     </Typography>
                                     {initialKnowledgeBaseFile && (
                                         <Alert severity="info" sx={{
@@ -1135,8 +1134,7 @@ const App: React.FC = () => {
                                             fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
                                             textAlign: 'left'
                                         }}>
-                                            {initialKnowledgeBaseFile}. Вы можете загрузить новый файл для обновления или
-                                            оставить без изменений.
+                                            {initialKnowledgeBaseFile}. You can upload a new file to update or leave it as is.
                                         </Alert>
                                     )}
                                     <FormControlLabel
@@ -1164,8 +1162,8 @@ const App: React.FC = () => {
                                         textAlign: 'left'
                                     }}>
                                         {deleteKnowledgeBase
-                                            ? 'Выбрано удаление базы знаний. Выбор файла невозможен.'
-                                            : 'Загрузите новый файл (PDF или TXT) для обновления базы знаний. Если файл не выбран, текущая база знаний останется без изменений.'}
+                                            ? 'Selected knowledge base deleting. File selection is not possible.'
+                                            : 'Upload a new file (PDF or TXT) to update the knowledge base. If no file is selected, the current knowledge base will remain unchanged.'}
                                     </Typography>
                                 </>
                             )}
@@ -1259,7 +1257,7 @@ const App: React.FC = () => {
                                             textAlign: 'left',
                                         }}
                                     >
-                                        Чат с {selectedAgent.name}
+                                        Chat with {selectedAgent.name}
                                     </Typography>
                                 </Box>
 
