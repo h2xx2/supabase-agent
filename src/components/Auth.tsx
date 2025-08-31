@@ -55,7 +55,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
     const handleSignUp = async () => {
         setError(null);
         if (!email.trim() || !password.trim()) {
-            setError('Please fill in the email and password.');
+            setError('Please fill email and password');
             return;
         }
         try {
@@ -72,7 +72,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
             if (user) {
                 if (parsedBody.requires_email_confirmation || !token) {
                     setEmailConfirmationRequired(true);
-                    setError('Please confirm your account by email. After confirmation, log in.');
+                    setError('Please confirm your account via email. Sign in after confirmation');
                     return;
                 }
 
@@ -82,11 +82,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                 }
                 onAuthChange(user);
             } else {
-                setError('Registration has been completed, but the user has not been found.');
+                setError('Sign Up has been succeed, but user was not found');
             }
         } catch (error: any) {
             console.error('Sign Up Error:', error);
-            setError('Registration error. Check the data or try again later.');
+            setError('Sign Up error. Please check data or try again later.');
         }
     };
 
@@ -94,7 +94,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
         setError(null);
         setEmailConfirmationRequired(false);
         if (!email.trim() || !password.trim()) {
-            setError('Please fill in the email and password.');
+            setError('Please fill email and password');
             return;
         }
         try {
@@ -112,11 +112,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                 localStorage.setItem('authToken', token);
                 onAuthChange(user);
             } else {
-                setError('Incorrect response from the server');
+                setError('Incorrect server response');
             }
         } catch (error: any) {
             console.error('Sign In Error:', error);
-            setError('Login error. Check the data or try again later.');
+            setError('Sign In error. Please check data or try again later.');
         }
     };
 
@@ -189,7 +189,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                             width: deviceType === 'mobile' ? '100%' : deviceType === 'tablet' ? '50vw' : '25vw',
                         }}
                     >
-                        Please verify your account by sending an email to {email}. After confirmation, log in.
+                        Please confirm your account via email, sent to {email}. Sign in after confirmation.
                     </Alert>
                 )}
                 <TextField
@@ -227,7 +227,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                             py: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.25 : 1.5,
                         }}
                     >
-                        Enter
+                        Sign In
                     </Button>
                     <Button
                         variant="outlined"
@@ -238,7 +238,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                             py: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.25 : 1.5,
                         }}
                     >
-                        Registration
+                        Sign Up
                     </Button>
                 </Box>
             </Box>

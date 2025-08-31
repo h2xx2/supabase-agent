@@ -7,6 +7,8 @@ import {
     Drawer,
     List,
     ListItem,
+    ListItemButton,
+    ListItemIcon,
     ListItemText,
     Container,
     IconButton,
@@ -30,8 +32,10 @@ import {
     useMediaQuery,
     useTheme,
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
+import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import LogoutIcon from '@mui/icons-material/Logout';
+import MenuIcon from '@mui/icons-material/Menu';
 import Auth from './components/Auth';
 import {
     MessageList,
@@ -60,7 +64,7 @@ interface Agent {
 }
 
 const App: React.FC = () => {
-    // States
+    // Состояния
     const [user, setUser] = useState<any>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [agents, setAgents] = useState<Agent[]>([]);
@@ -83,37 +87,41 @@ const App: React.FC = () => {
     const [initialKnowledgeBaseFile, setInitialKnowledgeBaseFile] = useState<string | null>(null);
     const [deleteKnowledgeBase, setDeleteKnowledgeBase] = useState(false);
     const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
-    const [keyboardOffset, setKeyboardOffset] = useState(0);
+    const [keyboardOffset, setKeyboardOffset] = useState(0); // <-- оставили только здесь
     const messageListRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLDivElement | null>(null);
-    const newFileInputRef = useRef<HTMLInputElement | null>(null);
-    const editFileInputRef = useRef<HTMLInputElement | null>(null);
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
     const deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
     const [messageListHeight, setMessageListHeight] = useState<number>(0);
-
     useEffect(() => {
         if (!chatOpen) {
             setMessageListHeight(0);
             return;
         }
 
-        const viewportH = viewportHeight;
-        const headerHeight = 48;
-        const inputHeight = 56;
+        const viewportH = viewportHeight; // текущая высота viewport, обновляется при изменении
+        const headerHeight = 48; // пример, высота заголовка (можно замерить или взять из CSS)
+        const inputHeight = 56; // пример, высота поля ввода (примерно)
+
+        // Если клавиатура открыта, добавляем offset (например, keyboardOffset)
         const bottomOffset = deviceType === 'mobile' ? keyboardOffset : 0;
+
+        // Общая высота для MessageList — отнимаем header + input + offset
         const availableHeight = viewportH - headerHeight - inputHeight - bottomOffset;
+
         setMessageListHeight(availableHeight > 0 ? availableHeight : 0);
     }, [viewportHeight, keyboardOffset, deviceType, chatOpen]);
 
-    // Update keyboard offset
+
+// Обновление отступа при открытии клавиатуры
     useEffect(() => {
         const updateKeyboardOffset = () => {
             const viewport = window.visualViewport;
             if (!viewport) return;
+
             const bottomInset = window.innerHeight - (viewport.height + viewport.offsetTop);
             setKeyboardOffset(bottomInset > 0 ? bottomInset : 0);
         };
@@ -128,7 +136,7 @@ const App: React.FC = () => {
         };
     }, []);
 
-    // Prevent background scrolling when chat is open
+// Запрет прокрутки фона, когда чат открыт
     useEffect(() => {
         if (chatOpen && (deviceType === 'mobile' || deviceType === 'tablet')) {
             document.documentElement.style.overflow = 'hidden';
@@ -143,7 +151,7 @@ const App: React.FC = () => {
         }
     }, [chatOpen, deviceType]);
 
-    // Update viewport height
+// Обновление высоты viewport
     useEffect(() => {
         const handleVisualResize = () => {
             const h = window.visualViewport?.height || window.innerHeight;
@@ -158,7 +166,7 @@ const App: React.FC = () => {
         };
     }, []);
 
-    // Auto-scroll messages to bottom
+// Автопрокрутка сообщений в конец
     useEffect(() => {
         if (messageListRef.current) {
             messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
@@ -169,7 +177,7 @@ const App: React.FC = () => {
     const fetchAgentStatus = async (agentId: string): Promise<string> => {
         const token = await getAuthToken();
         const user_id = user?.id;
-        if (!user_id) throw new Error('user_id missing');
+        if (!user_id) throw new Error('user_id отсутствует');
         const response = await axios.post(
             `${import.meta.env.VITE_API_GATEWAY_URL}/get-agent-status`,
             { agentId, user_id },
@@ -185,8 +193,8 @@ const App: React.FC = () => {
                     const agentsData = await fetchAgents();
                     setAgents(agentsData);
                 } catch (error: any) {
-                    console.error('Error loading agents:', error);
-                    setErrorMessage('Error loading agents');
+                    console.error('Ошибка при загрузке агентов:', error);
+                    setErrorMessage('Не удалось загрузить агентов');
                 }
             };
             loadAgents();
@@ -205,8 +213,8 @@ const App: React.FC = () => {
             );
             return response.data.agents || [];
         } catch (error: any) {
-            console.error('Error receiving agents:', error);
-            setErrorMessage('Error receiving agents');
+            console.error('Ошибка при получении агентов:', error);
+            setErrorMessage('Could not get agents');
             return [];
         }
     };
@@ -253,13 +261,13 @@ const App: React.FC = () => {
 
     const handleAddAgent = async () => {
         if (!newAgent.name.trim() || !newAgent.instructions.trim() || newAgent.instructions.length < 40) {
-            setErrorMessage('Name and instructions (min. 40 characters) are required');
+            setErrorMessage('Имя и инструкции (мин. 40 символов) обязательны');
             return;
         }
 
         const sanitizedName = newAgent.name.replace(/[^a-zA-Z0-9_-]/g, '');
         if (!sanitizedName) {
-            setErrorMessage('Invalid agent name');
+            setErrorMessage('Недопустимое имя агента');
             return;
         }
 
@@ -282,7 +290,7 @@ const App: React.FC = () => {
             );
 
             const createdAgentId = response.data.agentId;
-            if (!createdAgentId) throw new Error('agentId not received from response');
+            if (!createdAgentId) throw new Error('agentId не получен из ответа');
 
             const waitForPrepared = async (agentId: string) => {
                 for (let i = 0; i < 20; i++) {
@@ -294,14 +302,14 @@ const App: React.FC = () => {
             };
 
             const isPrepared = await waitForPrepared(createdAgentId);
-            if (!isPrepared) throw new Error('Agent status did not become PREPARED');
+            if (!isPrepared) throw new Error('Статус агента не стал PREPARED');
 
             await fetchAgents();
             setLoadingAgentId(null);
             handleCloseAddDialog();
         } catch (error: any) {
-            console.error('Error creating agent:', error);
-            setErrorMessage(`Error creating agent: ${error.message || 'Unknown error'}`);
+            console.error('Ошибка при создании агента:', error);
+            setErrorMessage(`Ошибка при создании агента: ${error.message || 'Неизвестная ошибка'}`);
             setLoadingAgentId(null);
         }
     };
@@ -310,7 +318,7 @@ const App: React.FC = () => {
         setLoadingAgentId(agentId);
         const token = await getAuthToken();
         try {
-            if (!user?.id) throw new Error('user_id missing');
+            if (!user?.id) throw new Error('user_id отсутствует');
             await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/create-alias`,
                 { agentId, agentName, user_id: user.id },
@@ -319,8 +327,8 @@ const App: React.FC = () => {
             await fetchAgents();
             setLoadingAgentId(null);
         } catch (error: any) {
-            console.error('Error creating alias:', error);
-            setErrorMessage(`Error creating alias: ${error.message || 'Unknown error'}`);
+            console.error('Ошибка при создании алиаса:', error);
+            setErrorMessage(`Ошибка при создании алиаса: ${error.message || 'Неизвестная ошибка'}`);
             setLoadingAgentId(null);
         }
     };
@@ -331,7 +339,7 @@ const App: React.FC = () => {
         setEditEnableEmailAction(agent.enableEmailAction || false);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
-        setInitialKnowledgeBaseFile(agent.knowledge_base_id ? 'A knowledge base file was previously uploaded' : null);
+        setInitialKnowledgeBaseFile(agent.knowledge_base_id ? 'Файл базы знаний ранее загружен' : null);
         setOpenEditDialog(true);
     };
 
@@ -348,13 +356,13 @@ const App: React.FC = () => {
 
     const handleEditAgent = async () => {
         if (!editAgent || !editAgent.id || !editAgent.agent_id || !editAgent.name.trim() || !editAgent.instructions.trim() || editAgent.instructions.length < 40) {
-            setErrorMessage('Name and instructions (min. 40 characters) are required');
+            setErrorMessage('Имя и инструкции (мин. 40 символов) обязательны');
             return;
         }
 
         const sanitizedName = editAgent.name.replace(/[^a-zA-Z0-9_-]/g, '');
         if (!sanitizedName) {
-            setErrorMessage('Invalid agent name');
+            setErrorMessage('Недопустимое имя агента');
             return;
         }
 
@@ -364,7 +372,7 @@ const App: React.FC = () => {
         try {
             const fileData = editFile ? await convertFileToBase64(editFile) : null;
             if (deleteKnowledgeBase && fileData) {
-                setErrorMessage('You cannot select a new file when deleting the knowledge base.');
+                setErrorMessage('Нельзя выбрать новый файл при удалении базы знаний');
                 setLoadingAgentId(null);
                 return;
             }
@@ -389,8 +397,8 @@ const App: React.FC = () => {
             setLoadingAgentId(null);
             handleCloseEditDialog();
         } catch (error: any) {
-            console.error('Error updating agent:', error);
-            setErrorMessage(`Error updating agent: ${error.message || 'Unknown error'}`);
+            console.error('Ошибка при обновлении агента:', error);
+            setErrorMessage(`Ошибка при обновлении агента: ${error.message || 'Неизвестная ошибка'}`);
             setLoadingAgentId(null);
         }
     };
@@ -437,8 +445,8 @@ const App: React.FC = () => {
                 status: 'success',
             }, { headers: { Authorization: `Bearer ${token}` } });
         } catch (error: any) {
-            console.error('Error sending message:', error);
-            const errorMessage: MessageModel = { message: `Error: ${error.message || 'Unknown error'}`, sentTime: new Date().toISOString(), sender: 'bot', direction: 'incoming', position: 'single' };
+            console.error('Ошибка при отправке сообщения:', error);
+            const errorMessage: MessageModel = { message: `Ошибка: ${error.message || 'Неизвестная ошибка'}`, sentTime: new Date().toISOString(), sender: 'bot', direction: 'incoming', position: 'single' };
             setChatMessages((prev) => [...prev, errorMessage]);
 
             await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call`, {
@@ -480,10 +488,10 @@ const App: React.FC = () => {
             );
             const { publicUrl, apkKey } = response.data;
             setAgents(agents.map(a => a.id === agent.id ? { ...a, public_url: publicUrl } : a));
-            alert(`Public URL: ${publicUrl}\nAPI Key: ${apkKey}\nCopy and use it for access!`);
+            alert(`Публичная URL: ${publicUrl}\nAPK Key: ${apkKey}\nСкопируйте и используйте для доступа!`);
         } catch (error: any) {
-            console.error('Error deploying chat:', error);
-            setErrorMessage(`Error deploying chat: ${error.message || 'Unknown error'}`);
+            console.error('Ошибка при деплое чата:', error);
+            setErrorMessage(`Ошибка при деплое чата: ${error.message || 'Неизвестная ошибка'}`);
         } finally {
             setLoadingAgentId(null);
         }
@@ -501,44 +509,43 @@ const App: React.FC = () => {
             setAgents(agents.map(a => a.id === agent.id ? { ...a, public_url: undefined } : a));
             await fetchAgents();
         } catch (error: any) {
-            console.error('Error revoking chat:', error);
-            setErrorMessage(`Error revoking chat: ${error.message || 'Unknown error'}`);
+            console.error('Ошибка при revoke чата:', error);
+            setErrorMessage(`Ошибка при revoke чата: ${error.message || 'Неизвестная ошибка'}`);
         } finally {
             setLoadingAgentId(null);
         }
     };
 
     return (
-        <>
-            <GlobalStyles styles={{
-                'html, body': {
-                    overflowX: 'hidden',
-                    width: '100%',
-                    maxWidth: '100%',
-                },
-                '#root': {
-                    overflowX: 'hidden',
-                    width: '100%',
-                    maxWidth: '100%',
-                }
-            }}/>
+        <><GlobalStyles styles={{
+            'html, body': {
+                overflowX: 'hidden',
+                width: '100%',
+                maxWidth: '100%',
+            },
+            '#root': {
+                overflowX: 'hidden',
+                width: '100%',
+                maxWidth: '100%',
+            }
+        }}/>{/* Верхний контейнер приложения */}
             <Box
                 sx={{
                     display: 'flex',
                     flexDirection: 'column',
                     minHeight: '100vh',
-                    width: '100%',
+                    width: '100%',           // вместо 100vw
                     maxWidth: '100%',
-                    overflow: 'hidden',
+                    overflow: 'hidden',      // убирает и X и Y, можно поставить overflowX: 'hidden'
                     boxSizing: 'border-box',
                     backgroundColor: '#fff',
                 }}
             >
-                <AppBar position="fixed" sx={{ width: '100%' }}>
+                <AppBar position="fixed" sx={{width: '100%'}}>
                     <Toolbar>
                         {user && (
-                            <IconButton color="inherit" onClick={toggleDrawer} edge="start" sx={{ mr: 2 }}>
-                                <MenuIcon />
+                            <IconButton color="inherit" onClick={toggleDrawer} edge="start" sx={{mr: 2}}>
+                                <MenuIcon/>
                             </IconButton>
                         )}
                         <Typography variant="h6" sx={{
@@ -550,8 +557,9 @@ const App: React.FC = () => {
                         </Typography>
                         {user && (
                             <Button color="inherit" onClick={handleSignOut}
-                                    sx={{ fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem' }}>
-                                Sign Out
+                                    startIcon={<LogoutIcon />}
+                                    sx={{fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem'}}>
+                                Logout
                             </Button>
                         )}
                     </Toolbar>
@@ -563,12 +571,14 @@ const App: React.FC = () => {
                         boxSizing: 'border-box'
                     }
                 }}>
-                    <List>
-                        <ListItem component="button" onClick={handleOpenAddDialog}>
-                            <ListItemText primary="Add Agent" sx={{ textAlign: 'left' }} />
-                        </ListItem>
-                        <ListItem component="button" onClick={toggleDrawer}>
-                            <ListItemText primary="Close" sx={{ textAlign: 'left' }} />
+                    <List dense>
+                        <ListItem onClick={handleOpenAddDialog} disablePadding>
+                            <ListItemButton>
+                                <ListItemIcon>
+                                    <AddIcon />
+                                </ListItemIcon>
+                                <ListItemText primary="Add agent" sx={{textAlign: 'left'}}/>
+                            </ListItemButton>
                         </ListItem>
                     </List>
                 </Drawer>
@@ -582,7 +592,7 @@ const App: React.FC = () => {
                     overflowX: 'hidden',
                 }}>
                     {!user ? (
-                        <Auth onAuthChange={setUser} onSignOut={handleSignOut} />
+                        <Auth onAuthChange={setUser} onSignOut={handleSignOut}/>
                     ) : (
                         <Box sx={{
                             mt: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4,
@@ -590,8 +600,8 @@ const App: React.FC = () => {
                             overflowX: 'hidden'
                         }}>
                             <Typography variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
-                                        sx={{ textAlign: 'left' }}>
-                                Your Agents
+                                        sx={{textAlign: 'left'}}>
+                                Your agents
                             </Typography>
                             {errorMessage && (
                                 <Alert severity="error" sx={{
@@ -603,7 +613,7 @@ const App: React.FC = () => {
                                     {errorMessage}
                                 </Alert>
                             )}
-                            <Box sx={{ width: '100%', overflowX: 'hidden' }}>
+                            <Box sx={{width: '100%', overflowX: 'hidden'}}>
                                 <Table sx={{
                                     width: '100%',
                                     tableLayout: 'fixed',
@@ -673,7 +683,7 @@ const App: React.FC = () => {
                                                                         mt: 0.5,
                                                                         textAlign: 'left'
                                                                     }}>
-                                                                        <strong>Monthly Calls:</strong> {agent.call_count || 0}
+                                                                        <strong>Month requests count:</strong> {agent.call_count || 0}
                                                                     </Typography>
                                                                     <Typography sx={{
                                                                         fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
@@ -681,7 +691,7 @@ const App: React.FC = () => {
                                                                         mt: 0.5,
                                                                         textAlign: 'left'
                                                                     }}>
-                                                                        <strong>Yearly Calls:</strong> {agent.call_count_year || 0}
+                                                                        <strong>Year requests count:</strong> {agent.call_count_year || 0}
                                                                     </Typography>
                                                                 </Box>
                                                                 {deviceType === 'mobile' && (
@@ -694,7 +704,7 @@ const App: React.FC = () => {
                                                                         justifyContent: 'flex-start'
                                                                     }}>
                                                                         {loadingAgentId === agent.agent_id || loadingAgentId === 'new-agent' ? (
-                                                                            <CircularProgress size={20} />
+                                                                            <CircularProgress size={20}/>
                                                                         ) : (
                                                                             <>
                                                                                 {!agent.alias_id && agent.status === 'PREPARED' && (
@@ -710,7 +720,7 @@ const App: React.FC = () => {
                                                                                             height: 32
                                                                                         }}
                                                                                     >
-                                                                                        Create Alias
+                                                                                        Создать Alias
                                                                                     </Button>
                                                                                 )}
                                                                                 {agent.agent_id && agent.alias_id && (
@@ -727,7 +737,7 @@ const App: React.FC = () => {
                                                                                                 height: 32
                                                                                             }}
                                                                                         >
-                                                                                            Chat
+                                                                                            Чат
                                                                                         </Button>
                                                                                         {!agent.public_url ? (
                                                                                             <Button
@@ -798,7 +808,7 @@ const App: React.FC = () => {
                                                                     alignItems: 'center'
                                                                 }}>
                                                                     {loadingAgentId === agent.agent_id || loadingAgentId === 'new-agent' ? (
-                                                                        <CircularProgress size={24} />
+                                                                        <CircularProgress size={24}/>
                                                                     ) : (
                                                                         <>
                                                                             {!agent.alias_id && agent.status === 'PREPARED' && (
@@ -807,7 +817,7 @@ const App: React.FC = () => {
                                                                                     color="primary"
                                                                                     onClick={() => createAlias(agent.agent_id, agent.name)}
                                                                                     sx={{
-                                                                                        fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                                        fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
                                                                                         px: deviceType === 'tablet' ? 1.5 : 2,
                                                                                         py: deviceType === 'tablet' ? 0.75 : 1,
                                                                                         width: deviceType === 'tablet' ? 140 : 160
@@ -823,7 +833,7 @@ const App: React.FC = () => {
                                                                                         color="primary"
                                                                                         onClick={() => handleOpenChat(agent)}
                                                                                         sx={{
-                                                                                            fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                                            fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
                                                                                             px: deviceType === 'tablet' ? 1.5 : 2,
                                                                                             py: deviceType === 'tablet' ? 0.75 : 1,
                                                                                             width: deviceType === 'tablet' ? 140 : 160
@@ -837,7 +847,7 @@ const App: React.FC = () => {
                                                                                             color="secondary"
                                                                                             onClick={() => deployChat(agent)}
                                                                                             sx={{
-                                                                                                fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                                                fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
                                                                                                 px: deviceType === 'tablet' ? 1.5 : 2,
                                                                                                 py: deviceType === 'tablet' ? 0.75 : 1,
                                                                                                 width: deviceType === 'tablet' ? 140 : 160
@@ -851,7 +861,7 @@ const App: React.FC = () => {
                                                                                             color="error"
                                                                                             onClick={() => revokeChat(agent)}
                                                                                             sx={{
-                                                                                                fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                                                fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
                                                                                                 px: deviceType === 'tablet' ? 1.5 : 2,
                                                                                                 py: deviceType === 'tablet' ? 0.75 : 1,
                                                                                                 width: deviceType === 'tablet' ? 140 : 160
@@ -868,7 +878,7 @@ const App: React.FC = () => {
                                                                                     color="warning"
                                                                                     onClick={() => handleOpenEditDialog(agent)}
                                                                                     sx={{
-                                                                                        fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                                        fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem', // Уменьшенный шрифт
                                                                                         px: deviceType === 'tablet' ? 1.5 : 2,
                                                                                         py: deviceType === 'tablet' ? 0.75 : 1,
                                                                                         width: deviceType === 'tablet' ? 140 : 160
@@ -896,8 +906,9 @@ const App: React.FC = () => {
                                                                     fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
                                                                     textAlign: 'left'
                                                                 }}>
-                                                                    <strong>Public URL:</strong>{' '}
-                                                                    <a href={agent.public_url} target="_blank" rel="noopener noreferrer">
+                                                                    <strong>Public link:</strong>{' '}
+                                                                    <a href={agent.public_url} target="_blank"
+                                                                       rel="noopener noreferrer">
                                                                         {agent.public_url}
                                                                     </a>
                                                                 </Typography>
@@ -908,8 +919,9 @@ const App: React.FC = () => {
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={deviceType === 'mobile' ? 1 : 2} sx={{ textAlign: 'left' }}>
-                                                    No agents available
+                                                <TableCell colSpan={deviceType === 'mobile' ? 1 : 2}
+                                                           sx={{textAlign: 'left'}}>
+                                                    No agents
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -919,14 +931,15 @@ const App: React.FC = () => {
                         </Box>
                     )}
 
-                    <Dialog open={openAddDialog} onClose={handleCloseAddDialog} fullWidth maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>
+                    <Dialog open={openAddDialog} onClose={handleCloseAddDialog} fullWidth
+                            maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>
                         <DialogTitle sx={{
                             fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.25rem',
                             textAlign: 'left'
                         }}>
-                            Add New Agent
+                            Add new agent
                         </DialogTitle>
-                        <DialogContent sx={{ textAlign: 'left', overflowX: 'hidden' }}>
+                        <DialogContent sx={{textAlign: 'left', overflowX: 'hidden'}}>
                             {errorMessage && (
                                 <Alert severity="error" sx={{
                                     mb: 2,
@@ -942,7 +955,7 @@ const App: React.FC = () => {
                                 fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
                                 textAlign: 'left'
                             }}>
-                                General Settings
+                                General settings
                             </Typography>
                             <TextField
                                 autoFocus
@@ -951,16 +964,15 @@ const App: React.FC = () => {
                                 type="text"
                                 fullWidth
                                 value={newAgent.name}
-                                onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                                helperText="Use only letters, numbers, underscores, or hyphens"
+                                onChange={(e) => setNewAgent({...newAgent, name: e.target.value})}
+                                helperText="Use only letters, digits, _ or -"
                                 sx={{
                                     mb: 2,
                                     '& .MuiInputBase-input': {
                                         fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
                                         textAlign: 'left'
                                     }
-                                }}
-                            />
+                                }}/>
                             <TextField
                                 margin="dense"
                                 label="Instructions"
@@ -969,16 +981,15 @@ const App: React.FC = () => {
                                 multiline
                                 rows={deviceType === 'mobile' ? 3 : 4}
                                 value={newAgent.instructions}
-                                onChange={(e) => setNewAgent({ ...newAgent, instructions: e.target.value })}
-                                helperText="Minimum length is 40 characters"
+                                onChange={(e) => setNewAgent({...newAgent, instructions: e.target.value})}
+                                helperText="Minimum length 40 characters"
                                 sx={{
                                     mb: 2,
                                     '& .MuiInputBase-input': {
                                         fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
                                         textAlign: 'left'
                                     }
-                                }}
-                            />
+                                }}/>
                             <Box sx={{
                                 display: 'flex',
                                 flexDirection: deviceType === 'mobile' ? 'column' : 'row',
@@ -987,82 +998,62 @@ const App: React.FC = () => {
                                 justifyContent: 'flex-start'
                             }}>
                                 <FormControlLabel
-                                    control={<Checkbox checked={enableHttpAction} onChange={(e) => setEnableHttpAction(e.target.checked)} />}
-                                    label="Enable HTTP Action"
-                                    sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
-                                />
+                                    control={<Checkbox checked={enableHttpAction}
+                                                       onChange={(e) => setEnableHttpAction(e.target.checked)}/>}
+                                    label="Enable HTTP-action"
+                                    sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
                                 <FormControlLabel
-                                    control={<Checkbox checked={enableEmailAction} onChange={(e) => setEnableEmailAction(e.target.checked)} />}
-                                    label="Enable Email Action"
-                                    sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
-                                />
+                                    control={<Checkbox checked={enableEmailAction}
+                                                       onChange={(e) => setEnableEmailAction(e.target.checked)}/>}
+                                    label="Enable Email-action"
+                                    sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
                             </Box>
-                            <Divider sx={{ my: 2 }} />
+                            <Divider sx={{my: 2}}/>
                             <Typography variant="h6" sx={{
                                 mb: 2,
                                 fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
                                 textAlign: 'left'
                             }}>
-                                Knowledge Base (Optional)
+                                Knowledge base (optional)
                             </Typography>
-                            <Box sx={{ mb: 2 }}>
-                                <Button
-                                    variant="outlined"
-                                    component="label"
-                                    sx={{
-                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                        textTransform: 'none',
-                                        borderRadius: '8px',
-                                        padding: deviceType === 'mobile' ? '8px 12px' : '10px 14px',
-                                    }}
-                                >
-                                    Select File
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.txt"
-                                        hidden
-                                        ref={newFileInputRef}
-                                        onChange={(e) => setNewFile(e.target.files ? e.target.files[0] : null)}
-                                    />
-                                </Button>
-                                {newFile && (
-                                    <Typography variant="caption" sx={{
-                                        mt: 1,
-                                        display: 'block',
-                                        fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.8rem',
-                                        textAlign: 'left'
-                                    }}>
-                                        Selected: {newFile.name}
-                                    </Typography>
-                                )}
-                            </Box>
+                            <input
+                                type="file"
+                                accept=".pdf,.txt"
+                                onChange={(e) => setNewFile(e.target.files ? e.target.files[0] : null)}
+                                style={{
+                                    margin: '16px 0',
+                                    width: '100%',
+                                    boxSizing: 'border-box',
+                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'
+                                }}/>
                             <Typography variant="caption" color="textSecondary" sx={{
                                 fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.8rem',
                                 textAlign: 'left'
                             }}>
-                                Upload a PDF or TXT file to create a knowledge base. If no file is selected, no knowledge base will be created.
+                                Upload a file (PDF or TXT) to create a knowledge base. If the file is not selected, the knowledge base will not be created.
                             </Typography>
                         </DialogContent>
-                        <DialogActions sx={{ justifyContent: 'center' }}>
+                        <DialogActions sx={{justifyContent: 'center'}}>
                             <Button onClick={handleCloseAddDialog} color="primary"
-                                    sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}>
+                                    sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
                                 Cancel
                             </Button>
                             <Button onClick={handleAddAgent} color="primary"
-                                    sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}>
-                                Create
+                                    sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
+                                Add
                             </Button>
                         </DialogActions>
                     </Dialog>
 
-                    <Dialog open={openEditDialog} onClose={handleCloseEditDialog} fullWidth maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>
+                    <Dialog open={openEditDialog} onClose={handleCloseEditDialog} fullWidth
+                            maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>
                         <DialogTitle sx={{
                             fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.25rem',
                             textAlign: 'left'
                         }}>
-                            Edit Agent
+                            Edit agent
                         </DialogTitle>
-                        <DialogContent sx={{ textAlign: 'left', overflowX: 'hidden' }}>
+                        <DialogContent sx={{textAlign: 'left', overflowX: 'hidden'}}>
                             {errorMessage && (
                                 <Alert severity="error" sx={{
                                     mb: 2,
@@ -1080,7 +1071,7 @@ const App: React.FC = () => {
                                         fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
                                         textAlign: 'left'
                                     }}>
-                                        General Settings
+                                        General settings
                                     </Typography>
                                     <TextField
                                         autoFocus
@@ -1089,16 +1080,15 @@ const App: React.FC = () => {
                                         type="text"
                                         fullWidth
                                         value={editAgent.name}
-                                        onChange={(e) => setEditAgent({ ...editAgent, name: e.target.value })}
-                                        helperText="Use only letters, numbers, underscores, or hyphens"
+                                        onChange={(e) => setEditAgent({...editAgent, name: e.target.value})}
+                                        helperText="Use only letters, numbers, _ or -"
                                         sx={{
                                             mb: 2,
                                             '& .MuiInputBase-input': {
                                                 fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
                                                 textAlign: 'left'
                                             }
-                                        }}
-                                    />
+                                        }}/>
                                     <TextField
                                         margin="dense"
                                         label="Instructions"
@@ -1107,16 +1097,15 @@ const App: React.FC = () => {
                                         multiline
                                         rows={deviceType === 'mobile' ? 3 : 4}
                                         value={editAgent.instructions}
-                                        onChange={(e) => setEditAgent({ ...editAgent, instructions: e.target.value })}
-                                        helperText="Minimum length is 40 characters"
+                                        onChange={(e) => setEditAgent({...editAgent, instructions: e.target.value})}
+                                        helperText="Minimum length 40 characters"
                                         sx={{
                                             mb: 2,
                                             '& .MuiInputBase-input': {
                                                 fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
                                                 textAlign: 'left'
                                             }
-                                        }}
-                                    />
+                                        }}/>
                                     <Box sx={{
                                         display: 'flex',
                                         flexDirection: deviceType === 'mobile' ? 'column' : 'row',
@@ -1125,23 +1114,25 @@ const App: React.FC = () => {
                                         justifyContent: 'flex-start'
                                     }}>
                                         <FormControlLabel
-                                            control={<Checkbox checked={editEnableHttpAction} onChange={(e) => setEditEnableHttpAction(e.target.checked)} />}
-                                            label="Enable HTTP Action"
-                                            sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
-                                        />
+                                            control={<Checkbox
+                                                checked={editEnableHttpAction}
+                                                onChange={(e) => setEditEnableHttpAction(e.target.checked)}/>}
+                                            label="Enable HTTP-action"
+                                            sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
                                         <FormControlLabel
-                                            control={<Checkbox checked={editEnableEmailAction} onChange={(e) => setEditEnableEmailAction(e.target.checked)} />}
-                                            label="Enable Email Action"
-                                            sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
-                                        />
+                                            control={<Checkbox
+                                                checked={editEnableEmailAction}
+                                                onChange={(e) => setEditEnableEmailAction(e.target.checked)}/>}
+                                            label="Enable Email-action"
+                                            sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
                                     </Box>
-                                    <Divider sx={{ my: 2 }} />
+                                    <Divider sx={{my: 2}}/>
                                     <Typography variant="h6" sx={{
                                         mb: 2,
                                         fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
                                         textAlign: 'left'
                                     }}>
-                                        Knowledge Base (Optional)
+                                        Knowledge base (optional)
                                     </Typography>
                                     {initialKnowledgeBaseFile && (
                                         <Alert severity="info" sx={{
@@ -1150,70 +1141,47 @@ const App: React.FC = () => {
                                             fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
                                             textAlign: 'left'
                                         }}>
-                                            {initialKnowledgeBaseFile}. You can upload a new file to update or leave it unchanged.
+                                            {initialKnowledgeBaseFile}. You can upload a new file to update or leave it as is.
                                         </Alert>
                                     )}
                                     <FormControlLabel
                                         control={<Checkbox checked={deleteKnowledgeBase} onChange={(e) => {
                                             setDeleteKnowledgeBase(e.target.checked);
                                             if (e.target.checked) setEditFile(null);
-                                        }} />}
-                                        label="Delete Knowledge Base"
-                                        sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
-                                    />
+                                        }}/>}
+                                        label="Delete knowledge base"
+                                        sx={{'& .MuiTypography-root': {fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}}/>
                                     {!deleteKnowledgeBase && (
-                                        <Box sx={{ mt: 2, mb: 2 }}>
-                                            <Button
-                                                variant="outlined"
-                                                component="label"
-                                                disabled={deleteKnowledgeBase}
-                                                sx={{
-                                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                                    textTransform: 'none',
-                                                    borderRadius: '8px',
-                                                    padding: deviceType === 'mobile' ? '8px 12px' : '10px 14px',
-                                                }}
-                                            >
-                                                Select File
-                                                <input
-                                                    type="file"
-                                                    accept=".pdf,.txt"
-                                                    hidden
-                                                    ref={editFileInputRef}
-                                                    onChange={(e) => setEditFile(e.target.files ? e.target.files[0] : null)}
-                                                    disabled={deleteKnowledgeBase}
-                                                />
-                                            </Button>
-                                            {editFile && (
-                                                <Typography variant="caption" sx={{
-                                                    mt: 1,
-                                                    display: 'block',
-                                                    fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.8rem',
-                                                    textAlign: 'left'
-                                                }}>
-                                                    Selected: {editFile.name}
-                                                </Typography>
-                                            )}
-                                        </Box>
+                                        <input
+                                            type="file"
+                                            accept=".pdf,.txt"
+                                            onChange={(e) => setEditFile(e.target.files ? e.target.files[0] : null)}
+                                            style={{
+                                                margin: '16px 0',
+                                                width: '100%',
+                                                boxSizing: 'border-box',
+                                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'
+                                            }}
+                                            disabled={deleteKnowledgeBase}/>
                                     )}
                                     <Typography variant="caption" color="textSecondary" sx={{
                                         fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.8rem',
                                         textAlign: 'left'
                                     }}>
                                         {deleteKnowledgeBase
-                                            ? 'Knowledge base deletion selected. No file can be uploaded.'
-                                            : 'Upload a new PDF or TXT file to update the knowledge base. If no file is selected, the current knowledge base will remain unchanged.'}
+                                            ? 'Selected knowledge base deleting. File selection is not possible.'
+                                            : 'Upload a new file (PDF or TXT) to update the knowledge base. If no file is selected, the current knowledge base will remain unchanged.'}
                                     </Typography>
                                 </>
                             )}
                         </DialogContent>
-                        <DialogActions sx={{ justifyContent: 'center' }}>
+                        <DialogActions sx={{justifyContent: 'center'}}>
                             <Button onClick={handleCloseEditDialog} color="primary"
-                                    sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}>
+                                    sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
                                 Cancel
                             </Button>
                             <Button onClick={handleEditAgent} color="primary"
-                                    sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}>
+                                    sx={{fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem'}}>
                                 Save
                             </Button>
                         </DialogActions>
@@ -1221,6 +1189,7 @@ const App: React.FC = () => {
 
                     {chatOpen && selectedAgent && (
                         <>
+                            {/* Полупрозрачный фон для закрытия чата на ПК */}
                             <Box
                                 sx={{
                                     display: { xs: 'none', md: 'block' },
@@ -1238,9 +1207,11 @@ const App: React.FC = () => {
                                 }}
                                 onClick={() => setChatOpen(false)}
                             />
+
+                            {/* Контейнер чата */}
                             <Box
                                 role="dialog"
-                                aria-label={`Chat with ${selectedAgent?.name}`}
+                                aria-label={`Чат с ${selectedAgent?.name}`}
                                 sx={{
                                     position: 'fixed',
                                     zIndex: 1400,
@@ -1261,9 +1232,10 @@ const App: React.FC = () => {
                                     transition: { md: 'transform 0.3s ease-in-out' },
                                     WebkitTextSizeAdjust: '100%',
                                     touchAction: 'pan-y',
-                                    overscrollBehavior: 'contain',
+                                    overscrollBehavior: 'contain',  // Ограничиваем "перетягивание" для всего чата
                                 }}
                             >
+                                {/* Заголовок */}
                                 <Box
                                     sx={{
                                         flexShrink: 0,
@@ -1272,8 +1244,8 @@ const App: React.FC = () => {
                                         p: deviceType === 'mobile' ? 1 : 2,
                                         borderBottom: 1,
                                         borderColor: 'grey.300',
-                                        overscrollBehavior: 'contain',
-                                        touchAction: 'none',
+                                        overscrollBehavior: 'contain', // Запретить "перетягивание" здесь
+                                        touchAction: 'none',           // Отключить прокрутку и жесты на заголовке
                                     }}
                                 >
                                     <IconButton onClick={() => setChatOpen(false)} sx={{ mr: 1 }}>
@@ -1295,6 +1267,8 @@ const App: React.FC = () => {
                                         Chat with {selectedAgent.name}
                                     </Typography>
                                 </Box>
+
+                                {/* Список сообщений */}
                                 <MessageList
                                     ref={messageListRef}
                                     style={{
@@ -1305,13 +1279,15 @@ const App: React.FC = () => {
                                         paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '0px',
                                         WebkitTextSizeAdjust: '100%',
                                         touchAction: 'pan-y',
-                                        overscrollBehavior: 'none',
+                                        overscrollBehavior: 'none',  // Разрешаем прокрутку сообщений, но без "перетягивания"
                                     }}
                                 >
                                     {chatMessages.map((msg, index) => (
                                         <Message key={index} model={msg} />
                                     ))}
                                 </MessageList>
+
+                                {/* Поле ввода */}
                                 <Box
                                     sx={{
                                         flexShrink: 0,
@@ -1319,7 +1295,7 @@ const App: React.FC = () => {
                                         borderTop: 1,
                                         borderColor: 'grey.200',
                                         padding: deviceType === 'mobile' ? '8px env(safe-area-inset-right, 8px) 8px env(safe-area-inset-left, 8px)' : '10px',
-                                        paddingBottom: deviceType === 'mobile' ? 'env(safe-area-inset-bottom, 12px)' : '12px',
+                                        paddingBottom: deviceType === 'mobile' ? 'env(safe-area-inset-bottom, 12px)' : '12px', // Увеличиваем отступ снизу
                                         transition: 'none',
                                         zIndex: 1500,
                                         overscrollBehavior: 'contain',
@@ -1329,7 +1305,7 @@ const App: React.FC = () => {
                                 >
                                     <MessageInput
                                         ref={inputRef}
-                                        placeholder="Type your message..."
+                                        placeholder="Введите сообщение..."
                                         onSend={sendChatMessage}
                                         attachButton={false}
                                         onFocus={() => {
@@ -1337,7 +1313,7 @@ const App: React.FC = () => {
                                                 const textarea = inputRef.current.querySelector('textarea');
                                                 if (textarea) {
                                                     textarea.style.fontSize = '16px';
-                                                    textarea.style.padding = deviceType === 'mobile' ? '8px 12px' : '10px 14px';
+                                                    textarea.style.padding = deviceType === 'mobile' ? '8px 12px' : '10px 14px'; // Добавляем внутренние отступы
                                                 }
                                                 setTimeout(() => {
                                                     inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -1351,8 +1327,8 @@ const App: React.FC = () => {
                                             textSizeAdjust: '100% !important',
                                             touchAction: 'manipulation',
                                             lineHeight: '1.5',
-                                            borderRadius: '8px',
-                                            padding: deviceType === 'mobile' ? '8px 12px' : '10px 14px',
+                                            borderRadius: '8px', // Для более мягкого вида
+                                            padding: deviceType === 'mobile' ? '8px 12px' : '10px 14px', // Дополнительные отступы для поля
                                         }}
                                     />
                                 </Box>
@@ -1360,8 +1336,7 @@ const App: React.FC = () => {
                         </>
                     )}
                 </Container>
-            </Box>
-        </>
+            </Box></>
     );
 };
 
