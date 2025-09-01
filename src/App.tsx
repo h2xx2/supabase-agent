@@ -37,6 +37,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import Auth from './components/Auth';
+import GlobalLoader from './components/GlobalLoader';
 import {
     MessageList,
     Message,
@@ -65,6 +66,7 @@ interface Agent {
 
 const App: React.FC = () => {
     // Состояния
+    const [globalLoading, setGlobalLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [agents, setAgents] = useState<Agent[]>([]);
@@ -78,7 +80,6 @@ const App: React.FC = () => {
     const [editEnableEmailAction, setEditEnableEmailAction] = useState(false);
     const [newFile, setNewFile] = useState<File | null>(null);
     const [editFile, setEditFile] = useState<File | null>(null);
-    const [loadingAgentId, setLoadingAgentId] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [chatOpen, setChatOpen] = useState(false);
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -271,7 +272,7 @@ const App: React.FC = () => {
             return;
         }
 
-        setLoadingAgentId('new-agent');
+        setGlobalLoading(true);
         const token = await getAuthToken();
 
         try {
@@ -305,17 +306,17 @@ const App: React.FC = () => {
             if (!isPrepared) throw new Error('Статус агента не стал PREPARED');
 
             await fetchAgents();
-            setLoadingAgentId(null);
+            setGlobalLoading(false);
             handleCloseAddDialog();
         } catch (error: any) {
             console.error('Ошибка при создании агента:', error);
             setErrorMessage(`Ошибка при создании агента: ${error.message || 'Неизвестная ошибка'}`);
-            setLoadingAgentId(null);
+            setGlobalLoading(false);
         }
     };
 
     const createAlias = async (agentId: string, agentName: string) => {
-        setLoadingAgentId(agentId);
+        setGlobalLoading(true);
         const token = await getAuthToken();
         try {
             if (!user?.id) throw new Error('user_id отсутствует');
@@ -325,11 +326,11 @@ const App: React.FC = () => {
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
             );
             await fetchAgents();
-            setLoadingAgentId(null);
+            setGlobalLoading(false);
         } catch (error: any) {
             console.error('Ошибка при создании алиаса:', error);
             setErrorMessage(`Ошибка при создании алиаса: ${error.message || 'Неизвестная ошибка'}`);
-            setLoadingAgentId(null);
+            setGlobalLoading(false);
         }
     };
 
@@ -366,14 +367,14 @@ const App: React.FC = () => {
             return;
         }
 
-        setLoadingAgentId(editAgent.id);
+        setGlobalLoading(true);
         const token = await getAuthToken();
 
         try {
             const fileData = editFile ? await convertFileToBase64(editFile) : null;
             if (deleteKnowledgeBase && fileData) {
                 setErrorMessage('Нельзя выбрать новый файл при удалении базы знаний');
-                setLoadingAgentId(null);
+                setGlobalLoading(false);
                 return;
             }
 
@@ -394,12 +395,12 @@ const App: React.FC = () => {
             );
 
             await fetchAgents();
-            setLoadingAgentId(null);
+            setGlobalLoading(false);
             handleCloseEditDialog();
         } catch (error: any) {
             console.error('Ошибка при обновлении агента:', error);
             setErrorMessage(`Ошибка при обновлении агента: ${error.message || 'Неизвестная ошибка'}`);
-            setLoadingAgentId(null);
+            setGlobalLoading(false);
         }
     };
 
@@ -478,7 +479,7 @@ const App: React.FC = () => {
     };
 
     const deployChat = async (agent: Agent) => {
-        setLoadingAgentId(agent.id);
+        setGlobalLoading(true);
         try {
             const token = await getAuthToken();
             const response = await axios.post(
@@ -493,12 +494,12 @@ const App: React.FC = () => {
             console.error('Ошибка при деплое чата:', error);
             setErrorMessage(`Ошибка при деплое чата: ${error.message || 'Неизвестная ошибка'}`);
         } finally {
-            setLoadingAgentId(null);
+            setGlobalLoading(false);
         }
     };
 
     const revokeChat = async (agent: Agent) => {
-        setLoadingAgentId(agent.id);
+        setGlobalLoading(true);
         try {
             const token = await getAuthToken();
             await axios.post(
@@ -512,7 +513,7 @@ const App: React.FC = () => {
             console.error('Ошибка при revoke чата:', error);
             setErrorMessage(`Ошибка при revoke чата: ${error.message || 'Неизвестная ошибка'}`);
         } finally {
-            setLoadingAgentId(null);
+            setGlobalLoading(false);
         }
     };
 
@@ -541,6 +542,7 @@ const App: React.FC = () => {
                     backgroundColor: '#fff',
                 }}
             >
+                {globalLoading && <GlobalLoader /> }
                 <AppBar position="fixed" sx={{width: '100%'}}>
                     <Toolbar>
                         {user && (
