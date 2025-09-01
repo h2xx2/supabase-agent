@@ -1,92 +1,113 @@
-import React, { useEffect, useState } from 'react';
-import { TextField, Button, Container, Typography, Box, Alert, useMediaQuery, useTheme } from '@mui/material';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import {
+    Avatar,
+    Button,
+    CssBaseline,
+    TextField,
+    FormControlLabel,
+    Checkbox,
+    Link,
+    Grid,
+    Box,
+    Typography,
+    Container,
+    Alert,
+} from "@mui/material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import axios from "axios";
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
     onSignOut: () => void;
 }
 
+const theme = createTheme();
+
 const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [fullName, setFullName] = useState(""); // Added state for full name
+    const [rememberMe, setRememberMe] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
-    const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
-
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
-    const deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
+    const [emailConfirmationRequired, setEmailConfirmationRequired] =
+        useState(false);
 
     useEffect(() => {
-        const storedToken = localStorage.getItem('authToken');
+        const storedToken = localStorage.getItem("authToken");
         if (storedToken) {
-            validateToken(storedToken).then((validUser) => {
-                if (validUser) {
-                    setUser(validUser);
-                    onAuthChange(validUser);
-                } else {
-                    localStorage.removeItem('authToken');
-                }
-            }).catch((err: any) => {
-                console.error('Validation error:', err);
-                localStorage.removeItem('authToken');
-            });
+            validateToken(storedToken)
+                .then((validUser) => {
+                    if (validUser) {
+                        setUser(validUser);
+                        onAuthChange(validUser);
+                    } else {
+                        localStorage.removeItem("authToken");
+                    }
+                })
+                .catch(() => localStorage.removeItem("authToken"));
         }
     }, [onAuthChange]);
 
     const validateToken = async (token: string): Promise<any> => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_API_GATEWAY_URL}/validate-token`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-            });
+            const response = await axios.get(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/validate-token`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
             const outerData = response.data;
-            const data = typeof outerData.body === 'string' ? JSON.parse(outerData.body) : outerData.body;
+            const data =
+                typeof outerData.body === "string"
+                    ? JSON.parse(outerData.body)
+                    : outerData.body;
 
             return data?.user || null;
-        } catch (error: any) {
-            console.error('Token validation error:', error);
+        } catch {
             return null;
         }
     };
 
     const handleSignUp = async () => {
         setError(null);
-        if (!email.trim() || !password.trim()) {
-            setError('Please fill email and password');
+        if (!email.trim() || !password.trim() || !fullName.trim()) { // Added fullName check
+            setError("Please fill email, password, and full name");
             return;
         }
         try {
-            const payload = { email, password };
-            const response = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/signup`, payload, {
-                headers: { 'Content-Type': 'application/json' },
-            });
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/signup`,
+                { email, password, fullName }, // Added fullName to request
+                { headers: { "Content-Type": "application/json" } }
+            );
 
             const outerData = response.data;
-            const parsedBody = typeof outerData.body === 'string' ? JSON.parse(outerData.body) : outerData.body;
+            const parsedBody =
+                typeof outerData.body === "string"
+                    ? JSON.parse(outerData.body)
+                    : outerData.body;
 
             const { user, token } = parsedBody;
 
             if (user) {
                 if (parsedBody.requires_email_confirmation || !token) {
                     setEmailConfirmationRequired(true);
-                    setError('Please confirm your account via email. Sign in after confirmation');
+                    setError(
+                        "Please confirm your account via email. Sign in after confirmation"
+                    );
                     return;
                 }
-
                 setUser(user);
-                if (token) {
-                    localStorage.setItem('authToken', token);
+                if (token && rememberMe) {
+                    localStorage.setItem("authToken", token);
                 }
                 onAuthChange(user);
             } else {
-                setError('Sign Up has been succeed, but user was not found');
+                setError("Sign Up has succeeded, but user was not found");
             }
-        } catch (error: any) {
-            console.error('Sign Up Error:', error);
-            setError('Sign Up error. Please check data or try again later.');
+        } catch {
+            setError("Sign Up error. Please check data or try again later.");
         }
     };
 
@@ -94,155 +115,229 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
         setError(null);
         setEmailConfirmationRequired(false);
         if (!email.trim() || !password.trim()) {
-            setError('Please fill email and password');
+            setError("Please fill email and password");
             return;
         }
         try {
-            const payload = { email, password };
-            const response = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/signin`, payload, {
-                headers: { 'Content-Type': 'application/json' },
-            });
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/signin`,
+                { email, password },
+                { headers: { "Content-Type": "application/json" } }
+            );
 
             const outerData = response.data;
-            const data = typeof outerData.body === 'string' ? JSON.parse(outerData.body) : outerData.body;
+            const data =
+                typeof outerData.body === "string"
+                    ? JSON.parse(outerData.body)
+                    : outerData.body;
 
             const { user, token } = data;
             if (user && token) {
                 setUser(user);
-                localStorage.setItem('authToken', token);
+                if (rememberMe) {
+                    localStorage.setItem("authToken", token);
+                }
                 onAuthChange(user);
             } else {
-                setError('Incorrect server response');
+                setError("Incorrect server response");
             }
-        } catch (error: any) {
-            console.error('Sign In Error:', error);
-            setError('Sign In error. Please check data or try again later.');
+        } catch {
+            setError("Sign In error. Please check data or try again later.");
         }
     };
 
     const handleSignOut = async () => {
         try {
-            await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/signout`, {}, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
-            });
+            await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/signout`,
+                {},
+                { headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` } }
+            );
             setUser(null);
-            localStorage.removeItem('authToken');
+            localStorage.removeItem("authToken");
             onSignOut();
-        } catch (error: any) {
-            console.error('Sign Out Error:', error);
-        }
+        } catch {}
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        authMode === "signin" ? handleSignIn() : handleSignUp();
     };
 
     if (user) {
         return (
-            <Box sx={{ textAlign: 'center', mt: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4 }}>
-                <Typography
-                    variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
-                    sx={{ mb: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3, fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.5rem' }}
-                >
-                    Welcome, {user.email}
-                </Typography>
-                <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={handleSignOut}
+            <ThemeProvider theme={theme}>
+                <Container
+                    component="main"
+                    maxWidth={false} // Override default maxWidth
                     sx={{
-                        fontSize: deviceType === 'mobile' ? '0.875rem' : deviceType === 'tablet' ? '0.9375rem' : '1rem',
-                        px: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3,
-                        py: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.25 : 1.5,
+                        width: { xs: "min(90vw, 320px)", md: "400px" }, // Responsive width: 90vw or 320px on mobile, 400px on desktop
+                        mx: "auto", // Center horizontally
+                        mt: { xs: 4, md: 8 }, // Top margin to push container down
+                        boxShadow: { xs: "none", md: "0px 4px 16px rgba(0, 0, 0, 0.15)" }, // Desktop-only shadow
+                        padding: { xs: 1, md: 2 }, // Reduced padding
+                        borderRadius: 2, // Softer corners
+                        boxSizing: "border-box", // Prevent overflow
                     }}
                 >
-                    Exit
-                </Button>
-            </Box>
+                    <CssBaseline />
+                    <Box
+                        sx={{
+                            minHeight: "50vh", // Kept for tighter fit
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center", // Centered content
+                            paddingY: 4, // Consistent vertical padding
+                            width: "100%",
+                            maxWidth: { xs: "100%", md: "360px" }, // Full width on mobile, 360px on desktop
+                            mx: "auto", // Center internal content
+                            boxSizing: "border-box", // Prevent overflow
+                        }}
+                    >
+                        <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
+                            Welcome, {user.email}
+                        </Typography>
+                        <Button
+                            fullWidth
+                            variant="contained"
+                            sx={{ mt: 3, mb: 2 }} // Full-width button
+                            onClick={handleSignOut}
+                        >
+                            Sign Out
+                        </Button>
+                    </Box>
+                </Container>
+            </ThemeProvider>
         );
     }
 
     return (
-        <Container maxWidth={deviceType === 'mobile' ? 'sm' : 'md'} sx={{ px: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4 }}>
-            <Box sx={{ mt: deviceType === 'mobile' ? 4 : deviceType === 'tablet' ? 5 : 6, display: 'flex', flexDirection: 'column', gap: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3, alignItems: 'center' }}>
-                <Typography
-                    variant={deviceType === 'mobile' ? 'h4' : deviceType === 'tablet' ? 'h3' : 'h3'}
-                    align="center"
-                    sx={{ fontSize: deviceType === 'mobile' ? '2.125rem' : deviceType === 'tablet' ? '2.5rem' : '3rem' }}
+        <ThemeProvider theme={theme}>
+            <Container
+                component="main"
+                maxWidth={false} // Override default maxWidth
+                sx={{
+                    width: { xs: "min(90vw, 320px)", md: "400px" }, // Responsive width: 90vw or 320px on mobile, 400px on desktop
+                    mx: "auto", // Center horizontally
+                    mt: { xs: 4, md: 8 }, // Top margin to push container down
+                    boxShadow: { xs: "none", md: "0px 4px 16px rgba(0, 0, 0, 0.15)" }, // Desktop-only shadow
+                    padding: { xs: 1, md: 2 }, // Reduced padding
+                    borderRadius: 2, // Softer corners
+                    boxSizing: "border-box", // Prevent overflow
+                }}
+            >
+                <CssBaseline />
+                <Box
+                    sx={{
+                        minHeight: "50vh", // Kept for tighter fit
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center", // Centered content
+                        paddingY: 4, // Consistent vertical padding
+                        width: "100%",
+                        maxWidth: { xs: "100%", md: "360px" }, // Full width on mobile, 360px on desktop
+                        mx: "auto", // Center internal content
+                        boxSizing: "border-box", // Prevent overflow
+                    }}
                 >
-                    Authorization
-                </Typography>
-                {error && (
-                    <Alert
-                        severity="error"
-                        sx={{
-                            mb: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3,
-                            fontSize: deviceType === 'mobile' ? '0.875rem' : deviceType === 'tablet' ? '0.9375rem' : '1rem',
-                            width: deviceType === 'mobile' ? '100%' : deviceType === 'tablet' ? '50vw' : '25vw',
-                        }}
-                    >
-                        {error}
-                    </Alert>
-                )}
-                {emailConfirmationRequired && (
-                    <Alert
-                        severity="info"
-                        sx={{
-                            mb: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3,
-                            fontSize: deviceType === 'mobile' ? '0.875rem' : deviceType === 'tablet' ? '0.9375rem' : '1rem',
-                            width: deviceType === 'mobile' ? '100%' : deviceType === 'tablet' ? '50vw' : '25vw',
-                        }}
-                    >
-                        Please confirm your account via email, sent to {email}. Sign in after confirmation.
-                    </Alert>
-                )}
-                <TextField
-                    label="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    fullWidth
-                    required
-                    sx={{
-                        maxWidth: deviceType === 'mobile' ? '100%' : deviceType === 'tablet' ? '50vw' : '25vw',
-                        '& .MuiInputBase-input': { fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.0625rem' : '1.125rem' },
-                        '& .MuiInputLabel-root': { fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.0625rem' : '1.125rem' },
-                    }}
-                />
-                <TextField
-                    label="Password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    fullWidth
-                    required
-                    sx={{
-                        maxWidth: deviceType === 'mobile' ? '100%' : deviceType === 'tablet' ? '50vw' : '25vw',
-                        '& .MuiInputBase-input': { fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.0625rem' : '1.125rem' },
-                        '& .MuiInputLabel-root': { fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.0625rem' : '1.125rem' },
-                    }}
-                />
-                <Box sx={{ display: 'flex', gap: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3, justifyContent: 'center', mt: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3 }}>
-                    <Button
-                        variant="contained"
-                        onClick={handleSignIn}
-                        sx={{
-                            fontSize: deviceType === 'mobile' ? '0.875rem' : deviceType === 'tablet' ? '0.9375rem' : '1rem',
-                            px: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3,
-                            py: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.25 : 1.5,
-                        }}
-                    >
-                        Sign In
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        onClick={handleSignUp}
-                        sx={{
-                            fontSize: deviceType === 'mobile' ? '0.875rem' : deviceType === 'tablet' ? '0.9375rem' : '1rem',
-                            px: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 2.5 : 3,
-                            py: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.25 : 1.5,
-                        }}
-                    >
-                        Sign Up
-                    </Button>
+                    <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
+                        {authMode === "signin" ? "Sign In" : "Sign Up"}
+                    </Typography>
+
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
+                            {error}
+                        </Alert>
+                    )}
+                    {emailConfirmationRequired && (
+                        <Alert severity="info" sx={{ mb: 2, width: "100%" }}>
+                            Please confirm your account via email, sent to {email}.
+                        </Alert>
+                    )}
+
+                    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, width: "100%" }}>
+                        {authMode === "signup" && (
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                label="Full Name"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                autoFocus
+                                sx={{ mb: 2 }}
+                            />
+                        )}
+                        <TextField
+                            margin="normal"
+                            required
+                            fullWidth
+                            label="Email Address"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            autoFocus={authMode === "signin"} // Auto-focus email only for sign-in
+                            sx={{ mb: 2 }}
+                        />
+                        <TextField
+                            margin="normal"
+                            required
+                            fullWidth
+                            label="Password"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            sx={{ mb: 2 }}
+                        />
+
+                        {authMode === "signin" && (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        value="remember"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                        color="primary"
+                                    />
+                                }
+                                label="Remember me"
+                                sx={{ mb: 2 }}
+                            />
+                        )}
+
+                        <Button
+                            type="submit"
+                            fullWidth
+                            variant="contained"
+                            sx={{ mt: 3, mb: 2 }} // Full-width button
+                        >
+                            {authMode === "signin" ? "Sign In" : "Sign Up"}
+                        </Button>
+
+                        <Grid container justifyContent="center">
+                            <Grid item>
+                                <Link
+                                    href="#"
+                                    variant="body2"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setAuthMode(authMode === "signin" ? "signup" : "signin");
+                                        setError(null);
+                                        setEmailConfirmationRequired(false);
+                                    }}
+                                    sx={{ textDecoration: "underline", color: "primary.main" }}
+                                >
+                                    {authMode === "signin"
+                                        ? "Don't have an account? Sign Up"
+                                        : "Already have an account? Sign In"}
+                                </Link>
+                            </Grid>
+                        </Grid>
+                    </Box>
                 </Box>
-            </Box>
-        </Container>
+            </Container>
+        </ThemeProvider>
     );
 };
 
