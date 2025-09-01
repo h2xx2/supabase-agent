@@ -89,6 +89,7 @@ const App: React.FC = () => {
     const [editEnableEmailAction, setEditEnableEmailAction] = useState(false);
     const [newFile, setNewFile] = useState<File | null>(null);
     const [editFile, setEditFile] = useState<File | null>(null);
+    const [loadingAgentId, setLoadingAgentId] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [chatOpen, setChatOpen] = useState(false);
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
