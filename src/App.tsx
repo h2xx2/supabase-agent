@@ -559,7 +559,7 @@ const App: React.FC = () => {
             return;
         }
 
-        setLoadingAgentId(agentToDelete.id);
+        setGlobalLoading(true);
         const token = await getAuthToken();
 
         try {
@@ -578,7 +578,7 @@ const App: React.FC = () => {
             console.error('Ошибка при удалении агента:', error);
             setErrorMessage(`Ошибка при удалении агента: ${error.message || 'Неизвестная ошибка'}`);
         } finally {
-            setLoadingAgentId(null);
+            setGlobalLoading(false);
         }
     };
 
