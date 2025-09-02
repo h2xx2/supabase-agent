@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {
-    Avatar,
     Button,
     CssBaseline,
     TextField,
     FormControlLabel,
     Checkbox,
     Link,
-    Grid,
     Box,
     Typography,
     Container,
@@ -27,7 +25,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
     const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [fullName, setFullName] = useState(""); // Added state for full name
+    const [fullName, setFullName] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
@@ -71,14 +69,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
 
     const handleSignUp = async () => {
         setError(null);
-        if (!email.trim() || !password.trim() || !fullName.trim()) { // Added fullName check
+        if (!email.trim() || !password.trim() || !fullName.trim()) {
             setError("Please fill email, password, and full name");
             return;
         }
         try {
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/signup`,
-                { email, password, fullName }, // Added fullName to request
+                { email, password, fullName },
                 { headers: { "Content-Type": "application/json" } }
             );
 
@@ -99,8 +97,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                     return;
                 }
                 setUser(user);
-                if (token && rememberMe) {
-                    localStorage.setItem("authToken", token);
+                if (token) {
+                    localStorage.setItem("authToken", token); // Always save token
                 }
                 onAuthChange(user);
             } else {
@@ -134,9 +132,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
             const { user, token } = data;
             if (user && token) {
                 setUser(user);
-                if (rememberMe) {
-                    localStorage.setItem("authToken", token);
-                }
+                localStorage.setItem("authToken", token); // Always save token
                 onAuthChange(user);
             } else {
                 setError("Incorrect server response");
@@ -169,30 +165,30 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
             <ThemeProvider theme={theme}>
                 <Container
                     component="main"
-                    maxWidth={false} // Override default maxWidth
+                    maxWidth={false}
                     sx={{
-                        width: { xs: "min(90vw, 320px)", md: "400px" }, // Responsive width: 90vw or 320px on mobile, 400px on desktop
-                        mx: "auto", // Center horizontally
-                        mt: { xs: 4, md: 8 }, // Top margin to push container down
-                        boxShadow: { xs: "none", md: "0px 4px 16px rgba(0, 0, 0, 0.15)" }, // Desktop-only shadow
-                        padding: { xs: 1, md: 2 }, // Reduced padding
-                        borderRadius: 2, // Softer corners
-                        boxSizing: "border-box", // Prevent overflow
+                        width: { xs: "min(90vw, 320px)", md: "400px" },
+                        mx: "auto",
+                        mt: { xs: 4, md: 8 },
+                        boxShadow: { xs: "none", md: "0px 4px 16px rgba(0, 0, 0, 0.15)" },
+                        padding: { xs: 1, md: 2 },
+                        borderRadius: 2,
+                        boxSizing: "border-box",
                     }}
                 >
                     <CssBaseline />
                     <Box
                         sx={{
-                            minHeight: "50vh", // Kept for tighter fit
+                            minHeight: "50vh",
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
-                            justifyContent: "center", // Centered content
-                            paddingY: 4, // Consistent vertical padding
+                            justifyContent: "center",
+                            paddingY: 4,
                             width: "100%",
-                            maxWidth: { xs: "100%", md: "360px" }, // Full width on mobile, 360px on desktop
-                            mx: "auto", // Center internal content
-                            boxSizing: "border-box", // Prevent overflow
+                            maxWidth: { xs: "100%", md: "360px" },
+                            mx: "auto",
+                            boxSizing: "border-box",
                         }}
                     >
                         <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
@@ -201,7 +197,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                         <Button
                             fullWidth
                             variant="contained"
-                            sx={{ mt: 3, mb: 2 }} // Full-width button
+                            sx={{ mt: 3, mb: 2 }}
                             onClick={handleSignOut}
                         >
                             Sign Out
@@ -216,30 +212,30 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
         <ThemeProvider theme={theme}>
             <Container
                 component="main"
-                maxWidth={false} // Override default maxWidth
+                maxWidth={false}
                 sx={{
-                    width: { xs: "min(90vw, 320px)", md: "400px" }, // Responsive width: 90vw or 320px on mobile, 400px on desktop
-                    mx: "auto", // Center horizontally
-                    mt: { xs: 4, md: 8 }, // Top margin to push container down
-                    boxShadow: { xs: "none", md: "0px 4px 16px rgba(0, 0, 0, 0.15)" }, // Desktop-only shadow
-                    padding: { xs: 1, md: 2 }, // Reduced padding
-                    borderRadius: 2, // Softer corners
-                    boxSizing: "border-box", // Prevent overflow
+                    width: { xs: "min(90vw, 320px)", md: "400px" },
+                    mx: "auto",
+                    mt: { xs: 4, md: 8 },
+                    boxShadow: { xs: "none", md: "0px 4px 16px rgba(0, 0, 0, 0.15)" },
+                    padding: { xs: 1, md: 2 },
+                    borderRadius: 2,
+                    boxSizing: "border-box",
                 }}
             >
                 <CssBaseline />
                 <Box
                     sx={{
-                        minHeight: "50vh", // Kept for tighter fit
+                        minHeight: "50vh",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        justifyContent: "center", // Centered content
-                        paddingY: 4, // Consistent vertical padding
+                        justifyContent: "center",
+                        paddingY: 4,
                         width: "100%",
-                        maxWidth: { xs: "100%", md: "360px" }, // Full width on mobile, 360px on desktop
-                        mx: "auto", // Center internal content
-                        boxSizing: "border-box", // Prevent overflow
+                        maxWidth: { xs: "100%", md: "360px" },
+                        mx: "auto",
+                        boxSizing: "border-box",
                     }}
                 >
                     <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
@@ -277,7 +273,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                             label="Email Address"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            autoFocus={authMode === "signin"} // Auto-focus email only for sign-in
+                            autoFocus={authMode === "signin"}
                             sx={{ mb: 2 }}
                         />
                         <TextField
@@ -310,13 +306,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                             type="submit"
                             fullWidth
                             variant="contained"
-                            sx={{ mt: 3, mb: 2 }} // Full-width button
+                            sx={{ mt: 3, mb: 2 }}
                         >
                             {authMode === "signin" ? "Sign In" : "Sign Up"}
                         </Button>
 
-                        <Grid container justifyContent="center">
-                            <Grid item>
+                        <Box sx={{ display: "flex", justifyContent: "center", width: "100%" }}>
+                            <Box sx={{ textAlign: "center", width: "100%" }}>
                                 <Link
                                     href="#"
                                     variant="body2"
@@ -332,8 +328,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                                         ? "Don't have an account? Sign Up"
                                         : "Already have an account? Sign In"}
                                 </Link>
-                            </Grid>
-                        </Grid>
+                            </Box>
+                        </Box>
                     </Box>
                 </Box>
             </Container>
