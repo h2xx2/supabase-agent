@@ -161,54 +161,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
         authMode === "signin" ? handleSignIn() : handleSignUp();
     };
 
-    if (user) {
-        return (
-            <ThemeProvider theme={theme}>
-                <Container
-                    component="main"
-                    maxWidth={false} // Override default maxWidth
-                    sx={{
-                        width: { xs: "min(90vw, 320px)", md: "400px" }, // Responsive width: 90vw or 320px on mobile, 400px on desktop
-                        mx: "auto", // Center horizontally
-                        mt: { xs: 4, md: 8 }, // Top margin to push container down
-                        boxShadow: { xs: "none", md: "0px 4px 16px rgba(0, 0, 0, 0.15)" }, // Desktop-only shadow
-                        padding: { xs: 1, md: 2 }, // Reduced padding
-                        borderRadius: 2, // Softer corners
-                        boxSizing: "border-box", // Prevent overflow
-                    }}
-                >
-                    <CssBaseline />
-                    <Box
-                        sx={{
-                            minHeight: "50vh", // Kept for tighter fit
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center", // Centered content
-                            paddingY: 4, // Consistent vertical padding
-                            width: "100%",
-                            maxWidth: { xs: "100%", md: "360px" }, // Full width on mobile, 360px on desktop
-                            mx: "auto", // Center internal content
-                            boxSizing: "border-box", // Prevent overflow
-                        }}
-                    >
-                        <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
-                            Welcome, {user.email}
-                        </Typography>
-                        <Button
-                            fullWidth
-                            variant="contained"
-                            sx={{ mt: 3, mb: 2 }} // Full-width button
-                            onClick={handleSignOut}
-                        >
-                            Sign Out
-                        </Button>
-                    </Box>
-                </Container>
-            </ThemeProvider>
-        );
-    }
-
     return isLoading ? <></> : (
         <ThemeProvider theme={theme}>
             <Container
