@@ -160,54 +160,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
         authMode === "signin" ? handleSignIn() : handleSignUp();
     };
 
-    if (user) {
-        return (
-            <ThemeProvider theme={theme}>
-                <Container
-                    component="main"
-                    maxWidth={false}
-                    sx={{
-                        width: { xs: "min(90vw, 320px)", md: "400px" },
-                        mx: "auto",
-                        mt: { xs: 4, md: 8 },
-                        boxShadow: { xs: "none", md: "0px 4px 16px rgba(0, 0, 0, 0.15)" },
-                        padding: { xs: 1, md: 2 },
-                        borderRadius: 2,
-                        boxSizing: "border-box",
-                    }}
-                >
-                    <CssBaseline />
-                    <Box
-                        sx={{
-                            minHeight: "50vh",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            paddingY: 4,
-                            width: "100%",
-                            maxWidth: { xs: "100%", md: "360px" },
-                            mx: "auto",
-                            boxSizing: "border-box",
-                        }}
-                    >
-                        <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
-                            Welcome, {user.email}
-                        </Typography>
-                        <Button
-                            fullWidth
-                            variant="contained"
-                            sx={{ mt: 3, mb: 2 }}
-                            onClick={handleSignOut}
-                        >
-                            Sign Out
-                        </Button>
-                    </Box>
-                </Container>
-            </ThemeProvider>
-        );
-    }
-
     return (
         <ThemeProvider theme={theme}>
             <Container
