@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import axios from "axios";
+import {useCookies} from "react-cookie";
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
@@ -21,19 +22,21 @@ interface AuthProps {
 
 const theme = createTheme();
 
-const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
+const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
+    const [cookies, setCookie, removeCookie] = useCookies();
     const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [fullName, setFullName] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
-    const [user, setUser] = useState<any>(null);
+    const [, setUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [emailConfirmationRequired, setEmailConfirmationRequired] =
         useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const storedToken = localStorage.getItem("authToken");
+        const storedToken = cookies["authToken"];
         if (storedToken) {
             validateToken(storedToken)
                 .then((validUser) => {
@@ -41,10 +44,15 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                         setUser(validUser);
                         onAuthChange(validUser);
                     } else {
-                        localStorage.removeItem("authToken");
+                        removeCookie("authToken");
                     }
                 })
-                .catch(() => localStorage.removeItem("authToken"));
+                .catch(() => removeCookie("authToken"))
+                .finally(() => {
+                    setIsLoading(false);
+                });
+        } else {
+            setIsLoading(false);
         }
     }, [onAuthChange]);
 
@@ -54,14 +62,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                 `${import.meta.env.VITE_API_GATEWAY_URL}/validate-token`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-
-            const outerData = response.data;
-            const data =
-                typeof outerData.body === "string"
-                    ? JSON.parse(outerData.body)
-                    : outerData.body;
-
-            return data?.user || null;
+            return response?.data?.user || null;
         } catch {
             return null;
         }
@@ -98,7 +99,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                 }
                 setUser(user);
                 if (token) {
-                    localStorage.setItem("authToken", token); // Always save token
+                    setCookie("authToken", token); // Always save token
                 }
                 onAuthChange(user);
             } else {
@@ -132,7 +133,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
             const { user, token } = data;
             if (user && token) {
                 setUser(user);
-                localStorage.setItem("authToken", token); // Always save token
+                setCookie("authToken", token); // Always save token
                 onAuthChange(user);
             } else {
                 setError("Incorrect server response");
@@ -142,25 +143,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
         }
     };
 
-    const handleSignOut = async () => {
-        try {
-            await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/signout`,
-                {},
-                { headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` } }
-            );
-            setUser(null);
-            localStorage.removeItem("authToken");
-            onSignOut();
-        } catch {}
-    };
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         authMode === "signin" ? handleSignIn() : handleSignUp();
     };
 
-    return (
+    return isLoading ? <></> : (
         <ThemeProvider theme={theme}>
             <Container
                 component="main"
@@ -175,7 +165,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                     boxSizing: "border-box",
                 }}
             >
-                <CssBaseline />
+                <CssBaseline/>
                 <Box
                     sx={{
                         minHeight: "50vh",
@@ -190,22 +180,22 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                         boxSizing: "border-box",
                     }}
                 >
-                    <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
+                    <Typography component="h1" variant="h5" sx={{mb: 3}}>
                         {authMode === "signin" ? "Sign In" : "Sign Up"}
                     </Typography>
 
                     {error && (
-                        <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
+                        <Alert severity="error" sx={{mb: 2, width: "100%"}}>
                             {error}
                         </Alert>
                     )}
                     {emailConfirmationRequired && (
-                        <Alert severity="info" sx={{ mb: 2, width: "100%" }}>
+                        <Alert severity="info" sx={{mb: 2, width: "100%"}}>
                             Please confirm your account via email, sent to {email}.
                         </Alert>
                     )}
 
-                    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, width: "100%" }}>
+                    <Box component="form" onSubmit={handleSubmit} sx={{mt: 2, width: "100%"}}>
                         {authMode === "signup" && (
                             <TextField
                                 margin="normal"
@@ -215,7 +205,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                                 value={fullName}
                                 onChange={(e) => setFullName(e.target.value)}
                                 autoFocus
-                                sx={{ mb: 2 }}
+                                sx={{mb: 2}}
                             />
                         )}
                         <TextField
@@ -236,7 +226,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            sx={{ mb: 2 }}
+                            sx={{mb: 2}}
                         />
 
                         {authMode === "signin" && (
@@ -250,7 +240,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                                     />
                                 }
                                 label="Remember me"
-                                sx={{ mb: 2 }}
+                                sx={{mb: 2}}
                             />
                         )}
 
@@ -274,7 +264,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange, onSignOut }) => {
                                         setError(null);
                                         setEmailConfirmationRequired(false);
                                     }}
-                                    sx={{ textDecoration: "underline", color: "primary.main" }}
+                                    sx={{textDecoration: "underline", color: "primary.main"}}
                                 >
                                     {authMode === "signin"
                                         ? "Don't have an account? Sign Up"

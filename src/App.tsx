@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useCookies } from 'react-cookie';
 import { GlobalStyles } from '@mui/material';
 import {
     AppBar,
@@ -75,6 +76,7 @@ interface Blueprint {
 }
 
 const App: React.FC = () => {
+    const [cookies, , removeCookie] = useCookies(['authToken']);
     const [globalLoading, setGlobalLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -100,8 +102,8 @@ const App: React.FC = () => {
     const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
     const [keyboardOffset, setKeyboardOffset] = useState(0);
     const [selectedBlueprint, setSelectedBlueprint] = useState<string>('');
-    const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // Новый стейт для диалога удаления
-    const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null); // Агент для удаления
+    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
     const messageListRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLDivElement | null>(null);
 
@@ -123,7 +125,7 @@ const App: React.FC = () => {
         {
             blueprint_name: "Personal Assistant",
             agent_name: "Personal Assistant of John Doe",
-            agent_instructions: "You are the personal assistant of John Doe, the CEO of JD Inc. JD Inc. performs the Software Development with the following technologies: - Web Development (React, Angular, NodeJS) - Cloud Computing (AWS) - iOS/Android Software Development - AI / LLM John Doe is available for the scheduled meetings on the following days: - Wednesday 10:00 - 14:00 - Friday 11:00 - 15:00 - If user will ask for the guidance regarding what TJD Inc. does - provide him the necessary answers. - If user will ask the preliminary feasibility of the project - ask the project details and say that John Doe will contact him back. In the meantime send the email to sergei.nntu@gmail.com with the provided project details. - If user will ask to schedule the meeting with John Doe - request the following information from user: - email - first and last name - topic of the discussion - desired day and time (verify it according to John Doe availability) Once the information above is provided - send the meeting invitation to john.doe@example.com.",
+            agent_instructions: "You are the personal assistant of John Doe, the CEO of JD Inc. JD Inc. performs the Software Development with the following technologies: - Web Development (React, Angular, NodeJS) - Cloud Computing (AWS) - iOS/Android Software Development - AI / LLM John Doe is available for the scheduled meetings on the following days: - Wednesday 10:00 - 14:00 - Friday 11:00 - 15:00 - If user will ask for the guidance regarding what JD Inc. does - provide him the necessary answers. - If user will ask the preliminary feasibility of the project - ask the project details and say that John Doe will contact him back. In the meantime send the email to sergei.nntu@gmail.com with the provided project details. - If user will ask to schedule the meeting with John Doe - request the following information from user: - email - first and last name - topic of the discussion - desired day and time (verify it according to John Doe availability) Once the information above is provided - send the meeting invitation to john.doe@example.com.",
             email_action: true,
             http_request_action: false,
             kb_required: false,
@@ -197,16 +199,39 @@ const App: React.FC = () => {
         }
     }, [chatMessages]);
 
+    const getAuthToken = (): string => {
+        const token = cookies.authToken;
+        if (!token) {
+            throw new Error('Токен авторизации отсутствует в куки');
+        }
+        return token;
+    };
+
+    const getUserIdFromToken = (token: string): string => {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.sub;
+        } catch (error) {
+            console.error('Ошибка декодирования токена:', error);
+            throw new Error('Невозможно извлечь user_id из токена');
+        }
+    };
+
     const fetchAgentStatus = async (agentId: string): Promise<string> => {
-        const token = await getAuthToken();
-        const user_id = user?.id;
-        if (!user_id) throw new Error('user_id отсутствует');
-        const response = await axios.post(
-            `${import.meta.env.VITE_API_GATEWAY_URL}/get-agent-status`,
-            { agentId, user_id },
-            { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-        );
-        return response.data.statusInDb || 'UNKNOWN';
+        try {
+            const token = getAuthToken();
+            const user_id = user?.id;
+            if (!user_id) throw new Error('user_id отсутствует');
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/get-agent-status`,
+                { agentId, user_id },
+                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+            );
+            return response.data.statusInDb || 'UNKNOWN';
+        } catch (error: any) {
+            console.error('Ошибка при получении статуса агента:', error);
+            throw error;
+        }
     };
 
     useEffect(() => {
@@ -228,7 +253,7 @@ const App: React.FC = () => {
 
     const fetchAgents = async (): Promise<Agent[]> => {
         try {
-            const token = await getAuthToken();
+            const token = getAuthToken();
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/agents`,
                 { user_id: user?.id },
@@ -237,7 +262,7 @@ const App: React.FC = () => {
             return response.data.agents || [];
         } catch (error: any) {
             console.error('Ошибка при получении агентов:', error);
-            setErrorMessage('Could not get agents');
+            setErrorMessage(error.message === 'Токен авторизации отсутствует в куки' ? 'Пожалуйста, войдите в систему' : 'Не удалось загрузить агентов');
             return [];
         }
     };
@@ -246,14 +271,14 @@ const App: React.FC = () => {
 
     const handleSignOut = async () => {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = cookies.authToken;
             if (token) {
                 await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/signout`, {}, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
             }
         } catch (error: any) {
-            console.error('Sign Out Error:', error);
+            console.error('Ошибка при выходе:', error);
         } finally {
             setUser(null);
             setAgents([]);
@@ -261,7 +286,7 @@ const App: React.FC = () => {
             setChatOpen(false);
             setChatMessages([]);
             setSessionIds({});
-            localStorage.removeItem('authToken');
+            removeCookie('authToken', { path: '/' });
         }
     };
 
@@ -298,19 +323,21 @@ const App: React.FC = () => {
         }
 
         setGlobalLoading(true);
-        const token = await getAuthToken();
-
         try {
+            const token = getAuthToken();
+            const user_id = getUserIdFromToken(token);
             const fileData = newFile ? await convertFileToBase64(newFile) : null;
+            const fileName = newFile ? newFile.name : null;
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/create-agent`,
                 JSON.stringify({
                     name: sanitizedName,
                     instructions: newAgent.instructions,
-                    user_id: user?.id,
+                    user_id,
                     enableHttpAction,
                     enableEmailAction,
                     file: fileData,
+                    fileName,
                 }),
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
             );
@@ -331,30 +358,30 @@ const App: React.FC = () => {
             if (!isPrepared) throw new Error('Статус агента не стал PREPARED');
 
             await fetchAgents();
-            setGlobalLoading(false);
             handleCloseAddDialog();
         } catch (error: any) {
             console.error('Ошибка при создании агента:', error);
-            setErrorMessage(`Ошибка при создании агента: ${error.message || 'Неизвестная ошибка'}`);
+            setErrorMessage(error.message === 'Токен авторизации отсутствует в куки' ? 'Пожалуйста, войдите в систему' : `Ошибка при создании агента: ${error.message || 'Неизвестная ошибка'}`);
+        } finally {
             setGlobalLoading(false);
         }
     };
 
     const createAlias = async (agentId: string, agentName: string) => {
         setGlobalLoading(true);
-        const token = await getAuthToken();
         try {
-            if (!user?.id) throw new Error('user_id отсутствует');
+            const token = getAuthToken();
+            const user_id = getUserIdFromToken(token);
             await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/create-alias`,
-                { agentId, agentName, user_id: user.id },
+                { agentId, agentName, user_id },
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
             );
             await fetchAgents();
-            setGlobalLoading(false);
         } catch (error: any) {
             console.error('Ошибка при создании алиаса:', error);
-            setErrorMessage(`Ошибка при создании алиаса: ${error.message || 'Неизвестная ошибка'}`);
+            setErrorMessage(error.message === 'Токен авторизации отсутствует в куки' ? 'Пожалуйста, войдите в систему' : `Ошибка при создании алиаса: ${error.message || 'Неизвестная ошибка'}`);
+        } finally {
             setGlobalLoading(false);
         }
     };
@@ -365,7 +392,7 @@ const App: React.FC = () => {
         setEditEnableEmailAction(agent.enableEmailAction || false);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
-        setInitialKnowledgeBaseFile(agent.knowledge_base_id ? 'Файл базы знаний ранее загружен' : null);
+        setInitialKnowledgeBaseFile(agent.knowledge_base_id ? 'Knowledge base file exists' : null);
         setOpenEditDialog(true);
     };
 
@@ -393,13 +420,13 @@ const App: React.FC = () => {
         }
 
         setGlobalLoading(true);
-        const token = await getAuthToken();
-
         try {
+            const token = getAuthToken();
+            const user_id = getUserIdFromToken(token);
             const fileData = editFile ? await convertFileToBase64(editFile) : null;
+            const fileName = editFile ? editFile.name : null;
             if (deleteKnowledgeBase && fileData) {
                 setErrorMessage('Нельзя выбрать новый файл при удалении базы знаний');
-                setGlobalLoading(false);
                 return;
             }
 
@@ -410,21 +437,22 @@ const App: React.FC = () => {
                     agent_id: editAgent.agent_id,
                     name: sanitizedName,
                     instructions: editAgent.instructions,
-                    user_id: user?.id,
+                    user_id,
                     enableHttpAction: editEnableHttpAction,
                     enableEmailAction: editEnableEmailAction,
                     file: fileData,
+                    fileName,
                     deleteKnowledgeBase: deleteKnowledgeBase,
                 }),
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
             );
 
             await fetchAgents();
-            setGlobalLoading(false);
             handleCloseEditDialog();
         } catch (error: any) {
             console.error('Ошибка при обновлении агента:', error);
-            setErrorMessage(`Ошибка при обновлении агента: ${error.message || 'Неизвестная ошибка'}`);
+            setErrorMessage(error.message === 'Токен авторизации отсутствует в куки' ? 'Пожалуйста, войдите в систему' : `Ошибка при обновлении агента: ${error.message || 'Неизвестная ошибка'}`);
+        } finally {
             setGlobalLoading(false);
         }
     };
@@ -438,14 +466,54 @@ const App: React.FC = () => {
         });
     };
 
+    const downloadKnowledgeBase = async (agent: Agent) => {
+        if (!agent.knowledge_base_id) return;
+
+        setGlobalLoading(true);
+        try {
+            const token = getAuthToken();
+            const response = await axios.get(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/download-knowledge-base/${agent.knowledge_base_id}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    responseType: 'blob',
+                }
+            );
+
+            // Извлекаем имя файла из заголовка Content-Disposition, если он есть
+            let fileName = `knowledge_base_${agent.knowledge_base_id}.pdf`; // По умолчанию
+            const contentDisposition = response.headers['content-disposition'];
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (fileNameMatch && fileNameMatch[1]) {
+                    fileName = fileNameMatch[1];
+                }
+            }
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error: any) {
+            console.error('Ошибка при скачивании базы знаний:', error);
+            setErrorMessage('Не удалось скачать файл базы знаний');
+        } finally {
+            setGlobalLoading(false);
+        }
+    };
+
     const sendChatMessage = async (text: string) => {
         if (!text.trim() || !selectedAgent?.agent_id || !selectedAgent.alias_id) return;
         const newMessage: MessageModel = { message: text, sentTime: new Date().toISOString(), sender: 'user', direction: 'outgoing', position: 'single' };
         setChatMessages((prev) => [...prev, newMessage]);
         let sessionId = sessionIds[selectedAgent.agent_id] || `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         setSessionIds((prev) => ({ ...prev, [selectedAgent.agent_id]: sessionId }));
-        const token = await getAuthToken();
         try {
+            const token = getAuthToken();
             const response = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/send`, {
                 message: text,
                 agentId: selectedAgent.agent_id,
@@ -472,14 +540,40 @@ const App: React.FC = () => {
             }, { headers: { Authorization: `Bearer ${token}` } });
         } catch (error: any) {
             console.error('Ошибка при отправке сообщения:', error);
-            const errorMessage: MessageModel = { message: `Ошибка: ${error.message || 'Неизвестная ошибка'}`, sentTime: new Date().toISOString(), sender: 'bot', direction: 'incoming', position: 'single' };
+            let errorMessageText = 'Ошибка: Неизвестная ошибка';
+            if (error.response) {
+                if (error.response.status === 403 && error.response.data.error) {
+                    errorMessageText = error.response.data.error;
+                } else if (error.response.data.error) {
+                    errorMessageText = `Ошибка: ${error.response.data.error}`;
+                } else {
+                    errorMessageText = `Ошибка: ${error.response.statusText || 'Неизвестная ошибка'}`;
+                }
+            } else if (error.message === 'Токен авторизации отсутствует в куки') {
+                errorMessageText = 'Пожалуйста, войдите в систему';
+            } else {
+                errorMessageText = `Ошибка: ${error.message || 'Неизвестная ошибка'}`;
+            }
+
+            const errorMessage: MessageModel = {
+                message: errorMessageText,
+                sentTime: new Date().toISOString(),
+                sender: 'bot',
+                direction: 'incoming',
+                position: 'single'
+            };
             setChatMessages((prev) => [...prev, errorMessage]);
 
-            await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call`, {
-                agent_id: selectedAgent.agent_id,
-                user_id: user?.id,
-                status: 'failure',
-            }, { headers: { Authorization: `Bearer ${token}` } });
+            try {
+                const token = getAuthToken();
+                await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call`, {
+                    agent_id: selectedAgent.agent_id,
+                    user_id: user?.id,
+                    status: 'failure',
+                }, { headers: { Authorization: `Bearer ${token}` } });
+            } catch (saveError) {
+                console.error('Ошибка при сохранении вызова:', saveError);
+            }
         }
     };
 
@@ -498,15 +592,10 @@ const App: React.FC = () => {
         }
     };
 
-    const getAuthToken = async (): Promise<string> => {
-        const token = localStorage.getItem('authToken') || 'temporary-token';
-        return token;
-    };
-
     const deployChat = async (agent: Agent) => {
         setGlobalLoading(true);
         try {
-            const token = await getAuthToken();
+            const token = getAuthToken();
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/deploy-chat`,
                 { agentId: agent.agent_id, user_id: user?.id },
@@ -517,7 +606,7 @@ const App: React.FC = () => {
             alert(`Публичная URL: ${publicUrl}\nAPK Key: ${apkKey}\nСкопируйте и используйте для доступа!`);
         } catch (error: any) {
             console.error('Ошибка при деплое чата:', error);
-            setErrorMessage(`Ошибка при деплое чата: ${error.message || 'Неизвестная ошибка'}`);
+            setErrorMessage(error.message === 'Токен авторизации отсутствует в куки' ? 'Пожалуйста, войдите в систему' : `Ошибка при деплое чата: ${error.message || 'Неизвестная ошибка'}`);
         } finally {
             setGlobalLoading(false);
         }
@@ -526,7 +615,7 @@ const App: React.FC = () => {
     const revokeChat = async (agent: Agent) => {
         setGlobalLoading(true);
         try {
-            const token = await getAuthToken();
+            const token = getAuthToken();
             await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/revoke-chat`,
                 { agentId: agent.agent_id, user_id: user?.id },
@@ -536,7 +625,7 @@ const App: React.FC = () => {
             await fetchAgents();
         } catch (error: any) {
             console.error('Ошибка при revoke чата:', error);
-            setErrorMessage(`Ошибка при revoke чата: ${error.message || 'Неизвестная ошибка'}`);
+            setErrorMessage(error.message === 'Токен авторизации отсутствует в куки' ? 'Пожалуйста, войдите в систему' : `Ошибка при revoke чата: ${error.message || 'Неизвестная ошибка'}`);
         } finally {
             setGlobalLoading(false);
         }
@@ -560,9 +649,8 @@ const App: React.FC = () => {
         }
 
         setGlobalLoading(true);
-        const token = await getAuthToken();
-
         try {
+            const token = getAuthToken();
             await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/delete-agent`,
                 JSON.stringify({
@@ -576,7 +664,7 @@ const App: React.FC = () => {
             handleCloseDeleteDialog();
         } catch (error: any) {
             console.error('Ошибка при удалении агента:', error);
-            setErrorMessage(`Ошибка при удалении агента: ${error.message || 'Неизвестная ошибка'}`);
+            setErrorMessage(error.message === 'Токен авторизации отсутствует в куки' ? 'Пожалуйста, войдите в систему' : `Ошибка при удалении агента: ${error.message || 'Неизвестная ошибка'}`);
         } finally {
             setGlobalLoading(false);
         }
@@ -608,30 +696,32 @@ const App: React.FC = () => {
                     backgroundColor: '#fff',
                 }}
             >
-                {globalLoading && <GlobalLoader /> }
-                <AppBar position="fixed" sx={{ width: '100%' }}>
-                    <Toolbar>
-                        {user && (
-                            <IconButton color="inherit" onClick={toggleDrawer} edge="start" sx={{ mr: 2 }}>
-                                <MenuIcon />
-                            </IconButton>
-                        )}
-                        <Typography variant="h6" sx={{
-                            flexGrow: 1,
-                            fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
-                            textAlign: 'left'
-                        }}>
-                            My Agents
-                        </Typography>
-                        {user && (
-                            <Button color="inherit" onClick={handleSignOut}
-                                    startIcon={<LogoutIcon />}
-                                    sx={{ fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem' }}>
-                                Logout
-                            </Button>
-                        )}
-                    </Toolbar>
-                </AppBar>
+                {globalLoading && <GlobalLoader />}
+                {user && (
+                    <AppBar position="fixed" sx={{ width: '100%' }}>
+                        <Toolbar>
+                            {user && (
+                                <IconButton color="inherit" onClick={toggleDrawer} edge="start" sx={{ mr: 2 }}>
+                                    <MenuIcon />
+                                </IconButton>
+                            )}
+                            <Typography variant="h6" sx={{
+                                flexGrow: 1,
+                                fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
+                                textAlign: 'left'
+                            }}>
+                                My Agents
+                            </Typography>
+                            {user && (
+                                <Button color="inherit" onClick={handleSignOut}
+                                        startIcon={<LogoutIcon />}
+                                        sx={{ fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem' }}>
+                                    Logout
+                                </Button>
+                            )}
+                        </Toolbar>
+                    </AppBar>
+                )}
 
                 <Drawer open={drawerOpen} onClose={toggleDrawer} sx={{
                     '& .MuiDrawer-paper': {
@@ -743,6 +833,26 @@ const App: React.FC = () => {
                                                                     }}>
                                                                         {agent.instructions}
                                                                     </Typography>
+                                                                    {agent.knowledge_base_id && (
+                                                                        <Typography sx={{
+                                                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                            color: 'text.secondary',
+                                                                            mt: 0.5,
+                                                                            textAlign: 'left'
+                                                                        }}>
+                                                                            <strong>Knowledge Base File:</strong>{' '}
+                                                                            <a
+                                                                                href="#"
+                                                                                onClick={(e) => {
+                                                                                    e.preventDefault();
+                                                                                    downloadKnowledgeBase(agent);
+                                                                                }}
+                                                                                style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                                                            >
+                                                                                Download Knowledge Base
+                                                                            </a>
+                                                                        </Typography>
+                                                                    )}
                                                                     <Typography sx={{
                                                                         fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
                                                                         color: 'text.secondary',
@@ -803,7 +913,7 @@ const App: React.FC = () => {
                                                                                                 height: 32
                                                                                             }}
                                                                                         >
-                                                                                            Чат
+                                                                                            Chat
                                                                                         </Button>
                                                                                         {!agent.public_url ? (
                                                                                             <Button
@@ -1057,7 +1167,7 @@ const App: React.FC = () => {
                                         setNewAgent({ name: blueprint.agent_name, instructions: blueprint.agent_instructions });
                                         setEnableHttpAction(blueprint.http_request_action);
                                         setEnableEmailAction(blueprint.email_action);
-                                        setNewFile(null); // Reset file if kb_required is false
+                                        setNewFile(null);
                                     } else {
                                         setNewAgent({ name: '', instructions: '' });
                                         setEnableHttpAction(false);
@@ -1466,7 +1576,7 @@ const App: React.FC = () => {
                                 >
                                     <MessageInput
                                         ref={inputRef}
-                                        placeholder="Введите сообщение..."
+                                        placeholder="Enter a message..."
                                         onSend={sendChatMessage}
                                         attachButton={false}
                                         onFocus={() => {
