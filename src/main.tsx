@@ -15,7 +15,10 @@ const theme = createTheme({
     },
 });
 
-const cookieOptions = { maxAge: 60 * 60 * 24 * 7 };
+const cookieOptions = {
+    maxAge: 60 * 60 * 24 * 7,
+    secure: true
+};
 
 createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
