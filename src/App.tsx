@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useCookies } from 'react-cookie';
 import { GlobalStyles } from '@mui/material';
 import {
     AppBar,
@@ -75,6 +76,7 @@ interface Blueprint {
 }
 
 const App: React.FC = () => {
+    const [,, removeCookie] = useCookies();
     const [globalLoading, setGlobalLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -261,7 +263,7 @@ const App: React.FC = () => {
             setChatOpen(false);
             setChatMessages([]);
             setSessionIds({});
-            localStorage.removeItem('authToken');
+            removeCookie('authToken');
         }
     };
 
@@ -609,29 +611,31 @@ const App: React.FC = () => {
                 }}
             >
                 {globalLoading && <GlobalLoader /> }
-                <AppBar position="fixed" sx={{ width: '100%' }}>
-                    <Toolbar>
-                        {user && (
-                            <IconButton color="inherit" onClick={toggleDrawer} edge="start" sx={{ mr: 2 }}>
-                                <MenuIcon />
-                            </IconButton>
-                        )}
-                        <Typography variant="h6" sx={{
-                            flexGrow: 1,
-                            fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
-                            textAlign: 'left'
-                        }}>
-                            My Agents
-                        </Typography>
-                        {user && (
-                            <Button color="inherit" onClick={handleSignOut}
-                                    startIcon={<LogoutIcon />}
-                                    sx={{ fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem' }}>
-                                Logout
-                            </Button>
-                        )}
-                    </Toolbar>
-                </AppBar>
+                {user && (
+                    <AppBar position="fixed" sx={{ width: '100%' }}>
+                        <Toolbar>
+                            {user && (
+                                <IconButton color="inherit" onClick={toggleDrawer} edge="start" sx={{ mr: 2 }}>
+                                    <MenuIcon />
+                                </IconButton>
+                            )}
+                            <Typography variant="h6" sx={{
+                                flexGrow: 1,
+                                fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
+                                textAlign: 'left'
+                            }}>
+                                My Agents
+                            </Typography>
+                            {user && (
+                                <Button color="inherit" onClick={handleSignOut}
+                                        startIcon={<LogoutIcon />}
+                                        sx={{ fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem' }}>
+                                    Logout
+                                </Button>
+                            )}
+                        </Toolbar>
+                    </AppBar>
+                )}
 
                 <Drawer open={drawerOpen} onClose={toggleDrawer} sx={{
                     '& .MuiDrawer-paper': {
