@@ -466,41 +466,37 @@ const App: React.FC = () => {
         });
     };
 
-    const downloadKnowledgeBase = async (agent: Agent) => {
-        if (!agent.knowledge_base_id) return;
+    const downloadKnowledgeBase = async (agent:any) => {
+        if (!agent.knowledge_base_id || !agent.agent_id) return;
 
         setGlobalLoading(true);
         try {
             const token = getAuthToken();
             const response = await axios.get(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/download-knowledge-base/${agent.knowledge_base_id}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                    responseType: 'blob',
-                }
+                `${import.meta.env.VITE_API_GATEWAY_URL}/download-knowledge-base?knowledge_base_id=${agent.knowledge_base_id}&agent_id=${agent.agent_id}`,
+                { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            // Извлекаем имя файла из заголовка Content-Disposition, если он есть
-            let fileName = `knowledge_base_${agent.knowledge_base_id}.pdf`; // По умолчанию
-            const contentDisposition = response.headers['content-disposition'];
-            if (contentDisposition) {
-                const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
-                if (fileNameMatch && fileNameMatch[1]) {
-                    fileName = fileNameMatch[1];
-                }
-            }
+            const presignedUrl = response.data.url;
+            if (!presignedUrl) throw new Error("Не удалось получить ссылку на файл");
 
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', fileName);
+            // Use fetch to download the file
+            const fileResponse = await fetch(presignedUrl);
+            const blob = await fileResponse.blob();
+            const fileName =
+                presignedUrl.split("/").pop()?.split("?")[0] || "knowledge_base.pdf";
+
+            // Create a download link
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", fileName);
             document.body.appendChild(link);
             link.click();
-            link.parentNode?.removeChild(link);
-            window.URL.revokeObjectURL(url);
-        } catch (error: any) {
-            console.error('Ошибка при скачивании базы знаний:', error);
-            setErrorMessage('Не удалось скачать файл базы знаний');
+            link.remove();
+            URL.revokeObjectURL(link.href); // Clean up
+        } catch (error) {
+            console.error("Ошибка при скачивании базы знаний:", error);
+            setErrorMessage("Не удалось скачать файл базы знаний");
         } finally {
             setGlobalLoading(false);
         }
