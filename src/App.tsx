@@ -48,8 +48,6 @@ import axios from 'axios';
 import AppNavbar from "./components/AppNavbar";
 
 interface Agent {
-    enableEmailAction: boolean;
-    enableHttpAction: boolean;
     id: string;
     user_id: string;
     name: string;
@@ -62,6 +60,8 @@ interface Agent {
     call_count?: number;
     call_count_year?: number;
     knowledge_base_id?: string;
+    http_action_enabled: boolean;
+    email_action_enabled: boolean;
 }
 
 interface Blueprint {
@@ -385,9 +385,12 @@ const App: React.FC = () => {
     };
 
     const handleOpenEditDialog = (agent: Agent) => {
+        console.log('Agent data:', agent);
+        console.log('Initial http_action_enabled:', agent.http_action_enabled);
+        console.log('Initial email_action_enabled:', agent.email_action_enabled);
         setEditAgent(agent);
-        setEditEnableHttpAction(agent.enableHttpAction || false);
-        setEditEnableEmailAction(agent.enableEmailAction || false);
+        setEditEnableHttpAction(!!agent.http_action_enabled);
+        setEditEnableEmailAction(!!agent.email_action_enabled);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
         setInitialKnowledgeBaseFile(agent.knowledge_base_id ? 'Knowledge base file exists' : null);
@@ -464,7 +467,7 @@ const App: React.FC = () => {
         });
     };
 
-    const downloadKnowledgeBase = async (agent:any) => {
+    const downloadKnowledgeBase = async (agent: any) => {
         if (!agent.knowledge_base_id || !agent.agent_id) return;
 
         setGlobalLoading(true);
@@ -478,20 +481,18 @@ const App: React.FC = () => {
             const presignedUrl = response.data.url;
             if (!presignedUrl) throw new Error("Не удалось получить ссылку на файл");
 
-            // Use fetch to download the file
             const fileResponse = await fetch(presignedUrl);
             const blob = await fileResponse.blob();
             const fileName =
                 presignedUrl.split("/").pop()?.split("?")[0] || "knowledge_base.pdf";
 
-            // Create a download link
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.setAttribute("download", fileName);
             document.body.appendChild(link);
             link.click();
             link.remove();
-            URL.revokeObjectURL(link.href); // Clean up
+            URL.revokeObjectURL(link.href);
         } catch (error) {
             console.error("Ошибка при скачивании базы знаний:", error);
             setErrorMessage("Не удалось скачать файл базы знаний");
