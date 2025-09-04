@@ -693,47 +693,6 @@ const App: React.FC = () => {
                 }}
             >
                 {globalLoading && <GlobalLoader />}
-                {user && (
-                    <AppBar position="fixed" sx={{ width: '100%' }}>
-                        <Toolbar>
-                            {user && (
-                                <IconButton color="inherit" onClick={toggleDrawer} edge="start" sx={{ mr: 2 }}>
-                                    <MenuIcon />
-                                </IconButton>
-                            )}
-                            <Typography variant="h6" sx={{
-                                flexGrow: 1,
-                                fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
-                                textAlign: 'left'
-                            }}>
-                                My Agents
-                            </Typography>
-                            {user && (
-                                <Button color="inherit" onClick={handleSignOut}
-                                        startIcon={<LogoutIcon />}
-                                        sx={{ fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem' }}>
-                                    Logout
-                                </Button>
-                            )}
-                        </Toolbar>
-                    </AppBar>
-                )}
-
-                <Drawer open={drawerOpen} onClose={toggleDrawer} sx={{
-                    '& .MuiDrawer-paper': {
-                        width: deviceType === 'mobile' ? '70vw' : deviceType === 'tablet' ? '50vw' : 250,
-                        boxSizing: 'border-box'
-                    }
-                }}>
-                    <List dense>
-                        <ListItemButton onClick={handleOpenAddDialog}>
-                            <ListItemIcon>
-                                <AddIcon />
-                            </ListItemIcon>
-                            <ListItemText primary="Add agent" sx={{ textAlign: 'left' }} />
-                        </ListItemButton>
-                    </List>
-                </Drawer>
 
                 <Container sx={{
                     mt: 10,
@@ -745,7 +704,43 @@ const App: React.FC = () => {
                 }}>
                     {!user ? (
                         <Auth onAuthChange={setUser} onSignOut={handleSignOut} />
-                    ) : (
+                    ) : (<>
+                        <AppBar position="fixed" sx={{ width: '100%' }}>
+                            <Toolbar>
+                                <IconButton color="inherit" onClick={toggleDrawer} edge="start" sx={{ mr: 2 }}>
+                                    <MenuIcon />
+                                </IconButton>
+                                <Typography variant="h6" sx={{
+                                    flexGrow: 1,
+                                    fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
+                                    textAlign: 'left'
+                                }}>
+                                    My Agents
+                                </Typography>
+                                <Button color="inherit" onClick={handleSignOut}
+                                        startIcon={<LogoutIcon />}
+                                        sx={{ fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem' }}>
+                                    Logout
+                                </Button>
+                            </Toolbar>
+                        </AppBar>
+
+                        <Drawer open={drawerOpen} onClose={toggleDrawer} sx={{
+                            '& .MuiDrawer-paper': {
+                                width: deviceType === 'mobile' ? '70vw' : deviceType === 'tablet' ? '50vw' : 250,
+                                boxSizing: 'border-box'
+                            }
+                        }}>
+                            <List dense>
+                                <ListItemButton onClick={handleOpenAddDialog}>
+                                    <ListItemIcon>
+                                        <AddIcon />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Add agent" sx={{ textAlign: 'left' }} />
+                                </ListItemButton>
+                            </List>
+                        </Drawer>
+
                         <Box sx={{
                             mt: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4,
                             width: '100%',
@@ -1126,7 +1121,7 @@ const App: React.FC = () => {
                                 </Table>
                             </Box>
                         </Box>
-                    )}
+                    </>)}
 
                     <Dialog open={openAddDialog} onClose={handleCloseAddDialog} fullWidth
                             maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>
