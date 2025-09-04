@@ -35,6 +35,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import Auth from './components/Auth';
 import GlobalLoader from './components/GlobalLoader';
 import {
@@ -712,18 +713,30 @@ const App: React.FC = () => {
                             }
                         }}>
                             <List dense>
-                                <ListItemButton onClick={handleOpenAddDialog}>
+
+                                <ListItemButton>
                                     <ListItemIcon>
                                         <AddIcon />
                                     </ListItemIcon>
                                     <ListItemText primary="Add agent" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
+
+                                <Divider />
+
+                                <ListItemButton>
+                                    <ListItemIcon>
+                                        <ViewListIcon />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Agents" sx={{ textAlign: 'left' }} />
+                                </ListItemButton>
+
                                 <ListItemButton onClick={() => alert("Settings page coming soon")}>
                                     <ListItemIcon>
                                         <SettingsIcon />
                                     </ListItemIcon>
                                     <ListItemText primary="Settings" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
+
                             </List>
                         </Drawer>
 
