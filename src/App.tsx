@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useCookies } from 'react-cookie';
 import { GlobalStyles } from '@mui/material';
 import {
-    AppBar,
-    Toolbar,
     Typography,
     Drawer,
     List,
@@ -36,8 +34,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
-import LogoutIcon from '@mui/icons-material/Logout';
-import MenuIcon from '@mui/icons-material/Menu';
+import SettingsIcon from '@mui/icons-material/Settings';
 import Auth from './components/Auth';
 import GlobalLoader from './components/GlobalLoader';
 import {
@@ -48,6 +45,7 @@ import {
 } from '@chatscope/chat-ui-kit-react';
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
 import axios from 'axios';
+import AppNavbar from "./components/AppNavbar";
 
 interface Agent {
     enableEmailAction: boolean;
@@ -705,25 +703,7 @@ const App: React.FC = () => {
                     {!user ? (
                         <Auth onAuthChange={setUser} onSignOut={handleSignOut} />
                     ) : (<>
-                        <AppBar position="fixed" sx={{ width: '100%' }}>
-                            <Toolbar>
-                                <IconButton color="inherit" onClick={toggleDrawer} edge="start" sx={{ mr: 2 }}>
-                                    <MenuIcon />
-                                </IconButton>
-                                <Typography variant="h6" sx={{
-                                    flexGrow: 1,
-                                    fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
-                                    textAlign: 'left'
-                                }}>
-                                    My Agents
-                                </Typography>
-                                <Button color="inherit" onClick={handleSignOut}
-                                        startIcon={<LogoutIcon />}
-                                        sx={{ fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.9rem' }}>
-                                    Logout
-                                </Button>
-                            </Toolbar>
-                        </AppBar>
+                        <AppNavbar onToggleDrawer={toggleDrawer} deviceType={deviceType} onSignOut={handleSignOut}/>
 
                         <Drawer open={drawerOpen} onClose={toggleDrawer} sx={{
                             '& .MuiDrawer-paper': {
@@ -737,6 +717,12 @@ const App: React.FC = () => {
                                         <AddIcon />
                                     </ListItemIcon>
                                     <ListItemText primary="Add agent" sx={{ textAlign: 'left' }} />
+                                </ListItemButton>
+                                <ListItemButton onClick={() => alert("Settings page coming soon")}>
+                                    <ListItemIcon>
+                                        <SettingsIcon />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Settings" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
                             </List>
                         </Drawer>
