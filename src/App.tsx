@@ -47,6 +47,8 @@ import {
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
 import axios from 'axios';
 import AppNavbar from "./components/AppNavbar";
+import Settings from "./components/Settings";
+import Copyright from "./components/Copyright";
 
 interface Agent {
     id: string;
@@ -73,6 +75,11 @@ interface Blueprint {
     http_request_action: boolean;
     kb_required: boolean;
 }
+
+const Page = {
+    AGENTS: "My Agents",
+    SETTINGS: "Settings"
+};
 
 const App: React.FC = () => {
     const [cookies, , removeCookie] = useCookies(['authToken']);
@@ -103,6 +110,8 @@ const App: React.FC = () => {
     const [selectedBlueprint, setSelectedBlueprint] = useState<string>('');
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
+    const [page, setPage] = useState<string>(Page.AGENTS);
+
     const messageListRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLDivElement | null>(null);
 
@@ -290,6 +299,7 @@ const App: React.FC = () => {
     };
 
     const handleOpenAddDialog = () => {
+        setPage(Page.AGENTS);
         setOpenAddDialog(true);
         setErrorMessage(null);
         setEnableHttpAction(false);
@@ -666,6 +676,395 @@ const App: React.FC = () => {
         }
     };
 
+    const pageContent = (page) => {
+        switch(page) {
+            case Page.AGENTS: return (
+                <Box sx={{
+                    mt: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4,
+                    width: '100%',
+                    overflowX: 'hidden'
+                }}>
+                    <Typography variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
+                                sx={{ textAlign: 'left' }}>
+                        Your agents
+                    </Typography>
+                    {errorMessage && (
+                        <Alert severity="error" sx={{
+                            mb: 2,
+                            width: '100%',
+                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
+                            textAlign: 'left'
+                        }}>
+                            {errorMessage}
+                        </Alert>
+                    )}
+                    <Box sx={{ width: '100%', overflowX: 'hidden' }}>
+                        <Table sx={{
+                            width: '100%',
+                            tableLayout: 'fixed',
+                            wordBreak: 'break-word',
+                            overflowX: 'hidden'
+                        }}>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell sx={{
+                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                        width: deviceType === 'mobile' ? '100%' : '80%',
+                                        textAlign: 'left'
+                                    }}>
+                                        Agent
+                                    </TableCell>
+                                    {deviceType !== 'mobile' && (
+                                        <TableCell sx={{
+                                            fontSize: deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                            width: '20%',
+                                            textAlign: 'center'
+                                        }}>
+                                            Actions
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {agents.length > 0 ? (
+                                    agents.map((agent) => (
+                                        <React.Fragment key={agent.id}>
+                                            <TableRow>
+                                                <TableCell sx={{
+                                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                    py: 1,
+                                                    verticalAlign: 'top',
+                                                    textAlign: 'left'
+                                                }}>
+                                                    <Box sx={{
+                                                        display: 'flex',
+                                                        flexDirection: deviceType === 'mobile' ? 'column' : 'row',
+                                                        gap: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.5 : 2,
+                                                        alignItems: deviceType === 'mobile' ? 'flex-start' : 'flex-start'
+                                                    }}>
+                                                        <Box sx={{
+                                                            flex: 1,
+                                                            width: deviceType === 'mobile' ? '100%' : '80%'
+                                                        }}>
+                                                            <Typography sx={{
+                                                                fontWeight: 'bold',
+                                                                fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
+                                                                textAlign: 'left'
+                                                            }}>
+                                                                {agent.name}
+                                                            </Typography>
+                                                            <Typography sx={{
+                                                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                color: 'text.secondary',
+                                                                mt: 0.5,
+                                                                wordBreak: 'break-word',
+                                                                textAlign: 'left'
+                                                            }}>
+                                                                {agent.instructions}
+                                                            </Typography>
+                                                            {agent.knowledge_base_id && (
+                                                                <Typography sx={{
+                                                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                    color: 'text.secondary',
+                                                                    mt: 0.5,
+                                                                    textAlign: 'left'
+                                                                }}>
+                                                                    <strong>Knowledge Base File:</strong>{' '}
+                                                                    <a
+                                                                        href="#"
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            downloadKnowledgeBase(agent);
+                                                                        }}
+                                                                        style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                                                    >
+                                                                        Download Knowledge Base
+                                                                    </a>
+                                                                </Typography>
+                                                            )}
+                                                            <Typography sx={{
+                                                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                color: 'text.secondary',
+                                                                mt: 0.5,
+                                                                textAlign: 'left'
+                                                            }}>
+                                                                <strong>Month requests count:</strong> {agent.call_count || 0}
+                                                            </Typography>
+                                                            <Typography sx={{
+                                                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                color: 'text.secondary',
+                                                                mt: 0.5,
+                                                                textAlign: 'left'
+                                                            }}>
+                                                                <strong>Year requests count:</strong> {agent.call_count_year || 0}
+                                                            </Typography>
+                                                        </Box>
+                                                        {deviceType === 'mobile' && (
+                                                            <Box sx={{
+                                                                display: 'flex',
+                                                                flexDirection: 'row',
+                                                                gap: deviceType === 'mobile' ? 1 : 1.5,
+                                                                mt: 1,
+                                                                flexWrap: 'wrap',
+                                                                justifyContent: 'flex-start'
+                                                            }}>
+                                                                {loadingAgentId === agent.agent_id || loadingAgentId === 'new-agent' ? (
+                                                                    <CircularProgress size={20} />
+                                                                ) : (
+                                                                    <>
+                                                                        {!agent.alias_id && agent.status === 'PREPARED' && (
+                                                                            <Button
+                                                                                variant="contained"
+                                                                                color="primary"
+                                                                                onClick={() => createAlias(agent.agent_id, agent.name)}
+                                                                                sx={{
+                                                                                    fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
+                                                                                    px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                    py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                    minWidth: 80,
+                                                                                    height: 32
+                                                                                }}
+                                                                            >
+                                                                                Создать Alias
+                                                                            </Button>
+                                                                        )}
+                                                                        {agent.agent_id && agent.alias_id && (
+                                                                            <>
+                                                                                <Button
+                                                                                    variant="contained"
+                                                                                    color="primary"
+                                                                                    onClick={() => handleOpenChat(agent)}
+                                                                                    sx={{
+                                                                                        fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
+                                                                                        px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                        py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                        minWidth: 80,
+                                                                                        height: 32
+                                                                                    }}
+                                                                                >
+                                                                                    Chat
+                                                                                </Button>
+                                                                                {!agent.public_url ? (
+                                                                                    <Button
+                                                                                        variant="contained"
+                                                                                        color="secondary"
+                                                                                        onClick={() => deployChat(agent)}
+                                                                                        sx={{
+                                                                                            fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
+                                                                                            px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                            py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                            minWidth: 80,
+                                                                                            height: 32
+                                                                                        }}
+                                                                                    >
+                                                                                        Deploy
+                                                                                    </Button>
+                                                                                ) : (
+                                                                                    <Button
+                                                                                        variant="contained"
+                                                                                        color="error"
+                                                                                        onClick={() => revokeChat(agent)}
+                                                                                        sx={{
+                                                                                            fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
+                                                                                            px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                            py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                            minWidth: 80,
+                                                                                            height: 32
+                                                                                        }}
+                                                                                    >
+                                                                                        Revoke
+                                                                                    </Button>
+                                                                                )}
+                                                                                <Button
+                                                                                    variant="contained"
+                                                                                    color="error"
+                                                                                    onClick={() => handleOpenDeleteDialog(agent)}
+                                                                                    sx={{
+                                                                                        fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
+                                                                                        px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                        py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                        minWidth: 80,
+                                                                                        height: 32
+                                                                                    }}
+                                                                                >
+                                                                                    Delete
+                                                                                </Button>
+                                                                            </>
+                                                                        )}
+                                                                        {agent.alias_id && (
+                                                                            <Button
+                                                                                variant="contained"
+                                                                                color="warning"
+                                                                                onClick={() => handleOpenEditDialog(agent)}
+                                                                                sx={{
+                                                                                    fontSize: deviceType === 'mobile' ? '0.8rem' : '0.8rem',
+                                                                                    px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                    py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                    minWidth: 80,
+                                                                                    height: 32
+                                                                                }}
+                                                                            >
+                                                                                Edit
+                                                                            </Button>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                            </Box>
+                                                        )}
+                                                    </Box>
+                                                </TableCell>
+                                                {deviceType !== 'mobile' && (
+                                                    <TableCell sx={{
+                                                        fontSize: deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                        py: 1,
+                                                        verticalAlign: 'top',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                        <Box sx={{
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            gap: deviceType === 'tablet' ? 1.25 : 1.5,
+                                                            alignItems: 'center'
+                                                        }}>
+                                                            {loadingAgentId === agent.agent_id || loadingAgentId === 'new-agent' ? (
+                                                                <CircularProgress size={24} />
+                                                            ) : (
+                                                                <>
+                                                                    {!agent.alias_id && agent.status === 'PREPARED' && (
+                                                                        <Button
+                                                                            variant="contained"
+                                                                            color="primary"
+                                                                            onClick={() => createAlias(agent.agent_id, agent.name)}
+                                                                            sx={{
+                                                                                fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                                px: deviceType === 'tablet' ? 1.5 : 2,
+                                                                                py: deviceType === 'tablet' ? 0.75 : 1,
+                                                                                width: deviceType === 'tablet' ? 140 : 160
+                                                                            }}
+                                                                        >
+                                                                            Create Alias
+                                                                        </Button>
+                                                                    )}
+                                                                    {agent.agent_id && agent.alias_id && (
+                                                                        <>
+                                                                            <Button
+                                                                                variant="contained"
+                                                                                color="primary"
+                                                                                onClick={() => handleOpenChat(agent)}
+                                                                                sx={{
+                                                                                    fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                                    px: deviceType === 'tablet' ? 1.5 : 2,
+                                                                                    py: deviceType === 'tablet' ? 0.75 : 1,
+                                                                                    width: deviceType === 'tablet' ? 140 : 160
+                                                                                }}
+                                                                            >
+                                                                                Chat
+                                                                            </Button>
+                                                                            {!agent.public_url ? (
+                                                                                <Button
+                                                                                    variant="contained"
+                                                                                    color="secondary"
+                                                                                    onClick={() => deployChat(agent)}
+                                                                                    sx={{
+                                                                                        fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                                        px: deviceType === 'tablet' ? 1.5 : 2,
+                                                                                        py: deviceType === 'tablet' ? 0.75 : 1,
+                                                                                        width: deviceType === 'tablet' ? 140 : 160
+                                                                                    }}
+                                                                                >
+                                                                                    Deploy
+                                                                                </Button>
+                                                                            ) : (
+                                                                                <Button
+                                                                                    variant="contained"
+                                                                                    color="error"
+                                                                                    onClick={() => revokeChat(agent)}
+                                                                                    sx={{
+                                                                                        fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                                        px: deviceType === 'tablet' ? 1.5 : 2,
+                                                                                        py: deviceType === 'tablet' ? 0.75 : 1,
+                                                                                        width: deviceType === 'tablet' ? 140 : 160
+                                                                                    }}
+                                                                                >
+                                                                                    Revoke
+                                                                                </Button>
+                                                                            )}
+                                                                            <Button
+                                                                                variant="contained"
+                                                                                color="error"
+                                                                                onClick={() => handleOpenDeleteDialog(agent)}
+                                                                                sx={{
+                                                                                    fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                                    px: deviceType === 'tablet' ? 1.5 : 2,
+                                                                                    py: deviceType === 'tablet' ? 0.75 : 1,
+                                                                                    width: deviceType === 'tablet' ? 140 : 160
+                                                                                }}
+                                                                            >
+                                                                                Delete
+                                                                            </Button>
+                                                                        </>
+                                                                    )}
+                                                                    {agent.alias_id && (
+                                                                        <Button
+                                                                            variant="contained"
+                                                                            color="warning"
+                                                                            onClick={() => handleOpenEditDialog(agent)}
+                                                                            sx={{
+                                                                                fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                                px: deviceType === 'tablet' ? 1.5 : 2,
+                                                                                py: deviceType === 'tablet' ? 0.75 : 1,
+                                                                                width: deviceType === 'tablet' ? 140 : 160
+                                                                            }}
+                                                                        >
+                                                                            Edit
+                                                                        </Button>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </Box>
+                                                    </TableCell>
+                                                )}
+                                            </TableRow>
+                                            {agent.public_url && (
+                                                <TableRow>
+                                                    <TableCell colSpan={deviceType === 'mobile' ? 1 : 2} sx={{
+                                                        backgroundColor: '#f5f5f5',
+                                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                        py: 1,
+                                                        wordBreak: 'break-word',
+                                                        textAlign: 'left'
+                                                    }}>
+                                                        <Typography variant="body2" sx={{
+                                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                            textAlign: 'left'
+                                                        }}>
+                                                            <strong>Public link:</strong>{' '}
+                                                            <a href={agent.public_url} target="_blank" rel="noopener noreferrer">
+                                                                {agent.public_url}
+                                                            </a>
+                                                        </Typography>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </React.Fragment>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={deviceType === 'mobile' ? 1 : 2} sx={{ textAlign: 'left' }}>
+                                            No agents
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </Box>
+                </Box>
+            );
+            case Page.SETTINGS: return <Settings {...{ deviceType, user, setGlobalLoading }} />
+            default: return <></>
+        }
+    }
+
     return (
         <>
             <GlobalStyles styles={{
@@ -705,7 +1104,14 @@ const App: React.FC = () => {
                     {!user ? (
                         <Auth onAuthChange={setUser} onSignOut={handleSignOut} />
                     ) : (<>
-                        <AppNavbar onToggleDrawer={toggleDrawer} deviceType={deviceType} onSignOut={handleSignOut}/>
+                        <AppNavbar {...{
+                            deviceType,
+                            onToggleDrawer: toggleDrawer,
+                            onSignOut: handleSignOut,
+                            page
+                        }}
+
+                        />
 
                         <Drawer open={drawerOpen} onClose={toggleDrawer} sx={{
                             '& .MuiDrawer-paper': {
@@ -715,7 +1121,7 @@ const App: React.FC = () => {
                         }}>
                             <List dense>
 
-                                <ListItemButton>
+                                <ListItemButton onClick={handleOpenAddDialog}>
                                     <ListItemIcon>
                                         <AddIcon />
                                     </ListItemIcon>
@@ -724,14 +1130,14 @@ const App: React.FC = () => {
 
                                 <Divider />
 
-                                <ListItemButton>
+                                <ListItemButton onClick={() => setPage(Page.AGENTS)}>
                                     <ListItemIcon>
                                         <ViewListIcon />
                                     </ListItemIcon>
                                     <ListItemText primary="Agents" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
-                                <ListItemButton onClick={() => alert("Settings page coming soon")}>
+                                <ListItemButton onClick={() => setPage(Page.SETTINGS)}>
                                     <ListItemIcon>
                                         <SettingsIcon />
                                     </ListItemIcon>
@@ -741,387 +1147,9 @@ const App: React.FC = () => {
                             </List>
                         </Drawer>
 
-                        <Box sx={{
-                            mt: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4,
-                            width: '100%',
-                            overflowX: 'hidden'
-                        }}>
-                            <Typography variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
-                                        sx={{ textAlign: 'left' }}>
-                                Your agents
-                            </Typography>
-                            {errorMessage && (
-                                <Alert severity="error" sx={{
-                                    mb: 2,
-                                    width: '100%',
-                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                    textAlign: 'left'
-                                }}>
-                                    {errorMessage}
-                                </Alert>
-                            )}
-                            <Box sx={{ width: '100%', overflowX: 'hidden' }}>
-                                <Table sx={{
-                                    width: '100%',
-                                    tableLayout: 'fixed',
-                                    wordBreak: 'break-word',
-                                    overflowX: 'hidden'
-                                }}>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell sx={{
-                                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                width: deviceType === 'mobile' ? '100%' : '80%',
-                                                textAlign: 'left'
-                                            }}>
-                                                Agent
-                                            </TableCell>
-                                            {deviceType !== 'mobile' && (
-                                                <TableCell sx={{
-                                                    fontSize: deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                    width: '20%',
-                                                    textAlign: 'center'
-                                                }}>
-                                                    Actions
-                                                </TableCell>
-                                            )}
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {agents.length > 0 ? (
-                                            agents.map((agent) => (
-                                                <React.Fragment key={agent.id}>
-                                                    <TableRow>
-                                                        <TableCell sx={{
-                                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                            py: 1,
-                                                            verticalAlign: 'top',
-                                                            textAlign: 'left'
-                                                        }}>
-                                                            <Box sx={{
-                                                                display: 'flex',
-                                                                flexDirection: deviceType === 'mobile' ? 'column' : 'row',
-                                                                gap: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.5 : 2,
-                                                                alignItems: deviceType === 'mobile' ? 'flex-start' : 'flex-start'
-                                                            }}>
-                                                                <Box sx={{
-                                                                    flex: 1,
-                                                                    width: deviceType === 'mobile' ? '100%' : '80%'
-                                                                }}>
-                                                                    <Typography sx={{
-                                                                        fontWeight: 'bold',
-                                                                        fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
-                                                                        textAlign: 'left'
-                                                                    }}>
-                                                                        {agent.name}
-                                                                    </Typography>
-                                                                    <Typography sx={{
-                                                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                                        color: 'text.secondary',
-                                                                        mt: 0.5,
-                                                                        wordBreak: 'break-word',
-                                                                        textAlign: 'left'
-                                                                    }}>
-                                                                        {agent.instructions}
-                                                                    </Typography>
-                                                                    {agent.knowledge_base_id && (
-                                                                        <Typography sx={{
-                                                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                                            color: 'text.secondary',
-                                                                            mt: 0.5,
-                                                                            textAlign: 'left'
-                                                                        }}>
-                                                                            <strong>Knowledge Base File:</strong>{' '}
-                                                                            <a
-                                                                                href="#"
-                                                                                onClick={(e) => {
-                                                                                    e.preventDefault();
-                                                                                    downloadKnowledgeBase(agent);
-                                                                                }}
-                                                                                style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                                                                            >
-                                                                                Download Knowledge Base
-                                                                            </a>
-                                                                        </Typography>
-                                                                    )}
-                                                                    <Typography sx={{
-                                                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                                        color: 'text.secondary',
-                                                                        mt: 0.5,
-                                                                        textAlign: 'left'
-                                                                    }}>
-                                                                        <strong>Month requests count:</strong> {agent.call_count || 0}
-                                                                    </Typography>
-                                                                    <Typography sx={{
-                                                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                                        color: 'text.secondary',
-                                                                        mt: 0.5,
-                                                                        textAlign: 'left'
-                                                                    }}>
-                                                                        <strong>Year requests count:</strong> {agent.call_count_year || 0}
-                                                                    </Typography>
-                                                                </Box>
-                                                                {deviceType === 'mobile' && (
-                                                                    <Box sx={{
-                                                                        display: 'flex',
-                                                                        flexDirection: 'row',
-                                                                        gap: deviceType === 'mobile' ? 1 : 1.5,
-                                                                        mt: 1,
-                                                                        flexWrap: 'wrap',
-                                                                        justifyContent: 'flex-start'
-                                                                    }}>
-                                                                        {loadingAgentId === agent.agent_id || loadingAgentId === 'new-agent' ? (
-                                                                            <CircularProgress size={20} />
-                                                                        ) : (
-                                                                            <>
-                                                                                {!agent.alias_id && agent.status === 'PREPARED' && (
-                                                                                    <Button
-                                                                                        variant="contained"
-                                                                                        color="primary"
-                                                                                        onClick={() => createAlias(agent.agent_id, agent.name)}
-                                                                                        sx={{
-                                                                                            fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
-                                                                                            px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                            py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                            minWidth: 80,
-                                                                                            height: 32
-                                                                                        }}
-                                                                                    >
-                                                                                        Создать Alias
-                                                                                    </Button>
-                                                                                )}
-                                                                                {agent.agent_id && agent.alias_id && (
-                                                                                    <>
-                                                                                        <Button
-                                                                                            variant="contained"
-                                                                                            color="primary"
-                                                                                            onClick={() => handleOpenChat(agent)}
-                                                                                            sx={{
-                                                                                                fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
-                                                                                                px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                                py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                                minWidth: 80,
-                                                                                                height: 32
-                                                                                            }}
-                                                                                        >
-                                                                                            Chat
-                                                                                        </Button>
-                                                                                        {!agent.public_url ? (
-                                                                                            <Button
-                                                                                                variant="contained"
-                                                                                                color="secondary"
-                                                                                                onClick={() => deployChat(agent)}
-                                                                                                sx={{
-                                                                                                    fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
-                                                                                                    px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                                    py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                                    minWidth: 80,
-                                                                                                    height: 32
-                                                                                                }}
-                                                                                            >
-                                                                                                Deploy
-                                                                                            </Button>
-                                                                                        ) : (
-                                                                                            <Button
-                                                                                                variant="contained"
-                                                                                                color="error"
-                                                                                                onClick={() => revokeChat(agent)}
-                                                                                                sx={{
-                                                                                                    fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
-                                                                                                    px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                                    py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                                    minWidth: 80,
-                                                                                                    height: 32
-                                                                                                }}
-                                                                                            >
-                                                                                                Revoke
-                                                                                            </Button>
-                                                                                        )}
-                                                                                        <Button
-                                                                                            variant="contained"
-                                                                                            color="error"
-                                                                                            onClick={() => handleOpenDeleteDialog(agent)}
-                                                                                            sx={{
-                                                                                                fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
-                                                                                                px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                                py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                                minWidth: 80,
-                                                                                                height: 32
-                                                                                            }}
-                                                                                        >
-                                                                                            Delete
-                                                                                        </Button>
-                                                                                    </>
-                                                                                )}
-                                                                                {agent.alias_id && (
-                                                                                    <Button
-                                                                                        variant="contained"
-                                                                                        color="warning"
-                                                                                        onClick={() => handleOpenEditDialog(agent)}
-                                                                                        sx={{
-                                                                                            fontSize: deviceType === 'mobile' ? '0.8rem' : '0.8rem',
-                                                                                            px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                            py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                            minWidth: 80,
-                                                                                            height: 32
-                                                                                        }}
-                                                                                    >
-                                                                                        Edit
-                                                                                    </Button>
-                                                                                )}
-                                                                            </>
-                                                                        )}
-                                                                    </Box>
-                                                                )}
-                                                            </Box>
-                                                        </TableCell>
-                                                        {deviceType !== 'mobile' && (
-                                                            <TableCell sx={{
-                                                                fontSize: deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                                py: 1,
-                                                                verticalAlign: 'top',
-                                                                textAlign: 'center'
-                                                            }}>
-                                                                <Box sx={{
-                                                                    display: 'flex',
-                                                                    flexDirection: 'column',
-                                                                    gap: deviceType === 'tablet' ? 1.25 : 1.5,
-                                                                    alignItems: 'center'
-                                                                }}>
-                                                                    {loadingAgentId === agent.agent_id || loadingAgentId === 'new-agent' ? (
-                                                                        <CircularProgress size={24} />
-                                                                    ) : (
-                                                                        <>
-                                                                            {!agent.alias_id && agent.status === 'PREPARED' && (
-                                                                                <Button
-                                                                                    variant="contained"
-                                                                                    color="primary"
-                                                                                    onClick={() => createAlias(agent.agent_id, agent.name)}
-                                                                                    sx={{
-                                                                                        fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
-                                                                                        px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                                        py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                                        width: deviceType === 'tablet' ? 140 : 160
-                                                                                    }}
-                                                                                >
-                                                                                    Create Alias
-                                                                                </Button>
-                                                                            )}
-                                                                            {agent.agent_id && agent.alias_id && (
-                                                                                <>
-                                                                                    <Button
-                                                                                        variant="contained"
-                                                                                        color="primary"
-                                                                                        onClick={() => handleOpenChat(agent)}
-                                                                                        sx={{
-                                                                                            fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
-                                                                                            px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                                            py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                                            width: deviceType === 'tablet' ? 140 : 160
-                                                                                        }}
-                                                                                    >
-                                                                                        Chat
-                                                                                    </Button>
-                                                                                    {!agent.public_url ? (
-                                                                                        <Button
-                                                                                            variant="contained"
-                                                                                            color="secondary"
-                                                                                            onClick={() => deployChat(agent)}
-                                                                                            sx={{
-                                                                                                fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
-                                                                                                px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                                                py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                                                width: deviceType === 'tablet' ? 140 : 160
-                                                                                            }}
-                                                                                        >
-                                                                                            Deploy
-                                                                                        </Button>
-                                                                                    ) : (
-                                                                                        <Button
-                                                                                            variant="contained"
-                                                                                            color="error"
-                                                                                            onClick={() => revokeChat(agent)}
-                                                                                            sx={{
-                                                                                                fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
-                                                                                                px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                                                py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                                                width: deviceType === 'tablet' ? 140 : 160
-                                                                                            }}
-                                                                                        >
-                                                                                            Revoke
-                                                                                        </Button>
-                                                                                    )}
-                                                                                    <Button
-                                                                                        variant="contained"
-                                                                                        color="error"
-                                                                                        onClick={() => handleOpenDeleteDialog(agent)}
-                                                                                        sx={{
-                                                                                            fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
-                                                                                            px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                                            py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                                            width: deviceType === 'tablet' ? 140 : 160
-                                                                                        }}
-                                                                                    >
-                                                                                        Delete
-                                                                                    </Button>
-                                                                                </>
-                                                                            )}
-                                                                            {agent.alias_id && (
-                                                                                <Button
-                                                                                    variant="contained"
-                                                                                    color="warning"
-                                                                                    onClick={() => handleOpenEditDialog(agent)}
-                                                                                    sx={{
-                                                                                        fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
-                                                                                        px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                                        py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                                        width: deviceType === 'tablet' ? 140 : 160
-                                                                                    }}
-                                                                                >
-                                                                                    Edit
-                                                                                </Button>
-                                                                            )}
-                                                                        </>
-                                                                    )}
-                                                                </Box>
-                                                            </TableCell>
-                                                        )}
-                                                    </TableRow>
-                                                    {agent.public_url && (
-                                                        <TableRow>
-                                                            <TableCell colSpan={deviceType === 'mobile' ? 1 : 2} sx={{
-                                                                backgroundColor: '#f5f5f5',
-                                                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                                py: 1,
-                                                                wordBreak: 'break-word',
-                                                                textAlign: 'left'
-                                                            }}>
-                                                                <Typography variant="body2" sx={{
-                                                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                                    textAlign: 'left'
-                                                                }}>
-                                                                    <strong>Public link:</strong>{' '}
-                                                                    <a href={agent.public_url} target="_blank" rel="noopener noreferrer">
-                                                                        {agent.public_url}
-                                                                    </a>
-                                                                </Typography>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    )}
-                                                </React.Fragment>
-                                            ))
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={deviceType === 'mobile' ? 1 : 2} sx={{ textAlign: 'left' }}>
-                                                    No agents
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </Box>
-                        </Box>
+                        {pageContent(page)}
                     </>)}
+                    <Copyright />
 
                     <Dialog open={openAddDialog} onClose={handleCloseAddDialog} fullWidth
                             maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>

@@ -13,9 +13,10 @@ interface AppNavbarProps {
     deviceType: string;
     onSignOut: () => void;
     onToggleDrawer: () => void;
+    page: string;
 }
 
-const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDrawer }) => {
+const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDrawer, page }) => {
     return (
         <AppBar position="fixed" sx={{ width: '100%' }}>
             <Toolbar>
@@ -27,7 +28,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDr
                     fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
                     textAlign: 'left'
                 }}>
-                    My Agents
+                    {page}
                 </Typography>
                 <Button color="inherit" onClick={onSignOut}
                         startIcon={<LogoutIcon />}
