@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import axios from "axios";
-import {useCookies} from "react-cookie";
+import { useCookies } from "react-cookie";
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
@@ -23,7 +23,7 @@ interface AuthProps {
 const theme = createTheme();
 
 const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
-    const [cookies, setCookie, removeCookie] = useCookies();
+    const [cookies, setCookie, removeCookie] = useCookies(["authToken"]);
     const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -31,9 +31,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [rememberMe, setRememberMe] = useState(false);
     const [, setUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
-    const [emailConfirmationRequired, setEmailConfirmationRequired] =
-        useState(false);
+    const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [resendSuccess, setResendSuccess] = useState<string | null>(null);
 
     useEffect(() => {
         const storedToken = cookies["authToken"];
@@ -54,7 +54,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         } else {
             setIsLoading(false);
         }
-    }, [onAuthChange]);
+    }, [onAuthChange, cookies, removeCookie]);
 
     const validateToken = async (token: string): Promise<any> => {
         try {
@@ -70,6 +70,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
 
     const handleSignUp = async () => {
         setError(null);
+        setResendSuccess(null);
         if (!email.trim() || !password.trim() || !fullName.trim()) {
             setError("Please fill email, password, and full name");
             return;
@@ -99,19 +100,23 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 }
                 setUser(user);
                 if (token) {
-                    setCookie("authToken", token); // Always save token
+                    setCookie("authToken", token);
                 }
                 onAuthChange(user);
             } else {
                 setError("Sign Up has succeeded, but user was not found");
             }
-        } catch {
-            setError("Sign Up error. Please check data or try again later.");
+        } catch (err: any) {
+            setError(
+                err.response?.data?.message ||
+                "Sign Up error. Please check data or try again later."
+            );
         }
     };
 
     const handleSignIn = async () => {
         setError(null);
+        setResendSuccess(null);
         setEmailConfirmationRequired(false);
         if (!email.trim() || !password.trim()) {
             setError("Please fill email and password");
@@ -133,24 +138,53 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             const { user, token } = data;
             if (user && token) {
                 setUser(user);
-                setCookie("authToken", token); // Always save token
+                setCookie("authToken", token);
                 onAuthChange(user);
             } else {
                 setError("Incorrect server response");
             }
-        } catch {
-            setError("Sign In error. Please check data or try again later.");
+        } catch (err: any) {
+            const errorMessage =
+                err.response?.data?.message || "Sign In error. Please check data or try again later.";
+            if (errorMessage.includes("Email not confirmed")) {
+                setEmailConfirmationRequired(true);
+                setError("Email not confirmed. Please check your email.");
+            } else {
+                setError(errorMessage);
+            }
         }
     };
 
-
+    const handleResendVerificationEmail = async () => {
+        setError(null);
+        setResendSuccess(null);
+        if (!email.trim()) {
+            setError("Please enter an email to resend the verification link");
+            return;
+        }
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/resend-verification`,
+                { email },
+                { headers: { "Content-Type": "application/json" } }
+            );
+            setResendSuccess("Verification email sent to " + email);
+        } catch (err: any) {
+            setError(
+                err.response?.data?.message ||
+                "Error resending verification email. Please try again later."
+            );
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         authMode === "signin" ? handleSignIn() : handleSignUp();
     };
 
-    return isLoading ? <></> : (
+    return isLoading ? (
+        <></>
+    ) : (
         <ThemeProvider theme={theme}>
             <Container
                 component="main"
@@ -165,7 +199,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                     boxSizing: "border-box",
                 }}
             >
-                <CssBaseline/>
+                <CssBaseline />
                 <Box
                     sx={{
                         minHeight: "50vh",
@@ -180,22 +214,39 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                         boxSizing: "border-box",
                     }}
                 >
-                    <Typography component="h1" variant="h5" sx={{mb: 3}}>
+                    <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
                         {authMode === "signin" ? "Sign In" : "Sign Up"}
                     </Typography>
 
                     {error && (
-                        <Alert severity="error" sx={{mb: 2, width: "100%"}}>
+                        <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
                             {error}
                         </Alert>
                     )}
-                    {emailConfirmationRequired && (
-                        <Alert severity="info" sx={{mb: 2, width: "100%"}}>
-                            Please confirm your account via email, sent to {email}.
+                    {resendSuccess && (
+                        <Alert severity="success" sx={{ mb: 2, width: "100%" }}>
+                            {resendSuccess}
                         </Alert>
                     )}
+                    {emailConfirmationRequired && (
+                        <Box sx={{ mb: 2, width: "100%", textAlign: "center" }}>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                Didn't receive the email?{" "}
+                                <Link
+                                    href="#"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handleResendVerificationEmail();
+                                    }}
+                                    sx={{ textDecoration: "underline", color: "primary.main" }}
+                                >
+                                    Resend verification email
+                                </Link>
+                            </Typography>
+                        </Box>
+                    )}
 
-                    <Box component="form" onSubmit={handleSubmit} sx={{mt: 2, width: "100%"}}>
+                    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, width: "100%" }}>
                         {authMode === "signup" && (
                             <TextField
                                 margin="normal"
@@ -205,7 +256,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                 value={fullName}
                                 onChange={(e) => setFullName(e.target.value)}
                                 autoFocus
-                                sx={{mb: 2}}
+                                sx={{ mb: 2 }}
                             />
                         )}
                         <TextField
@@ -226,7 +277,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            sx={{mb: 2}}
+                            sx={{ mb: 2 }}
                         />
 
                         {authMode === "signin" && (
@@ -240,7 +291,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                     />
                                 }
                                 label="Remember me"
-                                sx={{mb: 2}}
+                                sx={{ mb: 2 }}
                             />
                         )}
 
@@ -263,8 +314,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                         setAuthMode(authMode === "signin" ? "signup" : "signin");
                                         setError(null);
                                         setEmailConfirmationRequired(false);
+                                        setResendSuccess(null);
                                     }}
-                                    sx={{textDecoration: "underline", color: "primary.main"}}
+                                    sx={{ textDecoration: "underline", color: "primary.main" }}
                                 >
                                     {authMode === "signin"
                                         ? "Don't have an account? Sign Up"

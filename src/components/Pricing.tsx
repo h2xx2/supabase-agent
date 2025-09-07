@@ -48,7 +48,7 @@ const tiers = [
 const Pricing: React.FC = () => {
     return (
         <Container
-            id="plans"
+            id="pricing"
             sx={{
                 pt: { xs: 4, sm: 12 },
                 pb: { xs: 8, sm: 16 },
@@ -73,12 +73,12 @@ const Pricing: React.FC = () => {
                 >
                     Pricing
                 </Typography>
-                <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                {/*<Typography variant="body1" sx={{ color: 'text.secondary' }}>
                     Quickly build an effective pricing table for your potential customers with
                     this layout. <br />
                     It&apos;s built with default Material UI components with little
                     customization.
-                </Typography>
+                </Typography>*/}
             </Box>
             <Grid
                 container
