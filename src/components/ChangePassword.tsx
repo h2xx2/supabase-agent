@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {Box, Button, Dialog, DialogActions, DialogTitle, DialogContent, TextField, Alert} from "@mui/material";
+import {Button, Dialog, DialogActions, DialogTitle, DialogContent, TextField, Alert} from "@mui/material";
 import axios from "axios";
 
 interface ChangePasswordProps {
     user: any,
-    setGlobalLoading: (state) => void
+    setGlobalLoading: (state: any) => void
 }
 
 async function handleSignIn(email, password) {
@@ -46,6 +46,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({user, setGlobalLoading})
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
         setError(null);
+        // @ts-expect-error
         const formData = new FormData(event.currentTarget);
         const {currentPassword, newPassword, confirmPassword} = Object.fromEntries((formData as any).entries());
         if (!currentPassword?.trim() || !newPassword?.trim() || !confirmPassword?.trim()) {
