@@ -6,45 +6,40 @@ import ChangePassword from "./ChangePassword";
 import Pricing from "./Pricing";
 
 interface SettingsProps {
+    callCount: any,
     deviceType: string,
     user: any,
     setGlobalLoading: (state) => void
 }
 
-const Settings: React.FC<SettingsProps> = ({deviceType,user, setGlobalLoading}) => {
-    const [firstName, setFirstName] = React.useState<string>(user.email);
-    const [lastName, setLastName] = React.useState<string>(user.email);
-    const [username, setUsername] = React.useState<string>(user.email);
-
+const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGlobalLoading}) => {
     const settings = [
         {
             name: 'firstName',
             label: "First Name",
-            value: firstName,
-            onChange: (e) => {setFirstName(e.target.value)}
+            defaultValue: user.email,
         },
         {
             name: 'lastName',
             label: "Last Name",
-            value: lastName,
-            onChange: (e) => {setLastName(e.target.value)}
+            defaultValue: user.email,
         },
         {
             name: 'username',
             label: "Username",
-            value: username,
-            onChange: (e) => {setUsername(e.target.value)}
+            defaultValue: user.email,
+            readOnly: true
         }
     ];
 
     const statisticData: StatCardProps[] = [
         {
             title: 'Messages per month',
-            value: 120,
+            value: callCount.month,
         },
         {
             title: 'Messages per year',
-            value: 560,
+            value: callCount.year,
         },
     ];
 
@@ -63,9 +58,6 @@ const Settings: React.FC<SettingsProps> = ({deviceType,user, setGlobalLoading}) 
         <Box
             sx={{
                 flexGrow: 1,
-                // m: '0 2',
-                // p: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4,
-                // width: deviceType === 'mobile' ? '100%' : '75%',
             }}
 
         >
@@ -86,7 +78,7 @@ const Settings: React.FC<SettingsProps> = ({deviceType,user, setGlobalLoading}) 
                         form='save-settings-form'
                     >Save</Button>
                 </Box>
-                {settings.map(({name, label, value, onChange}, index) => (
+                {settings.map(({name, label, defaultValue, readOnly}, index) => (
                     <Box key={index} sx={{
                         display: 'flex',
                         ...(deviceType === 'desktop' ? {
@@ -103,7 +95,7 @@ const Settings: React.FC<SettingsProps> = ({deviceType,user, setGlobalLoading}) 
                         }}>
                             <Typography
                                 sx={{
-                                    fontWeight: 'bold',
+                                    color: 'text.secondary',
                                     fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
                                 }}
                             >
@@ -121,8 +113,14 @@ const Settings: React.FC<SettingsProps> = ({deviceType,user, setGlobalLoading}) 
                                     width: deviceType === 'desktop' ? '70%' : '100%',
                                 }}
                                 name={name}
-                                value={value}
-                                onChange={onChange}
+                                defaultValue={defaultValue}
+                                // disabled={disabled}
+                                slotProps={readOnly ? {
+                                        input: {
+                                            readOnly: true,
+                                        },
+                                    } : {}
+                                }
                             />
                         </Box>
                     </Box>
@@ -145,7 +143,7 @@ const Settings: React.FC<SettingsProps> = ({deviceType,user, setGlobalLoading}) 
                 }}>
                     <Typography
                         sx={{
-                            fontWeight: 'bold',
+                            color: 'text.secondary',
                             fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
                         }}
                     >

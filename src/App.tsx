@@ -1331,7 +1331,16 @@ const App: React.FC = () => {
                     </Box>
                 </Box>
             );
-            case Page.SETTINGS: return <Settings {...{ deviceType, user, setGlobalLoading }} />
+            case Page.SETTINGS: return <Settings {...{
+                callCount: agents.reduce((callCount, agent) => {
+                    callCount.month += agent.call_count || 0;
+                    callCount.year += agent.call_count_year || 0;
+                    return callCount;
+                }, {month: 0, year: 0}),
+                deviceType,
+                user,
+                setGlobalLoading
+            }} />
             default: return <></>
         }
     }
@@ -1399,7 +1408,10 @@ const App: React.FC = () => {
                             }}
                         >
                             <List dense>
-                                <ListItemButton onClick={handleOpenAddDialog}>
+                                <ListItemButton onClick={() => {
+                                    toggleDrawer();
+                                    handleOpenAddDialog();
+                                }}>
                                     <ListItemIcon>
                                         <AddIcon />
                                     </ListItemIcon>
@@ -1408,14 +1420,20 @@ const App: React.FC = () => {
 
                                 <Divider />
 
-                                <ListItemButton onClick={() => setPage(Page.AGENTS)}>
+                                <ListItemButton onClick={() => {
+                                    toggleDrawer();
+                                    setPage(Page.AGENTS);
+                                }}>
                                     <ListItemIcon>
                                         <ViewListIcon />
                                     </ListItemIcon>
                                     <ListItemText primary="Agents" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
-                                <ListItemButton onClick={() => setPage(Page.SETTINGS)}>
+                                <ListItemButton onClick={() => {
+                                    toggleDrawer();
+                                    setPage(Page.SETTINGS);
+                                }}>
                                     <ListItemIcon>
                                         <SettingsIcon />
                                     </ListItemIcon>

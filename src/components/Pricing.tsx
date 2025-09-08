@@ -22,6 +22,7 @@ const tiers = [
         buttonText: 'Your current plan',
         buttonVariant: 'outlined',
         buttonColor: 'primary',
+        buttonDisabled: true,
     },
     {
         title: 'Personal',
@@ -32,6 +33,7 @@ const tiers = [
         buttonText: 'Contact Us',
         buttonVariant: 'contained',
         buttonColor: 'secondary',
+        buttonDisabled: false,
     },
     {
         title: 'Custom',
@@ -42,10 +44,16 @@ const tiers = [
         buttonText: 'Contact us',
         buttonVariant: 'outlined',
         buttonColor: 'primary',
+        buttonDisabled: false,
     },
 ];
 
 const Pricing: React.FC = () => {
+
+    const contactUs = () => {
+        console.log("contactUs");
+    }
+
     return (
         <Container
             id="pricing"
@@ -184,6 +192,8 @@ const Pricing: React.FC = () => {
                                     fullWidth
                                     variant={tier.buttonVariant as 'outlined' | 'contained'}
                                     color={tier.buttonColor as 'primary' | 'secondary'}
+                                    disabled={tier.buttonDisabled}
+                                    onClick={contactUs}
                                 >
                                     {tier.buttonText}
                                 </Button>
