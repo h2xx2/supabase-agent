@@ -27,7 +27,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [fullName, setFullName] = useState("");
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
     const [, setUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
@@ -71,14 +72,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const handleSignUp = async () => {
         setError(null);
         setResendSuccess(null);
-        if (!email.trim() || !password.trim() || !fullName.trim()) {
-            setError("Please fill email, password, and full name");
+        if (!email.trim() || !password.trim() || !firstName.trim() || !lastName.trim()) {
+            setError("Please fill email, password, first name and last name");
             return;
         }
         try {
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/signup`,
-                { email, password, fullName },
+                { email, password, first_name: firstName, last_name: lastName },
                 { headers: { "Content-Type": "application/json" } }
             );
 
@@ -252,10 +253,21 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                 margin="normal"
                                 required
                                 fullWidth
-                                label="Full Name"
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
+                                label="First Name"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
                                 autoFocus
+                                sx={{ mb: 2 }}
+                            />
+                        )}
+                        {authMode === "signup" && (
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                label="Last Name"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
                                 sx={{ mb: 2 }}
                             />
                         )}

@@ -17,12 +17,12 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
         {
             name: 'firstName',
             label: "First Name",
-            defaultValue: user.email,
+            defaultValue: user.first_name || '',
         },
         {
             name: 'lastName',
             label: "Last Name",
-            defaultValue: user.email,
+            defaultValue: user.last_name || '',
         },
         {
             name: 'username',
