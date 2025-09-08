@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     Button,
     CssBaseline,
@@ -27,13 +27,21 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [fullName, setFullName] = useState("");
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
     const [, setUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [resendSuccess, setResendSuccess] = useState<string | null>(null);
+
+    // cooldown state: seconds remaining (0 = ready)
+    const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
+    const cooldownRef = useRef<number | null>(null);
+
+    // Для отладки: показываем "сырые" данные ответа (можешь убрать)
+    const [, setLastErrorRaw] = useState<any>(null);
 
     useEffect(() => {
         const storedToken = cookies["authToken"];
@@ -54,7 +62,42 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         } else {
             setIsLoading(false);
         }
+
+        // cleanup on unmount
+        return () => {
+            if (cooldownRef.current) {
+                clearInterval(cooldownRef.current);
+            }
+        };
     }, [onAuthChange, cookies, removeCookie]);
+
+    // управляем интервалом отсчёта
+    useEffect(() => {
+        if (cooldownSeconds > 0 && !cooldownRef.current) {
+            cooldownRef.current = window.setInterval(() => {
+                setCooldownSeconds((s) => {
+                    if (s <= 1) {
+                        if (cooldownRef.current) {
+                            clearInterval(cooldownRef.current);
+                            cooldownRef.current = null;
+                        }
+                        return 0;
+                    }
+                    return s - 1;
+                });
+            }, 1000);
+        }
+
+        // если cooldownSeconds сброшен вручную, очистим интервал
+        if (cooldownSeconds === 0 && cooldownRef.current) {
+            clearInterval(cooldownRef.current);
+            cooldownRef.current = null;
+        }
+
+        return () => {
+            // не очищаем интервал каждый рендер, оставляем в cleanup выше
+        };
+    }, [cooldownSeconds]);
 
     const validateToken = async (token: string): Promise<any> => {
         try {
@@ -68,34 +111,103 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         }
     };
 
+    const extractErrorMessage = (err: any): { message: string; raw: any } => {
+        try {
+            const rawResponse = err?.response ?? err;
+            console.log("DEBUG: full error object:", err);
+            setLastErrorRaw(rawResponse?.data ?? rawResponse);
+
+            let serverData: any = rawResponse?.data;
+
+            if (typeof serverData === "string") {
+                try {
+                    serverData = JSON.parse(serverData);
+                } catch {
+                    // оставляем строку
+                }
+            }
+
+            if (serverData && typeof serverData === "object" && typeof serverData.body === "string") {
+                try {
+                    const parsedBody = JSON.parse(serverData.body);
+                    serverData = { ...serverData, ...parsedBody };
+                } catch {
+                    // игнорируем
+                }
+            }
+
+            const msg =
+                (serverData && (serverData.message || serverData.error)) ||
+                err?.message ||
+                "Unexpected error. Please try again later.";
+
+            return { message: String(msg), raw: serverData ?? rawResponse };
+        } catch (ex) {
+            console.error("DEBUG: extractErrorMessage failed", ex);
+            return { message: err?.message ?? "Unknown error", raw: err };
+        }
+    };
+
+    const rawIndicatesEmailNotConfirmed = (raw: any, message: string) => {
+        try {
+            if (typeof message === "string" && message.includes("Email not confirmed")) return true;
+            const rawString = typeof raw === "string" ? raw : JSON.stringify(raw || {});
+            return rawString.includes("Email not confirmed");
+        } catch {
+            return false;
+        }
+    };
+
+    const startCooldown = (seconds = 60) => {
+        // сбрасываем существующие
+        if (cooldownRef.current) {
+            clearInterval(cooldownRef.current);
+            cooldownRef.current = null;
+        }
+        setCooldownSeconds(seconds);
+        // интервал создаётся эффектом выше
+    };
+
     const handleSignUp = async () => {
         setError(null);
         setResendSuccess(null);
-        if (!email.trim() || !password.trim() || !fullName.trim()) {
-            setError("Please fill email, password, and full name");
+        setLastErrorRaw(null);
+        if (!email.trim() || !password.trim() || !firstName.trim() || !lastName.trim()) {
+            setError("Please fill email, password, first name, and last name");
             return;
         }
         try {
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/signup`,
-                { email, password, fullName },
+                { email, password, firstName, lastName },
                 { headers: { "Content-Type": "application/json" } }
             );
 
             const outerData = response.data;
             const parsedBody =
-                typeof outerData.body === "string"
+                typeof outerData?.body === "string"
                     ? JSON.parse(outerData.body)
-                    : outerData.body;
+                    : outerData.body ?? outerData;
 
-            const { user, token } = parsedBody;
+            // Если сервер вернул ошибку внутри успешного ответа — отработаем её
+            if (parsedBody && (parsedBody.error || parsedBody.message)) {
+                setLastErrorRaw(parsedBody);
+                if (rawIndicatesEmailNotConfirmed(parsedBody, parsedBody.error || parsedBody.message)) {
+                    setEmailConfirmationRequired(true);
+                    setError("Email not confirmed. Please check your email.");
+                    return;
+                } else {
+                    setError(parsedBody.error || parsedBody.message || "Sign Up error");
+                    return;
+                }
+            }
+
+            const { user, token, requires_email_confirmation } = parsedBody || {};
 
             if (user) {
-                if (parsedBody.requires_email_confirmation || !token) {
+                if (requires_email_confirmation || !token) {
                     setEmailConfirmationRequired(true);
-                    setError(
-                        "Please confirm your account via email. Sign in after confirmation"
-                    );
+                    setError("Please confirm your account via email. Sign in after confirmation");
                     return;
                 }
                 setUser(user);
@@ -105,23 +217,30 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 onAuthChange(user);
             } else {
                 setError("Sign Up has succeeded, but user was not found");
+                setLastErrorRaw(parsedBody);
             }
         } catch (err: any) {
-            setError(
-                err.response?.data?.message ||
-                "Sign Up error. Please check data or try again later."
-            );
+            const { message, raw } = extractErrorMessage(err);
+            if (rawIndicatesEmailNotConfirmed(raw, message)) {
+                setEmailConfirmationRequired(true);
+                setError("Email not confirmed. Please check your email.");
+            } else {
+                setError(message);
+            }
         }
     };
 
     const handleSignIn = async () => {
         setError(null);
         setResendSuccess(null);
+        setLastErrorRaw(null);
         setEmailConfirmationRequired(false);
+
         if (!email.trim() || !password.trim()) {
             setError("Please fill email and password");
             return;
         }
+
         try {
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/signin`,
@@ -131,26 +250,40 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
 
             const outerData = response.data;
             const data =
-                typeof outerData.body === "string"
+                typeof outerData?.body === "string"
                     ? JSON.parse(outerData.body)
-                    : outerData.body;
+                    : outerData.body ?? outerData;
 
-            const { user, token } = data;
+            // Если сервер поместил ошибку внутрь ответа (200) — отработаем её
+            if (data && (data.error || data.message)) {
+                setLastErrorRaw(data);
+                if (rawIndicatesEmailNotConfirmed(data, data.error || data.message)) {
+                    setEmailConfirmationRequired(true);
+                    setError("Email not confirmed. Please check your email.");
+                    return;
+                } else {
+                    setError(data.error || data.message || "Incorrect server response");
+                    return;
+                }
+            }
+
+            const { user, token } = data || {};
             if (user && token) {
                 setUser(user);
                 setCookie("authToken", token);
                 onAuthChange(user);
             } else {
+                console.warn("DEBUG: signin returned without token or user:", data);
                 setError("Incorrect server response");
+                setLastErrorRaw(data);
             }
         } catch (err: any) {
-            const errorMessage =
-                err.response?.data?.message || "Sign In error. Please check data or try again later.";
-            if (errorMessage.includes("Email not confirmed")) {
+            const { message, raw } = extractErrorMessage(err);
+            if (rawIndicatesEmailNotConfirmed(raw, message)) {
                 setEmailConfirmationRequired(true);
                 setError("Email not confirmed. Please check your email.");
             } else {
-                setError(errorMessage);
+                setError(message);
             }
         }
     };
@@ -158,10 +291,16 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const handleResendVerificationEmail = async () => {
         setError(null);
         setResendSuccess(null);
+        setLastErrorRaw(null);
+
         if (!email.trim()) {
             setError("Please enter an email to resend the verification link");
             return;
         }
+
+        // Блокируем сразу при клике — но если запрос упадёт, откатим (см. catch)
+        startCooldown(60);
+
         try {
             await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/resend-verification`,
@@ -170,10 +309,16 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             );
             setResendSuccess("Verification email sent to " + email);
         } catch (err: any) {
-            setError(
-                err.response?.data?.message ||
-                "Error resending verification email. Please try again later."
-            );
+            // если ошибка — откатываем cooldown, показываем ошибку
+            if (cooldownRef.current) {
+                clearInterval(cooldownRef.current);
+                cooldownRef.current = null;
+            }
+            setCooldownSeconds(0);
+
+            const { message, raw } = extractErrorMessage(err);
+            setError(message);
+            setLastErrorRaw(raw);
         }
     };
 
@@ -232,32 +377,52 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                         <Box sx={{ mb: 2, width: "100%", textAlign: "center" }}>
                             <Typography variant="body2" sx={{ mb: 1 }}>
                                 Didn't receive the email?{" "}
-                                <Link
-                                    href="#"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        handleResendVerificationEmail();
-                                    }}
-                                    sx={{ textDecoration: "underline", color: "primary.main" }}
-                                >
-                                    Resend verification email
-                                </Link>
+                                {cooldownSeconds > 0 ? (
+                                    <Typography
+                                        component="span"
+                                        sx={{ color: "text.disabled", fontWeight: 500 }}
+                                    >
+                                        Resend verification email ({cooldownSeconds}s)
+                                    </Typography>
+                                ) : (
+                                    <Link
+                                        href="#"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleResendVerificationEmail();
+                                        }}
+                                        sx={{ textDecoration: "underline", color: "primary.main" }}
+                                    >
+                                        Resend verification email
+                                    </Link>
+                                )}
                             </Typography>
                         </Box>
                     )}
 
                     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, width: "100%" }}>
                         {authMode === "signup" && (
-                            <TextField
-                                margin="normal"
-                                required
-                                fullWidth
-                                label="Full Name"
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                autoFocus
-                                sx={{ mb: 2 }}
-                            />
+                            <>
+                                <TextField
+                                    margin="normal"
+                                    required
+                                    fullWidth
+                                    label="First Name"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    autoFocus
+                                    sx={{ mb: 2 }}
+                                />
+                                <TextField
+                                    margin="normal"
+                                    required
+                                    fullWidth
+                                    label="Last Name"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    sx={{ mb: 2 }}
+                                />
+                            </>
                         )}
                         <TextField
                             margin="normal"
@@ -295,12 +460,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                             />
                         )}
 
-                        <Button
-                            type="submit"
-                            fullWidth
-                            variant="contained"
-                            sx={{ mt: 3, mb: 2 }}
-                        >
+                        <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
                             {authMode === "signin" ? "Sign In" : "Sign Up"}
                         </Button>
 
@@ -315,6 +475,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                         setError(null);
                                         setEmailConfirmationRequired(false);
                                         setResendSuccess(null);
+                                        setLastErrorRaw(null);
                                     }}
                                     sx={{ textDecoration: "underline", color: "primary.main" }}
                                 >

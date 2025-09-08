@@ -2,23 +2,24 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
-import Chip from '@mui/material/Chip';
 import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import TextField from '@mui/material/TextField';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import axios from 'axios';
 
 const tiers = [
     {
         title: 'Free',
-        // price: '0',
-        description: [
-            '500 requests per month'
-        ],
+        description: ['500 requests per month'],
         buttonText: 'Your current plan',
         buttonVariant: 'outlined',
         buttonColor: 'primary',
@@ -26,10 +27,7 @@ const tiers = [
     },
     {
         title: 'Personal',
-        // price: '15',
-        description: [
-            'personal offer',
-        ],
+        description: ['personal offer'],
         buttonText: 'Contact Us',
         buttonVariant: 'contained',
         buttonColor: 'secondary',
@@ -37,10 +35,7 @@ const tiers = [
     },
     {
         title: 'Custom',
-        // price: '30',
-        description: [
-            'custom requests',
-        ],
+        description: ['custom requests'],
         buttonText: 'Contact us',
         buttonVariant: 'outlined',
         buttonColor: 'primary',
@@ -48,11 +43,61 @@ const tiers = [
     },
 ];
 
-const Pricing: React.FC = () => {
+interface User {
+    id: string;
+}
 
-    const contactUs = () => {
-        console.log("contactUs");
-    }
+const Pricing: React.FC = () => {
+    const [open, setOpen] = React.useState(false);
+    const [selectedPlan, setSelectedPlan] = React.useState('');
+    const [userEmail, setUserEmail] = React.useState('');
+    const [desiredLimits, setDesiredLimits] = React.useState('');
+    const [comments, setComments] = React.useState('');
+    const [errorMessage, setErrorMessage] = React.useState('');
+    const user: User | null = { id: 'user-id-placeholder' }; // Replace with actual user context
+    const getAuthToken = (): string => 'token-placeholder'; // Replace with actual token retrieval
+
+    const handleOpen = (plan: string) => {
+        setSelectedPlan(plan);
+        setOpen(true);
+    };
+
+    const handleClose = () => {
+        setOpen(false);
+        setUserEmail('');
+        setDesiredLimits('');
+        setComments('');
+        setErrorMessage('');
+    };
+
+    const handleRequestUpgrade = async () => {
+        try {
+            const token = getAuthToken();
+            const currentDate = new Date().toISOString().split('T')[0];
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/contact-us`,
+                {
+                    user_id: user?.id,
+                    email: userEmail,
+                    desired_plan: selectedPlan,
+                    desired_limits: desiredLimits,
+                    reason_comments: comments,
+                    current_account_status: tiers[0].title,
+                    request_date: currentDate,
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            console.log('Request sent successfully:', response.data);
+            handleClose();
+        } catch (error: any) {
+            console.error('Error sending upgrade request:', error);
+            setErrorMessage(
+                error.message === 'Токен авторизации отсутствует в куки'
+                    ? 'Пожалуйста, войдите в систему'
+                    : 'Не удалось отправить запрос на обновление'
+            );
+        }
+    };
 
     return (
         <Container
@@ -81,12 +126,6 @@ const Pricing: React.FC = () => {
                 >
                     Pricing
                 </Typography>
-                {/*<Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                    Quickly build an effective pricing table for your potential customers with
-                    this layout. <br />
-                    It&apos;s built with default Material UI components with little
-                    customization.
-                </Typography>*/}
             </Box>
             <Grid
                 container
@@ -139,24 +178,6 @@ const Pricing: React.FC = () => {
                                         {tier.title}
                                     </Typography>
                                 </Box>
-                                {/*<Box
-                                    sx={[
-                                        {
-                                            display: 'flex',
-                                            alignItems: 'baseline',
-                                        },
-                                        tier.title === 'Personal'
-                                            ? { color: 'grey.50' }
-                                            : { color: null },
-                                    ]}
-                                >
-                                    <Typography component="h3" variant="h2">
-                                        ${tier.price}
-                                    </Typography>
-                                    <Typography component="h3" variant="h6">
-                                        &nbsp; per month
-                                    </Typography>
-                                </Box>*/}
                                 <Divider sx={{ my: 2, opacity: 0.8, borderColor: 'divider' }} />
                                 {tier.description.map((line) => (
                                     <Box
@@ -193,7 +214,7 @@ const Pricing: React.FC = () => {
                                     variant={tier.buttonVariant as 'outlined' | 'contained'}
                                     color={tier.buttonColor as 'primary' | 'secondary'}
                                     disabled={tier.buttonDisabled}
-                                    onClick={contactUs}
+                                    onClick={() => handleOpen(tier.title)}
                                 >
                                     {tier.buttonText}
                                 </Button>
@@ -202,6 +223,56 @@ const Pricing: React.FC = () => {
                     </Grid>
                 ))}
             </Grid>
+            <Dialog open={open} onClose={handleClose}>
+                <DialogTitle>Upgrade to {selectedPlan}</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" gutterBottom>
+                        You are requesting an upgrade to the {selectedPlan} plan. Please provide the
+                        following details to proceed with your request.
+                    </Typography>
+                    {errorMessage && (
+                        <Typography color="error" variant="body2" gutterBottom>
+                            {errorMessage}
+                        </Typography>
+                    )}
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Your Email"
+                        type="email"
+                        fullWidth
+                        variant="outlined"
+                        value={userEmail}
+                        onChange={(e) => setUserEmail(e.target.value)}
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Desired Limits"
+                        type="text"
+                        fullWidth
+                        variant="outlined"
+                        value={desiredLimits}
+                        onChange={(e) => setDesiredLimits(e.target.value)}
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Reason/Comments"
+                        type="text"
+                        fullWidth
+                        variant="outlined"
+                        multiline
+                        rows={4}
+                        value={comments}
+                        onChange={(e) => setComments(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>Cancel</Button>
+                    <Button onClick={handleRequestUpgrade} variant="contained">
+                        Request Upgrade
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 }

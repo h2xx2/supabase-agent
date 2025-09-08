@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {Box, Button, Grid, TextField, Typography} from "@mui/material";
 import StatCard from "./StatCard";
+// @ts-ignore
 import StatCardProps from "./StatCard";
 import ChangePassword from "./ChangePassword";
 import Pricing from "./Pricing";
@@ -9,7 +10,7 @@ interface SettingsProps {
     callCount: any,
     deviceType: string,
     user: any,
-    setGlobalLoading: (state) => void
+    setGlobalLoading: (state: any) => void
 }
 
 const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGlobalLoading}) => {
@@ -32,6 +33,7 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
         }
     ];
 
+    // @ts-ignore
     const statisticData: StatCardProps[] = [
         {
             title: 'Messages per month',
@@ -46,6 +48,7 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
     const save = async (event: React.FormEvent) => {
         event.preventDefault();
         console.log('save settings', user);
+        // @ts-expect-error
         const formData = new FormData(event.currentTarget);
         const formJson = Object.fromEntries((formData as any).entries());
         console.log("save: formJson -", formJson);

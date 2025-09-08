@@ -1,12 +1,12 @@
 import * as React from 'react';
-import {Box, Button, Dialog, DialogActions, DialogTitle, DialogContent, TextField} from "@mui/material";
+import {Button, Dialog, DialogActions, DialogTitle, DialogContent, TextField} from "@mui/material";
 
 interface ChangePasswordProps {
     user: any,
-    setGlobalLoading: (state) => void
+    setGlobalLoading: (state: any) => void
 }
 
-const ChangePassword: React.FC<ChangePasswordProps> = ({user, setGlobalLoading}) => {
+const ChangePassword: React.FC<ChangePasswordProps> = ({ setGlobalLoading}) => {
     const [open, setOpen] = React.useState(false);
 
     const handleClickOpen = () => {
@@ -19,6 +19,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({user, setGlobalLoading})
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        // @ts-expect-error
         const formData = new FormData(event.currentTarget);
         const formJson = Object.fromEntries((formData as any).entries());
         console.log("handleSubmit: formJson -", formJson);
