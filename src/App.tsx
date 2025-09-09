@@ -1392,6 +1392,7 @@ const App: React.FC = () => {
         }
     }
 
+    // @ts-ignore
     return (
         <>
             <GlobalStyles
@@ -2099,6 +2100,17 @@ const App: React.FC = () => {
                         </>
                     )}
                 </Container>
+                {user && (
+                    <ChatWidget
+                        agents={agents.map(a => ({ id: a.id, name: a.name, agent_id: a.agent_id, alias_id: a.alias_id, public_url: a.public_url }))}
+                        onOpenChat={(agent) => {
+                            // найдем полного агента по id и вызовем существующий handleOpenChat
+                            const full = agents.find(x => x.id === agent.id);
+                            if (full) handleOpenChat(full);
+                        }}
+                        openPublicUrl={true} // опция — покажет иконку для открытия public_url (если он есть)
+                    />
+                )}
             </Box>
         </>
     );
