@@ -1,7 +1,8 @@
 import * as React from 'react';
-import {Box, Button, Grid, TextField, Typography} from "@mui/material";
+import {Alert, Box, Button, Grid, TextField, Typography} from "@mui/material";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import StatCard from "./StatCard";
-// @ts-ignore
 import StatCardProps from "./StatCard";
 import ChangePassword from "./ChangePassword";
 import Pricing from "./Pricing";
@@ -14,16 +15,23 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGlobalLoading}) => {
+    const [error, setError] = React.useState<string | null>(null);
+    const [dateOfBirth, setDateOfBirth] = React.useState<string | null>(user.date_of_birth || null);
+
     const settings = [
         {
-            name: 'firstName',
+            name: 'first_name',
             label: "First Name",
             defaultValue: user.first_name || '',
         },
         {
-            name: 'lastName',
+            name: 'last_name',
             label: "Last Name",
             defaultValue: user.last_name || '',
+        },
+        {
+            name: 'date_of_birth',
+            label: "Date of Birth (optional)",
         },
         {
             name: 'username',
@@ -33,7 +41,6 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
         }
     ];
 
-    // @ts-ignore
     const statisticData: StatCardProps[] = [
         {
             title: 'Messages per month',
@@ -45,14 +52,28 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
         },
     ];
 
+    const onChangeDate = (date: Date) => {
+        setDateOfBirth(
+            !!date ? date.toISOString().split('T')[0] : date
+        )
+    }
+
     const save = async (event: React.FormEvent) => {
         event.preventDefault();
-        console.log('save settings', user);
-        // @ts-expect-error
+        setError(null);
         const formData = new FormData(event.currentTarget);
-        const formJson = Object.fromEntries((formData as any).entries());
-        console.log("save: formJson -", formJson);
+        const {first_name, last_name} = Object.fromEntries((formData as any).entries());
+        if (!first_name?.trim() || !last_name?.trim()) {
+            setError("Please fill first name and last name");
+            return;
+        }
         setGlobalLoading(true);
+        const data = {
+            first_name,
+            last_name,
+            date_of_birth: dateOfBirth
+        };
+        // console.log("save: data -", data);
         await new Promise((resolve) => setTimeout(resolve, 1000));
         setGlobalLoading(false);
     }
@@ -64,6 +85,11 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
             }}
 
         >
+            {error && (
+                <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
+                    {error}
+                </Alert>
+            )}
             <form onSubmit={save}
                   id="save-settings-form"
                   noValidate
@@ -109,22 +135,40 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
                             width: deviceType === 'desktop' ? '50%' : '100%',
                             textAlign: deviceType === 'desktop' ? 'right' : 'center'
                         }}>
-                            <TextField
-                                variant="standard"
-                                sx={{
-                                    mb: 2,
-                                    width: deviceType === 'desktop' ? '70%' : '100%',
-                                }}
-                                name={name}
-                                defaultValue={defaultValue}
-                                // disabled={disabled}
-                                slotProps={readOnly ? {
-                                        input: {
-                                            readOnly: true,
-                                        },
-                                    } : {}
-                                }
-                            />
+                            {name.includes('date') ? (
+                                <DatePicker
+                                    selected={dateOfBirth}
+                                    onChange={onChangeDate}
+                                    dateFormat="yyyy-MM-dd"
+                                    customInput={
+                                        <TextField
+                                            variant="standard"
+                                            name={name}
+                                            sx={{
+                                                mb: 2,
+                                                width: deviceType === 'desktop' ? '70%' : '100%',
+                                            }}
+                                        />
+                                    }
+                                />
+                            ) : (
+                                <TextField
+                                    variant="standard"
+                                    sx={{
+                                        mb: 2,
+                                        width: deviceType === 'desktop' ? '70%' : '100%',
+                                    }}
+                                    name={name}
+                                    defaultValue={defaultValue}
+                                    slotProps={
+                                        readOnly ? {
+                                            input: {
+                                                readOnly: true,
+                                            },
+                                        } : {}
+                                    }
+                                />
+                            )}
                         </Box>
                     </Box>
                 ))}
