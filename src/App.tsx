@@ -50,6 +50,9 @@ import axios from 'axios';
 import AppNavbar from './components/AppNavbar';
 import Settings from './components/Settings';
 import Copyright from './components/Copyright';
+import PrivacyPolicy from "./components/PrivacyPolicy.tsx";
+// @ts-ignore
+import ChatWidget from "./components/ChatWidget.tsx";
 
 interface Agent {
     id: string;
@@ -1380,173 +1383,12 @@ const App: React.FC = () => {
                 user,
                 setGlobalLoading
             }} />
-            default: return <></>
             case Page.PRIVACY_POLICY:
                 return (
-                    <Box
-                        sx={{
-                            mt: deviceType === 'mobile' ? 2 : deviceType === 'tablet' ? 3 : 4,
-                            width: '100%',
-                            overflowX: 'hidden',
-                            textAlign: 'left',
-                        }}
-                    >
-                        <Typography
-                            variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
-                            sx={{ mb: 2 }}
-                        >
-                            Политика конфиденциальности
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 1 }}>
-                            <strong>Сервис:</strong> youagent.me
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 1 }}>
-                            <strong>Провайдер:</strong> Telemetry Balkan doo, Belgrade
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 1 }}>
-                            <strong>Адрес:</strong> 11118, Cara Nikolaja II, 11, Belgrade, Serbia
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 3 }}>
-                            <strong>Последнее обновление:</strong> 4 сентября 2025
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            1. Введение
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            Настоящая Политика конфиденциальности объясняет, как Telemetry Balkan doo, Belgrade («мы», «нас», «наш») собирает, использует и защищает ваши персональные данные при использовании сервиса youagent.me («Сервис»). Используя Сервис, вы соглашаетесь с настоящей Политикой конфиденциальности.
-                            Мы стремимся защищать вашу конфиденциальность и ответственно обращаться с вашей информацией.
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            2. Данные, которые мы собираем
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 1 }}>
-                            <strong>a. Информация, предоставленная вами</strong>
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 1, pl: 2 }}>
-                            - Данные учетной записи (например, имя, адрес электронной почты, пароль)<br />
-                            - Содержимое и инструкции, введенные при настройке AI-агентов<br />
-                            - Платежная информация (при необходимости)<br />
-                            - Коммуникации с нами (например, запросы в поддержку, отзывы)
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 1 }}>
-                            <strong>b. Автоматически собираемая информация</strong>
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 1, pl: 2 }}>
-                            - Данные об устройстве (например, IP-адрес, тип браузера, операционная система)<br />
-                            - Данные об использовании (например, посещенные страницы, взаимодействие с AI-агентами)<br />
-                            - Файлы cookie и аналогичные технологии для функциональности и аналитики
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            <strong>c. Данные, обрабатываемые AI-агентами</strong>
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2, pl: 2 }}>
-                            - Текстовые входные данные от вас или ваших конечных пользователей<br />
-                            - Данные, обработанные через дополнительные функции, такие как отправка электронной почты, HTTP-запросы или поиск в базе знаний
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            3. Как мы используем ваши данные
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            Мы используем ваши данные для:<br />
-                            - Предоставления, поддержки и улучшения Сервиса<br />
-                            - Настройки и работы AI-агентов<br />
-                            - Общения с вами по вопросам вашей учетной записи или Сервиса<br />
-                            - Анализа и мониторинга производительности, устранения неполадок<br />
-                            - Соблюдения юридических требований и обеспечения соблюдения наших Условий использования<br />
-                            Мы не продаем и не сдаем в аренду ваши данные третьим лицам.
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            4. Правовые основания для обработки данных
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            Мы обрабатываем ваши данные на основании:<br />
-                            - Предоставления и работы запрашиваемого вами Сервиса<br />
-                            - Нашего законного интереса в улучшении и обеспечении безопасности Сервиса<br />
-                            - Выполнения юридических и договорных обязательств<br />
-                            - Вашего согласия на дополнительные функции (например, файлы cookie или маркетинг)
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            5. Передача данных
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            Мы можем передавать ваши данные только в случае необходимости:<br />
-                            - Доверенным поставщикам услуг, которые помогают нам предоставлять Сервис<br />
-                            - Для юридических целей, например, для соблюдения судебного приказа или расследования<br />
-                            - В связи с деловыми операциями, такими как слияние или приобретение<br />
-                            Все третьи стороны, обрабатывающие ваши данные, обязаны соблюдать строгие обязательства по конфиденциальности и безопасности.
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            6. Хранение данных
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            Мы храним ваши данные только столько времени, сколько необходимо для выполнения целей, указанных в настоящей Политике, или в соответствии с требованиями закона.
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            7. Безопасность
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            Мы принимаем соответствующие технические и организационные меры для защиты ваших данных от потери, несанкционированного доступа и неправомерного использования. Однако ни одна система безопасности не является полностью надежной, и мы не можем гарантировать абсолютную защиту.
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            8. Ваши права и возможности
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            Вы имеете право:<br />
-                            - Получить доступ и ознакомиться с персональными данными, которые у нас есть<br />
-                            - Запросить исправление неточных или неполных данных<br />
-                            - Запросить удаление ваших данных при соблюдении юридических или договорных требований<br />
-                            - Отказаться от маркетинговых коммуникаций<br />
-                            - Управлять файлами cookie через настройки браузера<br />
-                            Для реализации этих прав свяжитесь с нами по адресу <a href="mailto:sergei@2lemetry.io">sergei@2lemetry.io</a>.
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            9. Файлы cookie и отслеживание
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            Мы используем файлы cookie и аналогичные инструменты для улучшения вашего опыта, совершенствования Сервиса и анализа поведения пользователей. Вы можете отключить файлы cookie в настройках браузера, хотя это может повлиять на функциональность.
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            10. Международная передача данных
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            Если мы передаем ваши данные в другие страны, мы обеспечиваем наличие адекватных мер защиты для сохранения вашей информации.
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            11. Конфиденциальность детей
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            Сервис не предназначен для детей младше 18 лет. Мы сознательно не собираем и не обрабатываем данные несовершеннолетних.
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            12. Изменения в настоящей Политике
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            Мы можем обновлять настоящую Политику конфиденциальности в любое время. Существенные изменения будут опубликованы здесь, и ваше дальнейшее использование Сервиса после публикации изменений означает, что вы принимаете обновленную Политику.
-                        </Typography>
-
-                        <Typography variant="h6" sx={{ fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.25rem', mb: 2 }}>
-                            13. Контактная информация
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem', mb: 2 }}>
-                            По вопросам или проблемам свяжитесь с нами по адресу:<br />
-                            Telemetry Balkan doo<br />
-                            11118, Cara Nikolaja II, 11, Belgrade, Serbia<br />
-                            <a href="mailto:sergei@2lemetry.io">sergei@2lemetry.io</a>
-                        </Typography>
-                    </Box>
+                    <PrivacyPolicy deviceType={undefined}/>
                 );
+            default: return <></>
+
         }
     }
 
@@ -1566,6 +1408,12 @@ const App: React.FC = () => {
                     },
                 }}
             />
+            {/*<ChatWidget*/}
+            {/*    agents={agents}*/}
+            {/*    user={user}*/}
+            {/*    deviceType={deviceType}*/}
+            {/*    getAuthToken={getAuthToken} // Передайте функцию для авторизованных чатов, если нужно*/}
+            {/*/>*/}
             <Box
                 sx={{
                     display: 'flex',

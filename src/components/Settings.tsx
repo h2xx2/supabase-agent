@@ -1,11 +1,14 @@
 import * as React from 'react';
-import {Alert, Box, Button, Grid, TextField, Typography} from "@mui/material";
+import { Alert, Box, Button, Grid, TextField, Typography } from "@mui/material";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import axios from 'axios';
 import StatCard from "./StatCard";
+// @ts-ignore
 import StatCardProps from "./StatCard";
 import ChangePassword from "./ChangePassword";
 import Pricing from "./Pricing";
+import {useState} from "react";
 
 interface SettingsProps {
     callCount: any,
@@ -14,9 +17,9 @@ interface SettingsProps {
     setGlobalLoading: (state: any) => void
 }
 
-const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGlobalLoading}) => {
+const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlobalLoading }) => {
     const [error, setError] = React.useState<string | null>(null);
-    const [dateOfBirth, setDateOfBirth] = React.useState<string | null>(user.date_of_birth || null);
+    const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
 
     const settings = [
         {
@@ -41,6 +44,7 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
         }
     ];
 
+    // @ts-ignore
     const statisticData: StatCardProps[] = [
         {
             title: 'Messages per month',
@@ -52,38 +56,55 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
         },
     ];
 
-    const onChangeDate = (date: Date) => {
-        setDateOfBirth(
-            !!date ? date.toISOString().split('T')[0] : date
-        )
-    }
+    const onChangeDate = (date: Date | null) => {
+        setDateOfBirth(date ? date.toISOString().split("T")[0] : null);
+    };
 
     const save = async (event: React.FormEvent) => {
         event.preventDefault();
         setError(null);
+        // @ts-ignore
         const formData = new FormData(event.currentTarget);
-        const {first_name, last_name} = Object.fromEntries((formData as any).entries());
+        const { first_name, last_name } = Object.fromEntries((formData as any).entries());
         if (!first_name?.trim() || !last_name?.trim()) {
             setError("Please fill first name and last name");
             return;
         }
         setGlobalLoading(true);
         const data = {
+            email: user.email,  // Добавлено для Lambda
             first_name,
             last_name,
             date_of_birth: dateOfBirth
         };
-        // console.log("save: data -", data);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setGlobalLoading(false);
+
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/save-setting`,
+                data,
+                {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+        } catch (error) {
+            setError("Failed to save settings. Please try again.");
+            console.error("Save error:", error);
+        } finally {
+            setGlobalLoading(false);
+        }
     }
 
+    // @ts-ignore
+    // @ts-ignore
+    // @ts-ignore
     return (
         <Box
             sx={{
                 flexGrow: 1,
             }}
-
         >
             {error && (
                 <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
@@ -107,7 +128,7 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
                         form='save-settings-form'
                     >Save</Button>
                 </Box>
-                {settings.map(({name, label, defaultValue, readOnly}, index) => (
+                {settings.map(({ name, label, defaultValue, readOnly }, index) => (
                     <Box key={index} sx={{
                         display: 'flex',
                         ...(deviceType === 'desktop' ? {
@@ -137,7 +158,7 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
                         }}>
                             {name.includes('date') ? (
                                 <DatePicker
-                                    selected={dateOfBirth}
+                                    selected={dateOfBirth ? new Date(dateOfBirth) : null}
                                     onChange={onChangeDate}
                                     dateFormat="yyyy-MM-dd"
                                     customInput={
@@ -146,7 +167,7 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
                                             name={name}
                                             sx={{
                                                 mb: 2,
-                                                width: deviceType === 'desktop' ? '70%' : '100%',
+                                                width: deviceType === "desktop" ? "70%" : "100%",
                                             }}
                                         />
                                     }
@@ -201,7 +222,7 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
                     width: '50%',
                     textAlign: deviceType === 'desktop' ? 'right' : 'center',
                 }}>
-                    <ChangePassword {...{user, setGlobalLoading}} />
+                    <ChangePassword token={''} {...{user, setGlobalLoading}} />
                 </Box>
             </Box>
 
@@ -215,7 +236,7 @@ const Settings: React.FC<SettingsProps> = ({callCount, deviceType,user, setGloba
                 }}
             >
                 {statisticData.map((card, index) => (
-                    <Grid key={index} size={ deviceType === 'mobile' ? 12 : 6 }>
+                    <Grid key={index} size={deviceType === 'mobile' ? 12 : 6}>
                         <StatCard {...card} />
                     </Grid>
                 ))}

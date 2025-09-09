@@ -1,36 +1,22 @@
 import * as React from 'react';
-import {Button, Dialog, DialogActions, DialogTitle, DialogContent, TextField, Alert} from "@mui/material";
+import {
+    Button,
+    Dialog,
+    DialogActions,
+    DialogTitle,
+    DialogContent,
+    TextField,
+    Alert
+} from "@mui/material";
 import axios from "axios";
 
 interface ChangePasswordProps {
     user: any,
+    token: string, // нужен токен для авторизации
     setGlobalLoading: (state: any) => void
 }
 
-async function handleSignIn(email, password) {
-    const response = await axios.post(
-        `${import.meta.env.VITE_API_GATEWAY_URL}/signin`,
-        {email, password},
-        {headers: {"Content-Type": "application/json"}}
-    );
-    // console.log("handleSignIn: response -", response);
-    const outerData = response.data;
-    const data =
-        typeof outerData.body === "string"
-            ? JSON.parse(outerData.body)
-            : outerData.body;
-
-    const {user, token} = data;
-    if (!user || !token) {
-        throw new Error("Incorrect server response");
-    }
-}
-
-async function handleChangePassword(password) {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-}
-
-const ChangePassword: React.FC<ChangePasswordProps> = ({user, setGlobalLoading}) => {
+const ChangePassword: React.FC<ChangePasswordProps> = ({ user, token, setGlobalLoading }) => {
     const [open, setOpen] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
 
@@ -46,9 +32,11 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({user, setGlobalLoading})
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
         setError(null);
+
         // @ts-expect-error
         const formData = new FormData(event.currentTarget);
-        const {currentPassword, newPassword, confirmPassword} = Object.fromEntries((formData as any).entries());
+        const { currentPassword, newPassword, confirmPassword } = Object.fromEntries((formData as any).entries());
+
         if (!currentPassword?.trim() || !newPassword?.trim() || !confirmPassword?.trim()) {
             setError("Please fill current password, new password and confirm password fields");
             return;
@@ -60,22 +48,29 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({user, setGlobalLoading})
 
         setGlobalLoading(true);
         try {
-            await handleSignIn(user.email, currentPassword);
-        } catch (e) {
-            setError("Incorrect current password");
-            setGlobalLoading(false);
-            return
-        }
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/change-password`,
+                {
+                    email: user?.email,
+                    currentPassword,
+                    newPassword
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
 
-        try {
-            await handleChangePassword(newPassword);
-        } catch (e) {
-            setError("Could not change password");
+            console.log("Password change response:", response.data);
             setGlobalLoading(false);
-            return
+            handleClose();
+        } catch (e: any) {
+            console.error("Password change failed:", e);
+            setError(e.response?.data?.error || "Could not change password");
+            setGlobalLoading(false);
         }
-        setGlobalLoading(false);
-        handleClose();
     };
 
     return (
@@ -84,10 +79,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({user, setGlobalLoading})
             <Dialog open={open} onClose={handleClose}>
                 <DialogTitle>Change Password</DialogTitle>
                 <DialogContent>
-                    {/*<DialogContentText>*/}
-                    {/*    To subscribe to this website, please enter your email address here. We*/}
-                    {/*    will send updates occasionally.*/}
-                    {/*</DialogContentText>*/}
                     {error && (
                         <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
                             {error}
@@ -132,6 +123,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({user, setGlobalLoading})
             </Dialog>
         </>
     );
-}
+};
 
 export default ChangePassword;
