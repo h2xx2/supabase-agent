@@ -37,6 +37,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import PolicyIcon from '@mui/icons-material/Policy';
+import DescriptionIcon from '@mui/icons-material/Description';
 import Auth from './components/Auth';
 import GlobalLoader from './components/GlobalLoader';
 import {
@@ -51,6 +52,7 @@ import AppNavbar from './components/AppNavbar';
 import Settings from './components/Settings';
 import Copyright from './components/Copyright';
 import PrivacyPolicy from "./components/PrivacyPolicy.tsx";
+import TermsAndConditions from "./components/TermsAndConditions";
 // @ts-ignore
 import ChatWidget from "./components/ChatWidget.tsx";
 
@@ -85,7 +87,8 @@ interface Blueprint {
 const Page = {
     AGENTS: "My Agents",
     SETTINGS: "Settings",
-    PRIVACY_POLICY: "Privacy Policy"
+    PRIVACY_POLICY: "Privacy Policy",
+    TERMS_AND_CONDITIONS: "Terms and Conditions",
 };
 
 const App: React.FC = () => {
@@ -1385,8 +1388,10 @@ const App: React.FC = () => {
             }} />
             case Page.PRIVACY_POLICY:
                 return (
-                    <PrivacyPolicy deviceType={undefined}/>
+                    <PrivacyPolicy {...{deviceType}}/>
                 );
+            case Page.TERMS_AND_CONDITIONS:
+                return <TermsAndConditions />;
             default: return <></>
 
         }
@@ -1491,7 +1496,7 @@ const App: React.FC = () => {
                                     <ListItemIcon>
                                         <SettingsIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary="Settings" sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary={Page.SETTINGS} sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
                                 <ListItemButton onClick={() => {
@@ -1501,7 +1506,17 @@ const App: React.FC = () => {
                                     <ListItemIcon>
                                         <PolicyIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary="Privacy Policy" sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary={Page.PRIVACY_POLICY} sx={{ textAlign: 'left' }} />
+                                </ListItemButton>
+
+                                <ListItemButton onClick={() => {
+                                    toggleDrawer();
+                                    setPage(Page.TERMS_AND_CONDITIONS);
+                                }}>
+                                    <ListItemIcon>
+                                        <DescriptionIcon />
+                                    </ListItemIcon>
+                                    <ListItemText primary={Page.TERMS_AND_CONDITIONS} sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
                             </List>
                         </Drawer>
