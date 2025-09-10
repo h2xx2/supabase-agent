@@ -19,7 +19,11 @@ import axios from 'axios';
 const tiers = [
     {
         title: 'Free',
-        description: ['500 requests per month'],
+        description: [
+            'Up to 5 agents',
+            'Up to 200 requests/month',
+            '$0/month'
+        ],
         buttonText: 'Your current plan',
         buttonVariant: 'outlined',
         buttonColor: 'primary',
@@ -27,7 +31,11 @@ const tiers = [
     },
     {
         title: 'Personal',
-        description: ['personal offer'],
+        description: [
+            'Unlimited agents',
+            'Up to 10,000 requests/month',
+            '$10/month'
+        ],
         buttonText: 'Contact Us',
         buttonVariant: 'contained',
         buttonColor: 'secondary',
@@ -35,7 +43,12 @@ const tiers = [
     },
     {
         title: 'Custom',
-        description: ['custom requests'],
+        description: [
+            'Unlimited agents',
+            'Number of requests is negotiable',
+            'Price is negotiable',
+            'Extended Support'
+        ],
         buttonText: 'Contact us',
         buttonVariant: 'outlined',
         buttonColor: 'primary',
