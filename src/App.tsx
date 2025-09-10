@@ -55,6 +55,7 @@ import PrivacyPolicy from "./components/PrivacyPolicy.tsx";
 import TermsAndConditions from "./components/TermsAndConditions";
 // @ts-ignore
 import ChatWidget from "./components/ChatWidget.tsx";
+import TermsAndConditionAcceptanceDialog from "./components/TermsAndConditionAcceptanceDialog";
 
 interface Agent {
     id: string;
@@ -1524,6 +1525,8 @@ const App: React.FC = () => {
                         {pageContent(page)}
                     </>)}
                     <Copyright />
+
+                    <TermsAndConditionAcceptanceDialog {...{isUserLoggedIn: !!user}}/>
 
                     <Dialog
                         open={openAddDialog}
