@@ -11,9 +11,13 @@ const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogPro
     const [isDialogOpened, setIsDialogOpened] = useState(false);
 
     useEffect(() => {
-        if (!alreadyShown && isUserLoggedIn) {
-            setIsDialogOpened(true);
-            setAlreadyShown(true);
+        if (!isUserLoggedIn) {
+            setAlreadyShown(false);
+        } else {
+            if (!alreadyShown) {
+                setIsDialogOpened(true);
+                setAlreadyShown(true);
+            }
         }
     }, [isUserLoggedIn]);
 
