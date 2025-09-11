@@ -986,6 +986,8 @@ const App: React.FC = () => {
                                 <TableRow>
                                     <TableCell
                                         sx={{
+                                            fontWeight: 'bold',
+                                            color: 'grey',
                                             fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
                                             width: deviceType === 'mobile' ? '100%' : '80%',
                                             textAlign: 'left',
@@ -996,6 +998,8 @@ const App: React.FC = () => {
                                     {deviceType !== 'mobile' && (
                                         <TableCell
                                             sx={{
+                                                fontWeight: 'bold',
+                                                color: 'grey',
                                                 fontSize: deviceType === 'tablet' ? '0.95rem' : '1rem',
                                                 width: '20%',
                                                 textAlign: 'center',
