@@ -327,6 +327,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         authMode === "signin" ? handleSignIn() : handleSignUp();
     };
 
+    // @ts-ignore
     return isLoading ? (
         <></>
     ) : (

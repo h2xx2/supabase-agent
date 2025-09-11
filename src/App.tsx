@@ -22,7 +22,6 @@ import {
     DialogContent,
     TextField,
     DialogActions,
-    CircularProgress,
     Alert,
     Checkbox,
     FormControlLabel,
@@ -1515,7 +1514,12 @@ const App: React.FC = () => {
                     </>)}
                     <Copyright />
 
-                    <TermsAndConditionAcceptanceDialog {...{isUserLoggedIn: !!user}}/>
+                    <TermsAndConditionAcceptanceDialog
+                        isUserLoggedIn={!!user}
+                        userProfile={user}
+                        onUpdateUser={setUser}
+                    />
+
 
                     <Dialog
                         open={openAddDialog}
@@ -2107,15 +2111,14 @@ const App: React.FC = () => {
                         </>
                     )}
                 </Container>
-                {user && (
+                {user && !chatOpen &&  (
                     <ChatWidget
-                        agents={agents.map(a => ({ id: a.id, name: a.name, agent_id: a.agent_id, alias_id: a.alias_id, public_url: a.public_url }))}
-                        onOpenChat={(agent) => {
-                            // найдем полного агента по id и вызовем существующий handleOpenChat
-                            const full = agents.find(x => x.id === agent.id);
-                            if (full) handleOpenChat(full);
+                        agent={{
+                            id: 'CMXAOO0KNV',
+                            name: 'Agent',
+                            alias_id: 'OZYKG6MIAV',
                         }}
-                        openPublicUrl={true} // опция — покажет иконку для открытия public_url (если он есть)
+                        apiKey="rn4tsgi0vmtir5xpo6z3i"
                     />
                 )}
             </Box>
