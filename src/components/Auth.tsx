@@ -331,163 +331,183 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         <></>
     ) : (
         <ThemeProvider theme={theme}>
-            <Container
-                component="main"
-                maxWidth={false}
+
+            <Box
                 sx={{
                     width: { xs: "min(90vw, 320px)", md: "400px" },
-                    mx: "auto",
-                    mt: { xs: 4, md: 8 },
-                    boxShadow: { xs: "none", md: "0px 4px 16px rgba(0, 0, 0, 0.15)" },
-                    padding: { xs: 1, md: 2 },
-                    borderRadius: 2,
-                    boxSizing: "border-box",
+                    mx: 'auto',
+                    // mt: { xs: 2, md: 3 },
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
                 }}
             >
-                <CssBaseline />
-                <Box
-                    sx={{
-                        minHeight: "50vh",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        paddingY: 4,
+                <img
+                    src='/youagent_me_logo.jpg'
+                    alt='youagent.me'
+                    loading="lazy"
+                    style={{
                         width: "100%",
-                        maxWidth: { xs: "100%", md: "360px" },
-                        mx: "auto",
+                        borderRadius: "10px"
+                    }}
+                />
+                <Container
+                    component="main"
+                    maxWidth
+                    sx={{
+                        mt: "7px",
+                        boxShadow: { xs: "none", md: "0px 4px 16px rgba(0, 0, 0, 0.15)" },
+                        padding: { xs: 1, md: 2 },
+                        borderRadius: 2,
                         boxSizing: "border-box",
                     }}
                 >
-                    <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
-                        {authMode === "signin" ? "Sign In" : "Sign Up"}
-                    </Typography>
+                    <CssBaseline />
+                    <Box
+                        sx={{
+                            // minHeight: "50vh",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            paddingY: 4,
+                            width: "100%",
+                            maxWidth: { xs: "100%", md: "360px" },
+                            mx: "auto",
+                            boxSizing: "border-box",
+                        }}
+                    >
+                        <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
+                            {authMode === "signin" ? "Sign In" : "Sign Up"}
+                        </Typography>
 
-                    {error && (
-                        <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
-                            {error}
-                        </Alert>
-                    )}
-                    {resendSuccess && (
-                        <Alert severity="success" sx={{ mb: 2, width: "100%" }}>
-                            {resendSuccess}
-                        </Alert>
-                    )}
-                    {emailConfirmationRequired && (
-                        <Box sx={{ mb: 2, width: "100%", textAlign: "center" }}>
-                            <Typography variant="body2" sx={{ mb: 1 }}>
-                                Didn't receive the email?{" "}
-                                {cooldownSeconds > 0 ? (
-                                    <Typography
-                                        component="span"
-                                        sx={{ color: "text.disabled", fontWeight: 500 }}
-                                    >
-                                        Resend verification email ({cooldownSeconds}s)
-                                    </Typography>
-                                ) : (
+                        {error && (
+                            <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
+                                {error}
+                            </Alert>
+                        )}
+                        {resendSuccess && (
+                            <Alert severity="success" sx={{ mb: 2, width: "100%" }}>
+                                {resendSuccess}
+                            </Alert>
+                        )}
+                        {emailConfirmationRequired && (
+                            <Box sx={{ mb: 2, width: "100%", textAlign: "center" }}>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                    Didn't receive the email?{" "}
+                                    {cooldownSeconds > 0 ? (
+                                        <Typography
+                                            component="span"
+                                            sx={{ color: "text.disabled", fontWeight: 500 }}
+                                        >
+                                            Resend verification email ({cooldownSeconds}s)
+                                        </Typography>
+                                    ) : (
+                                        <Link
+                                            href="#"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleResendVerificationEmail();
+                                            }}
+                                            sx={{ textDecoration: "underline", color: "primary.main" }}
+                                        >
+                                            Resend verification email
+                                        </Link>
+                                    )}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, width: "100%" }}>
+                            {authMode === "signup" && (
+                                <>
+                                    <TextField
+                                        margin="normal"
+                                        required
+                                        fullWidth
+                                        label="First Name"
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
+                                        autoFocus
+                                        sx={{ mb: 2 }}
+                                    />
+                                    <TextField
+                                        margin="normal"
+                                        required
+                                        fullWidth
+                                        label="Last Name"
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        sx={{ mb: 2 }}
+                                    />
+                                </>
+                            )}
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                label="Email Address"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                autoFocus={authMode === "signin"}
+                                sx={{ mb: 2 }}
+                            />
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                label="Password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                sx={{ mb: 2 }}
+                            />
+
+                            {authMode === "signin" && (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            value="remember"
+                                            checked={rememberMe}
+                                            onChange={(e) => setRememberMe(e.target.checked)}
+                                            color="primary"
+                                        />
+                                    }
+                                    label="Remember me"
+                                    sx={{ mb: 2 }}
+                                />
+                            )}
+
+                            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
+                                {authMode === "signin" ? "Sign In" : "Sign Up"}
+                            </Button>
+
+                            <Box sx={{ display: "flex", justifyContent: "center", width: "100%" }}>
+                                <Box sx={{ textAlign: "center", width: "100%" }}>
                                     <Link
                                         href="#"
+                                        variant="body2"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            handleResendVerificationEmail();
+                                            setAuthMode(authMode === "signin" ? "signup" : "signin");
+                                            setError(null);
+                                            setEmailConfirmationRequired(false);
+                                            setResendSuccess(null);
+                                            setLastErrorRaw(null);
                                         }}
                                         sx={{ textDecoration: "underline", color: "primary.main" }}
                                     >
-                                        Resend verification email
+                                        {authMode === "signin"
+                                            ? "Don't have an account? Sign Up"
+                                            : "Already have an account? Sign In"}
                                     </Link>
-                                )}
-                            </Typography>
-                        </Box>
-                    )}
-
-                    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, width: "100%" }}>
-                        {authMode === "signup" && (
-                            <>
-                                <TextField
-                                    margin="normal"
-                                    required
-                                    fullWidth
-                                    label="First Name"
-                                    value={firstName}
-                                    onChange={(e) => setFirstName(e.target.value)}
-                                    autoFocus
-                                    sx={{ mb: 2 }}
-                                />
-                                <TextField
-                                    margin="normal"
-                                    required
-                                    fullWidth
-                                    label="Last Name"
-                                    value={lastName}
-                                    onChange={(e) => setLastName(e.target.value)}
-                                    sx={{ mb: 2 }}
-                                />
-                            </>
-                        )}
-                        <TextField
-                            margin="normal"
-                            required
-                            fullWidth
-                            label="Email Address"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            autoFocus={authMode === "signin"}
-                            sx={{ mb: 2 }}
-                        />
-                        <TextField
-                            margin="normal"
-                            required
-                            fullWidth
-                            label="Password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            sx={{ mb: 2 }}
-                        />
-
-                        {authMode === "signin" && (
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        value="remember"
-                                        checked={rememberMe}
-                                        onChange={(e) => setRememberMe(e.target.checked)}
-                                        color="primary"
-                                    />
-                                }
-                                label="Remember me"
-                                sx={{ mb: 2 }}
-                            />
-                        )}
-
-                        <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
-                            {authMode === "signin" ? "Sign In" : "Sign Up"}
-                        </Button>
-
-                        <Box sx={{ display: "flex", justifyContent: "center", width: "100%" }}>
-                            <Box sx={{ textAlign: "center", width: "100%" }}>
-                                <Link
-                                    href="#"
-                                    variant="body2"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        setAuthMode(authMode === "signin" ? "signup" : "signin");
-                                        setError(null);
-                                        setEmailConfirmationRequired(false);
-                                        setResendSuccess(null);
-                                        setLastErrorRaw(null);
-                                    }}
-                                    sx={{ textDecoration: "underline", color: "primary.main" }}
-                                >
-                                    {authMode === "signin"
-                                        ? "Don't have an account? Sign Up"
-                                        : "Already have an account? Sign In"}
-                                </Link>
+                                </Box>
                             </Box>
                         </Box>
                     </Box>
-                </Box>
-            </Container>
+                </Container>
+            </Box>
         </ThemeProvider>
     );
 };
