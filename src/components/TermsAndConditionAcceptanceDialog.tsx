@@ -25,7 +25,7 @@ const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogPro
         setIsDialogOpened(false);
     };
 
-    return <Dialog open={isDialogOpened} onClose={handleClose} >
+    return <Dialog open={isDialogOpened} onClose={handleClose} maxWidth='lg'>
         <DialogContent>
             <TermsAndConditions />
         </DialogContent>
