@@ -1115,20 +1115,6 @@ const App: React.FC = () => {
                                                                     <CircularProgress size={20} />
                                                                 ) : (
                                                                     <>
-                                                                        <Button
-                                                                            variant="contained"
-                                                                            color="error"
-                                                                            onClick={() => handleOpenDeleteDialog(agent)}
-                                                                            sx={{
-                                                                                fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
-                                                                                px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                minWidth: 80,
-                                                                                height: 32,
-                                                                            }}
-                                                                        >
-                                                                            Delete
-                                                                        </Button>
                                                                         {agent.agent_id && (
                                                                             <>
                                                                                 {agent.alias_id ? (
@@ -1209,6 +1195,20 @@ const App: React.FC = () => {
                                                                                         Create Alias
                                                                                     </Button>
                                                                                 )}
+                                                                                <Button
+                                                                                    variant="contained"
+                                                                                    color="error"
+                                                                                    onClick={() => handleOpenDeleteDialog(agent)}
+                                                                                    sx={{
+                                                                                        fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
+                                                                                        px: deviceType === 'mobile' ? 1 : 1.5,
+                                                                                        py: deviceType === 'mobile' ? 0.5 : 0.75,
+                                                                                        minWidth: 80,
+                                                                                        height: 32,
+                                                                                    }}
+                                                                                >
+                                                                                    Delete
+                                                                                </Button>
                                                                             </>
                                                                         )}
                                                                     </>
@@ -1238,19 +1238,6 @@ const App: React.FC = () => {
                                                                 <CircularProgress size={24} />
                                                             ) : (
                                                                 <>
-                                                                    <Button
-                                                                        variant="contained"
-                                                                        color="error"
-                                                                        onClick={() => handleOpenDeleteDialog(agent)}
-                                                                        sx={{
-                                                                            fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
-                                                                            px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                            py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                            width: deviceType === 'tablet' ? 140 : 160,
-                                                                        }}
-                                                                    >
-                                                                        Delete
-                                                                    </Button>
                                                                     {agent.agent_id && (
                                                                         <>
                                                                             {agent.alias_id ? (
@@ -1328,6 +1315,19 @@ const App: React.FC = () => {
                                                                             )}
                                                                         </>
                                                                     )}
+                                                                    <Button
+                                                                        variant="contained"
+                                                                        color="error"
+                                                                        onClick={() => handleOpenDeleteDialog(agent)}
+                                                                        sx={{
+                                                                            fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
+                                                                            px: deviceType === 'tablet' ? 1.5 : 2,
+                                                                            py: deviceType === 'tablet' ? 0.75 : 1,
+                                                                            width: deviceType === 'tablet' ? 140 : 160,
+                                                                        }}
+                                                                    >
+                                                                        Delete
+                                                                    </Button>
                                                                 </>
                                                             )}
                                                         </Box>
