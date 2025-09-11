@@ -4,7 +4,7 @@ import {Box, Typography} from '@mui/material';
 const Copyright: React.FC = () => {
     const text = [
         'Copyright © ',
-        'Telemetry Balkan doo Beograd',
+        'Telemetry Balkan doo Belgrade',
         ' ',
         new Date().getFullYear(),
         '.'
