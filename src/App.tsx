@@ -960,12 +960,6 @@ const App: React.FC = () => {
                         overflowX: 'hidden',
                     }}
                 >
-                    <Typography
-                        variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
-                        sx={{ textAlign: 'left' }}
-                    >
-                        {page}
-                    </Typography>
                     {errorMessage && (
                         <Alert
                             severity="error"
