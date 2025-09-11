@@ -964,7 +964,7 @@ const App: React.FC = () => {
                         variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
                         sx={{ textAlign: 'left' }}
                     >
-                        Your agents
+                        {page}
                     </Typography>
                     {errorMessage && (
                         <Alert
