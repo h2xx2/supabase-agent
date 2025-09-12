@@ -119,7 +119,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'row',
-                    justifyContent: 'center'
+                    justifyContent: 'flex-end'
                 }}>
                     <Button
                         variant="contained"
