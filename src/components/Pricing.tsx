@@ -19,10 +19,10 @@ import axios from 'axios';
 const tiers = [
     {
         title: 'Free',
+        price: '0',
         description: [
             'Up to 5 agents',
             'Up to 200 requests/month',
-            '$0/month'
         ],
         buttonText: 'Your current plan',
         buttonVariant: 'outlined',
@@ -31,10 +31,10 @@ const tiers = [
     },
     {
         title: 'Personal',
+        price: '10',
         description: [
             'Unlimited agents',
             'Up to 10,000 requests/month',
-            '$10/month'
         ],
         buttonText: 'Contact Us',
         buttonVariant: 'contained',
@@ -191,6 +191,26 @@ const Pricing: React.FC = () => {
                                         {tier.title}
                                     </Typography>
                                 </Box>
+                                {tier.price && (
+                                    <Box
+                                        sx={[
+                                            {
+                                                display: 'flex',
+                                                alignItems: 'baseline',
+                                            },
+                                            tier.title === 'Personal'
+                                                ? { color: 'grey.50' }
+                                                : { color: null },
+                                        ]}
+                                    >
+                                        <Typography component="h3" variant="h2">
+                                            ${tier.price}
+                                        </Typography>
+                                        <Typography component="h3" variant="h6">
+                                            &nbsp; per month
+                                        </Typography>
+                                    </Box>
+                                )}
                                 <Divider sx={{ my: 2, opacity: 0.8, borderColor: 'divider' }} />
                                 {tier.description.map((line) => (
                                     <Box
