@@ -161,6 +161,10 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
                                     selected={dateOfBirth ? new Date(dateOfBirth) : null}
                                     onChange={onChangeDate}
                                     dateFormat="yyyy-MM-dd"
+                                    placeholderText="YYYY-MM-DD"
+                                    showMonthDropdown
+                                    showYearDropdown
+                                    dropdownMode="select"
                                     customInput={
                                         <TextField
                                             variant="standard"
