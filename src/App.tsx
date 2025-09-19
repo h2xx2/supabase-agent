@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCookies } from 'react-cookie';
-import { GlobalStyles } from '@mui/material';
+import {Accordion, AccordionSummary, AccordionDetails, GlobalStyles, Link} from '@mui/material';
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
     Typography,
     Drawer,
@@ -57,6 +58,7 @@ import ChatWidget from "./components/ChatWidget.tsx";
 import TermsAndConditionAcceptanceDialog from "./components/TermsAndConditionAcceptanceDialog";
 
 interface Agent {
+    key: React.ReactNode;
     id: string;
     user_id: string;
     name: string;
@@ -1097,6 +1099,26 @@ const App: React.FC = () => {
                                                             >
                                                                 <strong>Year requests count:</strong> {agent.call_count_year || 0}
                                                             </Typography>
+                                                            {agent.public_url && (
+                                                            <Typography
+                                                                sx={{
+                                                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                                    color: 'text.secondary',
+                                                                    mt: 0.5,
+                                                                    textAlign: 'left',
+                                                                }}
+                                                            >
+                                                                <strong>Public Link:</strong>{' '}
+                                                                <Link
+                                                                    href={agent.public_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    sx={{ color: '#1976d2', textDecoration: 'none' }}
+                                                                >
+                                                                    {agent.public_url}
+                                                                </Link>
+                                                            </Typography>
+                                                                )}
                                                         </Box>
                                                         {deviceType === 'mobile' && (
                                                             <Box
@@ -1329,25 +1351,113 @@ const App: React.FC = () => {
                                                     <TableCell
                                                         colSpan={deviceType === 'mobile' ? 1 : 2}
                                                         sx={{
-                                                            backgroundColor: '#f5f5f5',
-                                                            fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
+                                                            backgroundColor: 'transparent',
+                                                            fontSize:
+                                                                deviceType === 'mobile'
+                                                                    ? '0.9rem'
+                                                                    : deviceType === 'tablet'
+                                                                        ? '0.95rem'
+                                                                        : '1rem',
                                                             py: 1,
-                                                            wordBreak: 'break-word',
                                                             textAlign: 'left',
                                                         }}
                                                     >
-                                                        <Typography
-                                                            variant="body2"
-                                                            sx={{
-                                                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
-                                                                textAlign: 'left',
-                                                            }}
-                                                        >
-                                                            <strong>Public link:</strong>{' '}
-                                                            <a href={agent.public_url} target="_blank" rel="noopener noreferrer">
-                                                                {agent.public_url}
-                                                            </a>
-                                                        </Typography>
+                                                        <Accordion sx={{ mt: 0, width: '100%' }}>
+                                                            <AccordionSummary
+                                                                expandIcon={<ExpandMoreIcon />}
+                                                                aria-controls="script-content"
+                                                                id="script-header"
+                                                                sx={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    backgroundColor: '#f0f0f0',
+                                                                }}
+                                                            >
+                                                                <Typography
+                                                                    sx={{
+                                                                        fontWeight: 'bold',
+                                                                        fontSize:
+                                                                            deviceType === 'mobile'
+                                                                                ? '0.9rem'
+                                                                                : deviceType === 'tablet'
+                                                                                    ? '0.95rem'
+                                                                                    : '1rem',
+                                                                    }}
+                                                                >
+                                                                    Integration Script
+                                                                </Typography>
+                                                            </AccordionSummary>
+                                                            <AccordionDetails
+                                                                sx={{
+                                                                    backgroundColor: '#e0e0e0',
+                                                                    p: 1,
+                                                                    borderRadius: '4px',
+                                                                }}
+                                                            >
+                                                                <Box
+                                                                    component="pre"
+                                                                    sx={{
+                                                                        fontSize:
+                                                                            deviceType === 'mobile'
+                                                                                ? '0.8rem'
+                                                                                : deviceType === 'tablet'
+                                                                                    ? '0.85rem'
+                                                                                    : '0.9rem',
+                                                                        whiteSpace: 'pre-wrap',   // перенос строк
+                                                                        wordBreak: 'break-word',  // ломаем длинные слова
+                                                                        overflowX: 'auto',        // горизонтальный скролл, если совсем не помещается
+                                                                        mb: 1,
+                                                                        maxWidth: '100%',         // ограничиваем ширину
+                                                                    }}
+                                                                >
+                                                                    {`<script
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
+  data-agent-name="${agent.name}"
+  data-agent-id="${agent.agent_id}"
+  data-api-key="${agent.key}"
+  data-bottom-desktop="25"
+  data-right-desktop="25"
+  data-bottom-mobile="10"
+  data-right-mobile="10"
+></script>`}
+                                                                </Box>
+                                                                <Button
+                                                                    variant="outlined"
+                                                                    size="small"
+                                                                    onClick={() => {
+                                                                        navigator.clipboard
+                                                                            .writeText(`<script
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
+  data-agent-name="${agent.name}"
+  data-agent-id="${agent.agent_id}"
+  data-api-key="${agent.key}"
+  data-bottom-desktop="25"
+  data-right-desktop="25"
+  data-bottom-mobile="10"
+  data-right-mobile="10"
+></script>`)
+                                                                            .then(() => {
+                                                                                alert('The script has been copied to the clipboard!');
+                                                                            })
+                                                                            .catch((err) => {
+                                                                                console.error('Copy error:', err);
+                                                                                alert('Error when copying the script');
+                                                                            });
+                                                                    }}
+                                                                    sx={{
+                                                                        fontSize:
+                                                                            deviceType === 'mobile'
+                                                                                ? '0.8rem'
+                                                                                : deviceType === 'tablet'
+                                                                                    ? '0.85rem'
+                                                                                    : '0.9rem',
+                                                                        textTransform: 'none',
+                                                                    }}
+                                                                >
+                                                                    Copy script
+                                                                </Button>
+                                                            </AccordionDetails>
+                                                        </Accordion>
                                                     </TableCell>
                                                 </TableRow>
                                             )}
@@ -1516,10 +1626,9 @@ const App: React.FC = () => {
 
                     <TermsAndConditionAcceptanceDialog
                         isUserLoggedIn={!!user}
-                        userProfile={user}
-                        onUpdateUser={setUser}
+                        user={user} // Передаем весь объект user
+                        onUpdateUser={(updatedProfile) => setUser({ ...user, profile: updatedProfile })}
                     />
-
 
                     <Dialog
                         open={openAddDialog}
@@ -2111,16 +2220,7 @@ const App: React.FC = () => {
                         </>
                     )}
                 </Container>
-                {user && !chatOpen &&  (
-                    <ChatWidget
-                        agent={{
-                            id: 'CMXAOO0KNV',
-                            name: 'Agent',
-                            alias_id: 'OZYKG6MIAV',
-                        }}
-                        apiKey="rn4tsgi0vmtir5xpo6z3i"
-                    />
-                )}
+
             </Box>
         </>
     );

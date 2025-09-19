@@ -1,18 +1,18 @@
 import TermsAndConditions from "./TermsAndConditions";
 import { Button, Dialog, DialogActions, DialogContent } from "@mui/material";
-import { useEffect, useState, FC } from "react";
+import { useEffect, useState, type FC } from "react";
 import axios from "axios";
 import { useCookies } from "react-cookie";
 
 interface TermsAndConditionAcceptanceDialogProps {
     isUserLoggedIn: boolean;
-    userProfile: any; // Профиль пользователя с terms_and_conditions_of_use
-    onUpdateUser: (updatedUser: any) => void; // Обновление локального пользователя
+    user: any; // Полный объект user, содержащий email и profile
+    onUpdateUser: (updatedProfile: any) => void; // Обновление профиля
 }
 
 const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogProps> = ({
                                                                                            isUserLoggedIn,
-                                                                                           userProfile,
+                                                                                           user,
                                                                                            onUpdateUser
                                                                                        }) => {
     const [isDialogOpened, setIsDialogOpened] = useState(false);
@@ -21,28 +21,28 @@ const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogPro
 
     useEffect(() => {
         // Показываем диалог, если пользователь залогинен и terms_and_conditions_of_use === false
-        if (isUserLoggedIn && userProfile && !userProfile.terms_and_conditions_of_use) {
+        if (isUserLoggedIn && user?.profile && !user.profile.terms_and_conditions_of_use) {
             setIsDialogOpened(true);
         } else {
             setIsDialogOpened(false);
         }
-    }, [isUserLoggedIn, userProfile]);
+    }, [isUserLoggedIn, user]);
 
     const handleAccept = async () => {
-        if (!userProfile) return;
+        if (!user || !user.email || !user.profile) return;
 
         setLoading(true);
         try {
             const token = cookies["authToken"];
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/save-conditions`,
-                { email: userProfile.email, agreementConditions: true },
+                { email: user.email, agreementConditions: true },
                 { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
             );
 
-            // Обновляем локальное состояние user на основе ответа сервера
-            const updatedUser = response.data.profile; // Используем профиль из ответа
-            onUpdateUser(updatedUser);
+            // Обновляем локальное состояние profile на основе ответа сервера
+            const updatedProfile = response.data.profile;
+            onUpdateUser(updatedProfile);
 
             setIsDialogOpened(false);
         } catch (error) {
