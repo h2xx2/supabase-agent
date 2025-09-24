@@ -22,7 +22,7 @@ const tiers = [
         price: '0',
         description: [
             'Up to 5 agents',
-            'Up to 200 requests/month',
+            'Up to 100 requests/month',
         ],
         buttonText: 'Your current plan',
         buttonVariant: 'outlined',
@@ -31,10 +31,10 @@ const tiers = [
     },
     {
         title: 'Personal',
-        price: '10',
+        price: '15',
         description: [
             'Unlimited agents',
-            'Up to 10,000 requests/month',
+            'Up to 1,000 requests/month',
         ],
         buttonText: 'Contact Us',
         buttonVariant: 'contained',

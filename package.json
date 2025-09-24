@@ -20,6 +20,8 @@
     "react-cookie": "^8.0.1",
     "react-datepicker": "^8.7.0",
     "react-dom": "^19.1.0",
+    "reactour": "^1.19.4",
+    "styled-components": "^6.1.19",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

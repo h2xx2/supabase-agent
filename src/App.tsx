@@ -56,6 +56,7 @@ import TermsAndConditions from "./components/TermsAndConditions";
 // @ts-ignore
 import ChatWidget from "./components/ChatWidget.tsx";
 import TermsAndConditionAcceptanceDialog from "./components/TermsAndConditionAcceptanceDialog";
+import AddAgentDialog from "./components/CreateAgent.tsx";
 
 interface Agent {
     key: React.ReactNode;
@@ -522,13 +523,13 @@ const App: React.FC = () => {
 
     const handleAddAgent = async () => {
         if (!newAgent.name.trim() || !newAgent.instructions.trim() || newAgent.instructions.length < 40) {
-            setErrorMessage('Имя и инструкции (мин. 40 символов) обязательны');
+            setErrorMessage('Name and instructions (min. 40 characters) are required');
             return;
         }
 
         const sanitizedName = newAgent.name.replace(/[^a-zA-Z0-9_-]/g, '');
         if (!sanitizedName) {
-            setErrorMessage('Недопустимое имя агента');
+            setErrorMessage('Invalid agent name');
             return;
         }
 
@@ -540,7 +541,8 @@ const App: React.FC = () => {
             const fileData = newFile ? await convertFileToBase64(newFile) : blueprint?.kb_content ? `data:text/plain;base64,${btoa(blueprint.kb_content)}` : null;
             const fileName = newFile ? newFile.name : blueprint?.kb_filename || null;
 
-            const response = await axios.post(
+            // Step 1: Create the agent
+            const agentResponse = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/create-agent`,
                 JSON.stringify({
                     name: sanitizedName,
@@ -548,15 +550,33 @@ const App: React.FC = () => {
                     user_id,
                     enableHttpAction,
                     enableEmailAction,
-                    file: fileData,
-                    fileName,
+                    enableUserInputAction: true,
                 }),
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
             );
 
-            const createdAgentId = response.data.agentId;
-            if (!createdAgentId) throw new Error('agentId не получен из ответа');
+            const createdAgentId = agentResponse.data.agentId;
+            if (!createdAgentId) throw new Error('agentId not received in response');
 
+            // Step 2: If fileData exists, create the knowledge base
+            let knowledgeBaseId = null;
+            if (fileData) {
+                const kbResponse = await axios.post(
+                    `${import.meta.env.VITE_API_GATEWAY_URL}/create-knowledgebase`,
+                    JSON.stringify({
+                        agentId: createdAgentId,
+                        fileData,
+                        user_id,
+                    }),
+                    { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+                );
+
+                knowledgeBaseId = kbResponse.data.knowledgeBaseId;
+                if (!knowledgeBaseId) throw new Error('knowledgeBaseId not received in response');
+                console.log(`Knowledge Base ${knowledgeBaseId} created for agent ${createdAgentId}`);
+            }
+
+            // Step 3: Wait for agent to be prepared
             const waitForPrepared = async (agentId: string) => {
                 for (let i = 0; i < 20; i++) {
                     const status = await fetchAgentStatus(agentId);
@@ -567,18 +587,21 @@ const App: React.FC = () => {
             };
 
             const isPrepared = await waitForPrepared(createdAgentId);
-            if (!isPrepared) throw new Error('Статус агента не стал PREPARED');
+            if (!isPrepared) throw new Error('Agent status did not become PREPARED');
 
+            // Step 4: Create alias
             await createAlias(createdAgentId, sanitizedName);
+
+            // Step 5: Fetch updated agents list
             const agentsData = await fetchAgents();
             setAgents(agentsData);
             handleCloseAddDialog();
         } catch (error: any) {
-            console.error('Ошибка при создании агента или алиаса:', error);
+            console.error('Error creating agent or knowledge base:', error);
             setErrorMessage(
-                error.message === 'Токен авторизации отсутствует в куки'
-                    ? 'Пожалуйста, войдите в систему'
-                    : `Ошибка при создании агента или алиаса: ${error.message || 'Неизвестная ошибка'}`
+                error.message === 'Authorization token missing in cookies'
+                    ? 'Please log in'
+                    : `Error creating agent or knowledge base: ${error.message || 'Unknown error'}`
             );
         } finally {
             setGlobalLoading(false);
@@ -1411,7 +1434,7 @@ const App: React.FC = () => {
                                                                     }}
                                                                 >
                                                                     {`<script
-  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
+  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
@@ -1427,7 +1450,7 @@ const App: React.FC = () => {
                                                                     onClick={() => {
                                                                         navigator.clipboard
                                                                             .writeText(`<script
-  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
+  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
@@ -1551,9 +1574,11 @@ const App: React.FC = () => {
                                 deviceType,
                                 onToggleDrawer: toggleDrawer,
                                 onSignOut: handleSignOut,
-                                page
+                                page,
+                                onNewAgent: () => setOpenAddDialog(true)
                             }}
                         />
+
 
                         <Drawer
                             open={drawerOpen}
@@ -1630,222 +1655,17 @@ const App: React.FC = () => {
                         onUpdateUser={(updatedProfile) => setUser({ ...user, profile: updatedProfile })}
                     />
 
-                    <Dialog
+                    <AddAgentDialog
                         open={openAddDialog}
-                        onClose={handleCloseAddDialog}
-                        fullWidth
-                        maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}
-                    >
-                        <DialogTitle
-                            sx={{
-                                fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.25rem',
-                                textAlign: 'left',
-                            }}
-                        >
-                            Add new agent
-                        </DialogTitle>
-                        <DialogContent sx={{ textAlign: 'left', overflowX: 'hidden' }}>
-                            {errorMessage && (
-                                <Alert
-                                    severity="error"
-                                    sx={{
-                                        mb: 2,
-                                        width: '100%',
-                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                        textAlign: 'left',
-                                    }}
-                                >
-                                    {errorMessage}
-                                </Alert>
-                            )}
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    mb: 2,
-                                    fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
-                                    textAlign: 'left',
-                                }}
-                            >
-                                Blueprints
-                            </Typography>
-                            <Select
-                                value={selectedBlueprint}
-                                onChange={(e) => {
-                                    const blueprintName = e.target.value as string;
-                                    const blueprint = blueprints.find((b) => b.blueprint_name === blueprintName);
-                                    if (blueprint) {
-                                        setNewAgent({ name: blueprint.agent_name, instructions: blueprint.agent_instructions });
-                                        setEnableHttpAction(blueprint.http_request_action);
-                                        setEnableEmailAction(blueprint.email_action);
-                                        setNewFile(null);
-                                        setInitialKnowledgeBaseFile(blueprint.kb_filename ? `Preloaded: ${blueprint.kb_filename}` : null);
-                                    } else {
-                                        setNewAgent({ name: '', instructions: '' });
-                                        setEnableHttpAction(false);
-                                        setEnableEmailAction(false);
-                                        setInitialKnowledgeBaseFile(null);
-                                    }
-                                    setSelectedBlueprint(blueprintName);
-                                }}
-                                fullWidth
-                                displayEmpty
-                                sx={{
-                                    mb: 2,
-                                    '& .MuiSelect-select': {
-                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                        textAlign: 'left',
-                                    },
-                                }}
-                            >
-                                <MenuItem value="">
-                                    <em>Select a blueprint</em>
-                                </MenuItem>
-                                {blueprints.map((blueprint) => (
-                                    <MenuItem key={blueprint.blueprint_name} value={blueprint.blueprint_name}>
-                                        {blueprint.blueprint_name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                            {initialKnowledgeBaseFile && (
-                                <Typography
-                                    variant="caption"
-                                    color="textSecondary"
-                                    sx={{
-                                        mb: 2,
-                                        display: 'block',
-                                        fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.8rem',
-                                        textAlign: 'left',
-                                    }}
-                                >
-                                    <strong>Preloaded Knowledge Base:</strong>{' '}
-                                    <a
-                                        href="#"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            const blueprint = blueprints.find((b) => b.blueprint_name === selectedBlueprint);
-                                            if (blueprint) downloadBlueprintKnowledgeBase(blueprint);
-                                        }}
-                                        style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                                    >
-                                        {initialKnowledgeBaseFile}
-                                    </a>
-                                </Typography>
-                            )}
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    mb: 2,
-                                    fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
-                                    textAlign: 'left',
-                                }}
-                            >
-                                General settings
-                            </Typography>
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="Name"
-                                type="text"
-                                fullWidth
-                                value={newAgent.name}
-                                onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                                helperText="Use only letters, digits, _ or -"
-                                sx={{
-                                    mb: 2,
-                                    '& .MuiInputBase-input': {
-                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                        textAlign: 'left',
-                                    },
-                                }}
-                            />
-                            <TextField
-                                margin="dense"
-                                label="Instructions"
-                                type="text"
-                                fullWidth
-                                multiline
-                                rows={deviceType === 'mobile' ? 3 : 4}
-                                value={newAgent.instructions}
-                                onChange={(e) => setNewAgent({ ...newAgent, instructions: e.target.value })}
-                                helperText="Minimum length 40 characters"
-                                sx={{
-                                    mb: 2,
-                                    '& .MuiInputBase-input': {
-                                        fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                        textAlign: 'left',
-                                    },
-                                }}
-                            />
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    flexDirection: deviceType === 'mobile' ? 'column' : 'row',
-                                    gap: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 1.5 : 2,
-                                    mb: 2,
-                                    justifyContent: 'flex-start',
-                                }}
-                            >
-                                <FormControlLabel
-                                    control={<Checkbox checked={enableHttpAction} onChange={(e) => setEnableHttpAction(e.target.checked)} />}
-                                    label="Enable HTTP-action"
-                                    sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
-                                />
-                                <FormControlLabel
-                                    control={<Checkbox checked={enableEmailAction} onChange={(e) => setEnableEmailAction(e.target.checked)} />}
-                                    label="Enable Email-action"
-                                    sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
-                                />
-                            </Box>
-                            <Divider sx={{ my: 2 }} />
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    mb: 2,
-                                    fontSize: deviceType === 'mobile' ? '1.1rem' : deviceType === 'tablet' ? '1.15rem' : '1.1rem',
-                                    textAlign: 'left',
-                                }}
-                            >
-                                Knowledge base (optional)
-                            </Typography>
-                            <input
-                                type="file"
-                                accept=".pdf,.txt"
-                                onChange={(e) => setNewFile(e.target.files ? e.target.files[0] : null)}
-                                style={{
-                                    margin: '16px 0',
-                                    width: '100%',
-                                    boxSizing: 'border-box',
-                                    fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
-                                }}
-                            />
-                            <Typography
-                                variant="caption"
-                                color="textSecondary"
-                                sx={{
-                                    fontSize: deviceType === 'mobile' ? '0.8rem' : deviceType === 'tablet' ? '0.85rem' : '0.8rem',
-                                    textAlign: 'left',
-                                }}
-                            >
-                                Upload a file (PDF or TXT) to create a knowledge base. If the file is not selected, the knowledge base will not be created or will use the preloaded blueprint knowledge base.
-                            </Typography>
-                        </DialogContent>
-                        <DialogActions sx={{ justifyContent: 'center' }}>
-                            <Button
-                                onClick={handleCloseAddDialog}
-                                color="primary"
-                                sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleAddAgent}
-                                color="primary"
-                                sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
-                            >
-                                Add
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
+                        onClose={() => setOpenAddDialog(false)}
+                        onAddAgent={() => setOpenAddDialog(false)}
+                        deviceType={deviceType}
+                        getAuthToken={getAuthToken}
+                        userId={user?.id || ''}
+                        setGlobalLoading={setGlobalLoading}
+                        setErrorMessage={setErrorMessage}
+                        fetchAgents={fetchAgents}
+                    />
 
                     <Dialog
                         open={openEditDialog}

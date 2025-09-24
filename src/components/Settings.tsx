@@ -8,7 +8,7 @@ import StatCard from "./StatCard";
 import StatCardProps from "./StatCard";
 import ChangePassword from "./ChangePassword";
 import Pricing from "./Pricing";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 
 interface SettingsProps {
     callCount: any,
@@ -25,24 +25,26 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
         {
             name: 'first_name',
             label: "First Name",
-            defaultValue: user.first_name || '',
+            defaultValue: user?.first_name || user?.profile?.first_name || user?.profileData?.first_name || '',
         },
         {
             name: 'last_name',
             label: "Last Name",
-            defaultValue: user.last_name || '',
+            defaultValue: user?.last_name || user?.profile?.last_name || user?.profileData?.last_name || '',
         },
         {
             name: 'date_of_birth',
             label: "Date of Birth (optional)",
+            defaultValue: dateOfBirth || '',
         },
         {
             name: 'username',
             label: "Username",
-            defaultValue: user.email,
+            defaultValue: user?.email || '',
             readOnly: true
         }
     ];
+
 
     // @ts-ignore
     const statisticData: StatCardProps[] = [
@@ -96,7 +98,17 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
             setGlobalLoading(false);
         }
     }
-
+    useEffect(() => {
+        if (!user) return;
+        // ищем дату в нескольких местах, чтобы покрыть оба варианта ответа сервера
+        const dob =
+            user.date_of_birth ??
+            user.dateOfBirth ?? // если вы когда-то юзали camelCase
+            user.profile?.date_of_birth ??
+            user.profileData?.date_of_birth ??
+            null;
+        setDateOfBirth(dob || null);
+    }, [user]);
     // @ts-ignore
     // @ts-ignore
     // @ts-ignore

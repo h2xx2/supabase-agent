@@ -20,16 +20,21 @@ const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogPro
     const [cookies] = useCookies(["authToken"]);
 
     useEffect(() => {
-        // Показываем диалог, если пользователь залогинен и terms_and_conditions_of_use === false
-        if (isUserLoggedIn && user?.profile && !user.profile.terms_and_conditions_of_use) {
+        const termsAccepted =
+            user?.profile?.terms_and_conditions_of_use ??
+            user?.terms_and_conditions_of_use ??
+            user?.profileData?.terms_and_conditions_of_use;
+
+        if (isUserLoggedIn && termsAccepted === false) {
             setIsDialogOpened(true);
         } else {
             setIsDialogOpened(false);
         }
     }, [isUserLoggedIn, user]);
 
+
     const handleAccept = async () => {
-        if (!user || !user.email || !user.profile) return;
+        if (!user || !user.email) return;
 
         setLoading(true);
         try {
@@ -37,13 +42,18 @@ const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogPro
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/save-conditions`,
                 { email: user.email, agreementConditions: true },
-                { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
             );
 
-            // Обновляем локальное состояние profile на основе ответа сервера
-            const updatedProfile = response.data.profile;
-            onUpdateUser(updatedProfile);
+            const updatedProfile =
+                response.data.profile ?? response.data.user?.profile ?? response.data.user;
 
+            onUpdateUser(updatedProfile);
             setIsDialogOpened(false);
         } catch (error) {
             console.error("Ошибка при сохранении условий:", error);
@@ -51,6 +61,7 @@ const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogPro
             setLoading(false);
         }
     };
+
 
     const handleDecline = () => setIsDialogOpened(false);
 
