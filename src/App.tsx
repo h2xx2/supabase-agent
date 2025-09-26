@@ -212,6 +212,15 @@ const App: React.FC = () => {
             throw new Error('Невозможно извлечь user_id из токена');
         }
     };
+    useEffect(() => {
+        if (agents.length > 0) {
+            try {
+                setCurrentStep(9); // шаг "agent-card"
+            } catch (e) {
+                console.warn('Не удалось установить шаг тура:', e);
+            }
+        }
+    }, [agents, setCurrentStep]);
 
     useEffect(() => {
         if (user) {
@@ -1360,8 +1369,21 @@ const App: React.FC = () => {
                         userId={user?.id || ''}
                         setGlobalLoading={setGlobalLoading}
                         setErrorMessage={setErrorMessage}
+                        setAgents={setAgents}
                         fetchAgents={fetchAgents}
+                        setAgentCreated={(value: boolean) => {
+                            // когда диалог сообщает, что агент создан — продвигаем тур
+                            if (value) {
+                                try {
+                                    // 9 — тот индекс шага, на который вы раньше пытались переходить
+                                    setCurrentStep(9);
+                                } catch (e) {
+                                    console.warn('Не удалось установить шаг тура:', e);
+                                }
+                            }
+                        }}
                     />
+
 
                     <Dialog
                         open={openEditDialog}

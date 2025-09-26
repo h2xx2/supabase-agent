@@ -39,6 +39,7 @@ interface AddAgentDialogProps {
     setGlobalLoading: (loading: boolean) => void;
     setErrorMessage: (message: string | null) => void;
     fetchAgents: () => Promise<any[]>;
+    setAgents: (agents: any[]) => void;
     setAgentCreated: (value: boolean) => void;
 }
 
@@ -327,17 +328,11 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             if (!isPrepared) throw new Error('Agent status did not become PREPARED');
 
             await createAlias(createdAgentId, sanitizedName);
-            await fetchAgents();
+            const updatedAgents = await fetchAgents();
+            setAgents(updatedAgents);
+
             onAddAgent();
-            setAgentCreated(true);
-            onClose();
-            setTimeout(() => {
-                try {
-                    tour.setCurrentStep(9);
-                } catch (e) {
-                    // ignore
-                }
-            }, 200);
+
         } catch (error: any) {
             console.error('Error creating agent or knowledge base:', error);
             setErrorMessage(

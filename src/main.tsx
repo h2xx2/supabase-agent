@@ -70,6 +70,7 @@ const steps: StepType[] = [
     {
         selector: '[data-tour="agent-card"]',
         content: 'Поздравляем! Агент создан. Далее — чат, деплой и интеграция.',
+        observed: true, // <-- добавляем
     },
     {
         selector: '[data-tour="open-chat-button"]',
