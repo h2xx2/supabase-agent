@@ -36,15 +36,14 @@ const steps: StepType[] = [
     {
         selector: '[data-tour="blueprint-select"]',
         content: 'Выберите шаблон для запуска примеров агентов или нажмите "Next" для создания агента с нуля.',
-        // убираем stepInteraction, чтобы можно было принудительно продвигать тур
         stepInteraction: true,
     },
     {
-        selector: '#blueprint-menu',
+        selector: "[data-tour='blueprint-menu-list']",
         content: 'Это выпадающий список шаблонов. Выберите один из них или нажмите "Next" для создания агента с нуля.',
         observed: true,
         position: 'bottom' as const,
-        stepInteraction: true, // тоже убираем
+        stepInteraction: true,
     },
     {
         selector: '[data-tour="name-input"]',
@@ -70,11 +69,24 @@ const steps: StepType[] = [
     {
         selector: '[data-tour="agent-card"]',
         content: 'Поздравляем! Агент создан. Далее — чат, деплой и интеграция.',
-        observed: true, // <-- добавляем
+        observed: true,
     },
     {
         selector: '[data-tour="open-chat-button"]',
         content: 'Click the "Chat" button to instantly start chatting with your agent.',
+        stepInteraction: true,
+        observed: true, // ждем появления элемента
+        position: 'bottom' as const,
+        action: () => {
+            const button = document.querySelector('[data-tour="open-chat-button"]');
+            if (button) {
+                // Прокрутка к элементу и лог для дебага
+                button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                console.log('Chat button found and scrolled into view:', button);
+            } else {
+                console.log('Chat button not found yet');
+            }
+        },
     },
     {
         selector: '[data-tour="chat-dialog"]',
@@ -113,6 +125,7 @@ function Root() {
     const [blueprintInteracted, setBlueprintInteracted] = useState(false);
     const [skipBlueprint, setSkipBlueprint] = useState<(() => void) | null>(null);
     const [agentCreated, setAgentCreated] = useState(false);
+    const [chatOpened, setChatOpened] = useState(false); // <-- новое состояние
 
     return (
         <React.StrictMode>
@@ -131,19 +144,12 @@ function Root() {
                                 return null;
                             }
 
-                            if (currentStep === 8) {
-                                if (!agentCreated) {
-                                    return null;
-                                }
-                                return (
-                                    <button
-                                        onClick={() => {
-                                            setCurrentStep(currentStep + 1);
-                                        }}
-                                    >
-                                        Next
-                                    </button>
-                                );
+                            if (currentStep === 8 && !agentCreated) {
+                                return null; // нельзя нажать Next пока агент не создан
+                            }
+
+                            if (currentStep === 10 && !chatOpened) {
+                                return null; // нельзя нажать Next пока не кликнули Chat
                             }
 
                             if (currentStep === 2 || currentStep === 3) {
@@ -201,8 +207,9 @@ function Root() {
                         setBlueprintInteracted={(value: boolean) => setBlueprintInteracted(value)}
                         setSkipBlueprint={(fn: () => void) => setSkipBlueprint(() => fn)}
                         setAgentCreated={(value: boolean) => setAgentCreated(value)}
+                        setChatOpened={(value: boolean) => setChatOpened(value)} // <-- пробрасываем внутрь
                     >
-                        <App setAgentCreated={setAgentCreated} />
+                        <App setAgentCreated={setAgentCreated} setChatOpened={setChatOpened} />
                     </TourProvider>
                 </CookiesProvider>
             </ThemeProvider>

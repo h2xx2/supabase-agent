@@ -212,10 +212,13 @@ const App: React.FC = () => {
             throw new Error('Невозможно извлечь user_id из токена');
         }
     };
+    const [hasJumpedToAgentCard, setHasJumpedToAgentCard] = useState(false);
+
     useEffect(() => {
-        if (agents.length > 0) {
+        if (agents.length > 0 && !hasJumpedToAgentCard) {
             try {
                 setCurrentStep(9); // шаг "agent-card"
+                setHasJumpedToAgentCard(true); // Устанавливаем флаг, чтобы не повторять
             } catch (e) {
                 console.warn('Не удалось установить шаг тура:', e);
             }
@@ -265,10 +268,7 @@ const App: React.FC = () => {
     };
 
     const toggleDrawer = () => setDrawerOpen(!drawerOpen);
-    const handleNewAgentClick = () => {
-        handleOpenAddDialog(); // то, что вы обычно делаете при клике
-        setCurrentStep(prev => prev + 1);
-    }
+
     const handleSignOut = async () => {
         try {
             const token = cookies.authToken;

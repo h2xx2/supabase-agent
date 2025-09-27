@@ -53,6 +53,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                                                            setGlobalLoading,
                                                            setErrorMessage,
                                                            fetchAgents,
+                                                           setAgents,
                                                            setAgentCreated,
                                                        }) => {
     const [newAgent, setNewAgent] = useState({ name: '', instructions: '' });
@@ -223,6 +224,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             reader.readAsDataURL(file);
         });
     };
+    const intendedTourStepRef = useRef<number | null>(null);
 
     const createAlias = async (agentId: string, agentName: string) => {
         setGlobalLoading(true);
@@ -328,11 +330,11 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             if (!isPrepared) throw new Error('Agent status did not become PREPARED');
 
             await createAlias(createdAgentId, sanitizedName);
+            onClose();
             const updatedAgents = await fetchAgents();
             setAgents(updatedAgents);
 
             onAddAgent();
-
         } catch (error: any) {
             console.error('Error creating agent or knowledge base:', error);
             setErrorMessage(
@@ -366,37 +368,26 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
         setSelectedBlueprint(blueprintName);
         setBlueprintInteracted(true);
 
-        // Если выбран Custom (пустая строка) — используем skipBlueprint (сброс + переход).
-        // Для всех остальных — просто продвигаем тур на шаг 4.
-        if (blueprintName === '') {
-            if (skipBlueprintRef.current && typeof skipBlueprintRef.current === 'function') {
-                try {
-                    // skipBlueprint обычно сам делает tour.setCurrentStep(4)
-                    skipBlueprintRef.current();
-                } catch (e) {
-                    /* ignore */
+        // Логи для отладки
+        console.log('Selected blueprint:', blueprintName);
+        console.log('Tour state:', { isOpen: tour.isOpen, currentStep: tour.currentStep });
+
+        // Планируем переход на шаг 4
+        intendedTourStepRef.current = 4;
+
+        // Если выбран "Custom agent" или другой шаблон, пробуем перейти на шаг 4
+        if (tour.isOpen) {
+            try {
+                // Проверяем, не находится ли тур уже на шаге 4
+                if (tour.currentStep !== 4) {
+                    tour.setCurrentStep(4);
+                    console.log('Tour moved to step 4');
+                } else {
+                    console.log('Tour already on step 4, no change needed');
                 }
-            } else if (tour && typeof tour.setCurrentStep === 'function') {
-                // Небольшая задержка, чтобы селект закрылся/состояние обновилось
-                setTimeout(() => {
-                    try {
-                        tour.setCurrentStep(4);
-                    } catch (e) {
-                        /* ignore */
-                    }
-                }, 120);
-            }
-        } else {
-            // Для НЕ-Custom: просто двигаем тур на следующий шаг через таймаут,
-            // чтобы меню успело закрыться и состояние окончательно обновилось.
-            if (tour && typeof tour.setCurrentStep === 'function') {
-                setTimeout(() => {
-                    try {
-                        tour.setCurrentStep(4);
-                    } catch (e) {
-                        /* ignore */
-                    }
-                }, 120);
+                intendedTourStepRef.current = null; // Сбрасываем, чтобы избежать повторного перехода
+            } catch (e) {
+                console.error('Error setting tour step:', e);
             }
         }
     };
@@ -455,38 +446,56 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                         fullWidth
                         data-tour="blueprint-select"
                         displayEmpty
-                        MenuProps={{ PaperProps: { id: 'blueprint-menu' } }}
+                        MenuProps={{
+                            PaperProps: { id: 'blueprint-menu' },
+                            MenuListProps: { 'data-tour': 'blueprint-menu-list' },
+                            disablePortal: true,
+                        }}
                         onOpen={() => {
+                            console.log('Select opened');
                             setTimeout(() => {
                                 try {
-                                    tour.setCurrentStep(3);
+                                    if (tour.isOpen && tour.currentStep !== 3) {
+                                        tour.setCurrentStep(3);
+                                        console.log('Tour moved to step 3');
+                                    }
                                 } catch (e) {
-                                    // ignore
+                                    console.error('Error setting tour step on open:', e);
                                 }
-                            }, 80);
+                            }, 200);
                         }}
-                        sx={{
-                            '& .MuiSelect-select': {
-                                fontSize: deviceType === 'mobile' ? '0.9rem' : '0.95rem',
-                                textAlign: 'left',
-                            },
+                        onClose={() => {
+                            console.log('Select onClose triggered, intended step:', intendedTourStepRef.current);
+                            if (intendedTourStepRef.current !== null && tour.isOpen) {
+                                try {
+                                    if (tour.currentStep !== intendedTourStepRef.current) {
+                                        tour.setCurrentStep(intendedTourStepRef.current);
+                                        console.log('Tour moved to step', intendedTourStepRef.current);
+                                    } else {
+                                        console.log('Tour already on intended step', intendedTourStepRef.current);
+                                    }
+                                } catch (e) {
+                                    console.error('Error in Select onClose:', e);
+                                } finally {
+                                    intendedTourStepRef.current = null;
+                                }
+                            }
                         }}
+                        sx={{ '& .MuiSelect-select': { fontSize: deviceType === 'mobile' ? '0.9rem' : '0.95rem', textAlign: 'left' } }}
                     >
                         <MenuItem
                             value=""
-                            onClick={() => {
-                                // onClick will fire even if the value is already '' — this catches repeated selection
-                                handleBlueprintSelect('');
-                            }}
+                            onClick={() => handleBlueprintSelect('')}
+                            data-tour="blueprint-item-custom"
                         >
                             <em>Custom agent</em>
                         </MenuItem>
-
                         {blueprints.map((blueprint) => (
                             <MenuItem
                                 key={blueprint.blueprint_name}
                                 value={blueprint.blueprint_name}
                                 onClick={() => handleBlueprintSelect(blueprint.blueprint_name)}
+                                data-tour={`blueprint-item-${blueprint.blueprint_name}`}
                             >
                                 {blueprint.blueprint_name}
                             </MenuItem>
