@@ -16,7 +16,7 @@ const cookieOptions = {
     maxAge: 60 * 60 * 24 * 7,
     secure: true,
 };
-// после import …
+
 const waitForElement = (selector: string, timeout = 10000): Promise<HTMLElement | null> => {
     return new Promise((resolve) => {
         const el = document.querySelector(selector);
@@ -95,7 +95,7 @@ const steps: StepType[] = [
     },
     {
         selector: '[data-tour="open-chat-button"]',
-        content: 'Click “Chat” button to instantly  start chatting with your agent.',
+        content: 'Click “Chat” button to instantly start chatting with your agent.',
         stepInteraction: true,
         position: 'bottom' as const,
         action: async () => {
@@ -129,7 +129,7 @@ const steps: StepType[] = [
         content: 'You can also copy and paste the integration script into your Website, to make the agent widget to be available for your visitors.',
     },
     {
-        selector: '[data-tour="congratulations"]',
+        selector: '#root',
         content: (
             <div>
                 <strong>Congratulations!</strong>
@@ -149,6 +149,26 @@ function Root() {
     const [agentDeployed, setAgentDeployed] = useState(false);
     const [firstTourRun, setFirstTourRun] = useState(localStorage.getItem('tourCompleted') !== 'true');
 
+    const buttonStyle = {
+        backgroundColor: '#1976d2',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '20px',
+        padding: '6px 16px',
+        cursor: 'pointer',
+    };
+
+    // Централизованная функция закрытия тура — используем её в onClose и в кнопке Close
+    const closeTour = () => {
+        try {
+            setIsTourOpen(false);
+            setFirstTourRun(false);
+            localStorage.setItem('tourCompleted', 'true');
+        } catch (e) {
+            console.warn('Error closing tour and saving state', e);
+        }
+    };
+
     return (
         <React.StrictMode>
             <ThemeProvider theme={theme}>
@@ -156,10 +176,9 @@ function Root() {
                     <TourProvider
                         steps={steps}
                         open={isTourOpen}
+                        // используем closeTour здесь
                         onClose={() => {
-                            setIsTourOpen(false);
-                            setFirstTourRun(false);
-                            localStorage.setItem('tourCompleted', 'true');
+                            closeTour();
                         }}
                         disableInteraction={false}
                         showButtons={true}
@@ -190,6 +209,7 @@ function Root() {
                             if (currentStep === 2 || currentStep === 3) {
                                 return (
                                     <button
+                                        style={buttonStyle}
                                         onClick={() => {
                                             if (!blueprintInteracted && skipBlueprint) {
                                                 skipBlueprint();
@@ -205,7 +225,25 @@ function Root() {
 
                             const isLast = currentStep === stepsLength - 1;
                             return (
-                                <button onClick={() => (isLast ? setIsOpen(false) : setCurrentStep(currentStep + 1))}>
+                                <button
+                                    style={buttonStyle}
+                                    onClick={() => {
+                                        if (isLast) {
+                                            // вместо просто setIsOpen(false) — используем centralized close
+                                            // note: всё ещё можно вызвать setIsOpen(false) чтобы закрыть тур UI, но важно синхронно обновить локальное состояние и localStorage
+                                            try {
+                                                // закрываем UI тура через контекстную функцию (если нужно)
+                                                setIsOpen(false);
+                                            } catch (e) {
+                                                // игнорируем если setIsOpen недоступна
+                                            }
+                                            // гарантируем, что наш локальный state и localStorage установлены
+                                            closeTour();
+                                        } else {
+                                            setCurrentStep(currentStep + 1);
+                                        }
+                                    }}
+                                >
                                     {isLast ? 'Close' : 'Next'}
                                 </button>
                             );
@@ -218,6 +256,7 @@ function Root() {
                             if (currentStep === 4) {
                                 return (
                                     <button
+                                        style={buttonStyle}
                                         onClick={() => {
                                             setCurrentStep(2);
                                         }}
@@ -229,6 +268,7 @@ function Root() {
 
                             return (
                                 <button
+                                    style={buttonStyle}
                                     onClick={() => {
                                         if (currentStep > 0) {
                                             setCurrentStep(currentStep - 1);
@@ -255,5 +295,6 @@ function Root() {
         </React.StrictMode>
     );
 }
+
 
 createRoot(document.getElementById('root')!).render(<Root />);

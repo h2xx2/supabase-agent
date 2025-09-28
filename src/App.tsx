@@ -237,8 +237,21 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     }, [user]);
 
     useEffect(() => {
-        setIsTourOpen(true);
-    }, []);
+        const tourCompleted = localStorage.getItem('tourCompleted') === 'true';
+        if (user && !tourCompleted) {
+            try {
+                setIsOpen(true);
+            } catch (e) {
+                console.warn('Cannot open tour programmatically', e);
+            }
+        } else {
+            // Если пользователь вышел — убедимся, что тур закрыт
+            if (!user) {
+                try { setIsOpen(false); } catch (e) { /* ignore */ }
+            }
+        }
+    }, [user, setIsOpen]);
+
 
 
     const fetchAgents = async (): Promise<Agent[]> => {
