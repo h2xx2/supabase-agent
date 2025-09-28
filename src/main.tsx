@@ -16,89 +16,109 @@ const cookieOptions = {
     maxAge: 60 * 60 * 24 * 7,
     secure: true,
 };
+// после import …
+const waitForElement = (selector: string, timeout = 10000): Promise<HTMLElement | null> => {
+    return new Promise((resolve) => {
+        const el = document.querySelector(selector);
+        if (el) return resolve(el as HTMLElement);
+
+        const observer = new MutationObserver(() => {
+            const el = document.querySelector(selector);
+            if (el) {
+                resolve(el as HTMLElement);
+                observer.disconnect();
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        setTimeout(() => {
+            observer.disconnect();
+            resolve(null);
+        }, timeout);
+    });
+};
 
 const steps: StepType[] = [
     {
         selector: '[data-tour="welcome"]',
         content: (): React.ReactNode => (
             <div>
-                <strong>Добро пожаловать в YouAgent.me!</strong>
-                <div>Этот тур проведет вас через процесс создания агента. Нажмите "Далее", чтобы продолжить.</div>
+                <strong>Welcome to YouAgent.me Agentic AI service.</strong>
+                <div>This tour will guide you through the agent creation process. Click next to continue.</div>
             </div>
         ),
         position: 'center' as const,
     },
     {
         selector: '[data-tour="new-agent-button"]',
-        content: 'Нажмите кнопку "New Agent", чтобы начать создание нового агента.',
+        content: 'Press “New Agent” button in order to start the new agent creation.',
         stepInteraction: true,
     },
     {
         selector: '[data-tour="blueprint-select"]',
-        content: 'Выберите шаблон для запуска примеров агентов или нажмите "Next" для создания агента с нуля.',
+        content: 'Choose the blueprint to run the agent examples or proceed from scratch by going straight to the next step. ',
         stepInteraction: true,
     },
     {
         selector: "[data-tour='blueprint-menu-list']",
-        content: 'Это выпадающий список шаблонов. Выберите один из них или нажмите "Next" для создания агента с нуля.',
+        content: 'This is a drop-down list of templates. Select one of them or select "custom agent" to create an agent from scratch.',
         observed: true,
         position: 'bottom' as const,
         stepInteraction: true,
     },
     {
         selector: '[data-tour="name-input"]',
-        content: 'Введите имя агента. Используйте только буквы, цифры, _ или -.',
+        content: 'Insert your agent name. Use Letters and Digits only, avoid special symbols.',
     },
     {
         selector: '[data-tour="instructions-input"]',
-        content: 'Напишите инструкции для агента: как он должен общаться и какие у него обязанности (мин. 40 символов).',
+        content: 'Write the instructions to your agents how it must communicate with your users. Describe his duties in the same way as you would describe them to human.',
     },
     {
         selector: '[data-tour="actions-checkboxes"]',
-        content: 'Если вашему агенту нужны действия (email / http), включите соответствующие флаги.',
+        content: 'If your agent needs to send emails or make HTTP requests, set the corresponding checkbox to True. If no - go to the next step. ',
     },
     {
         selector: '[data-tour="kb-section"]',
-        content: 'Если агент должен ссылаться на документы — загрузите файл в Базу знаний (PDF или TXT).',
+        content: ' If your agent is to consult the user over the information from the document or table - please upload this document in the Knowledge base section. If no - go to the next step. ',
     },
     {
         selector: '[data-tour="add-agent-button"]',
-        content: 'Нажмите "Добавить", чтобы создать агента.',
+        content: 'Click Add to complete your Agent creation.',
         stepInteraction: true,
     },
     {
         selector: '[data-tour="agent-card"]',
-        content: 'Поздравляем! Агент создан. Далее — чат, деплой и интеграция.',
+        content: 'Congratulations! Your first Agent is ready. Click Next to learn what you can do with it.',
         observed: true,
     },
     {
         selector: '[data-tour="open-chat-button"]',
-        content: 'Click the "Chat" button to instantly start chatting with your agent.',
+        content: 'Click “Chat” button to instantly  start chatting with your agent.',
         stepInteraction: true,
-        observed: true, // ждем появления элемента
         position: 'bottom' as const,
-        action: () => {
-            const button = document.querySelector('[data-tour="open-chat-button"]');
+        action: async () => {
+            const button = await waitForElement('[data-tour="open-chat-button"]');
             if (button) {
-                // Прокрутка к элементу и лог для дебага
                 button.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                console.log('Chat button found and scrolled into view:', button);
+                console.log('Chat button found:', button);
             } else {
-                console.log('Chat button not found yet');
+                console.log('Chat button not found within timeout');
             }
         },
     },
     {
         selector: '[data-tour="chat-dialog"]',
-        content: 'Write your first message to the agent and click the "Send" button.',
+        content: 'Write your first message to the agent and Click “Send button”.',
     },
     {
         selector: '[data-tour="chat-close"]',
-        content: 'Chat as long as you like. Then press the "Close" button to close the chat dialog.',
+        content: 'Chat as long as you like. Then press “Close” button to close the chat dialog.',
     },
     {
         selector: '[data-tour="deploy-button"]',
-        content: 'To make your agent publicly available press the "Deploy" button.',
+        content: 'To make your agent publicly available press the Deploy button.',
     },
     {
         selector: '[data-tour="public-link"]',
@@ -106,14 +126,14 @@ const steps: StepType[] = [
     },
     {
         selector: '[data-tour="integration-script"]',
-        content: 'You can also copy and paste the integration script into your website to make the agent widget available to your visitors.',
+        content: 'You can also copy and paste the integration script into your Website, to make the agent widget to be available for your visitors.',
     },
     {
         selector: '[data-tour="congratulations"]',
         content: (
             <div>
-                <strong>Поздравляем!</strong>
-                <div>Вы освоили основы создания AI-агента на платформе YouAgent.me.</div>
+                <strong>Congratulations!</strong>
+                <div>You have learned the basics of AI Agents creation with YouAgent.me platform. Hope you enjoyed it! If you have any more questions - please feel free to contact our support.</div>
             </div>
         ),
         position: 'center' as const,
@@ -121,11 +141,13 @@ const steps: StepType[] = [
 ];
 
 function Root() {
-    const [isTourOpen, setIsTourOpen] = useState(true);
+    const [isTourOpen, setIsTourOpen] = useState(localStorage.getItem('tourCompleted') !== 'true');
     const [blueprintInteracted, setBlueprintInteracted] = useState(false);
     const [skipBlueprint, setSkipBlueprint] = useState<(() => void) | null>(null);
     const [agentCreated, setAgentCreated] = useState(false);
-    const [chatOpened, setChatOpened] = useState(false); // <-- новое состояние
+    const [chatOpened, setChatOpened] = useState(false);
+    const [agentDeployed, setAgentDeployed] = useState(false);
+    const [firstTourRun, setFirstTourRun] = useState(localStorage.getItem('tourCompleted') !== 'true');
 
     return (
         <React.StrictMode>
@@ -134,22 +156,35 @@ function Root() {
                     <TourProvider
                         steps={steps}
                         open={isTourOpen}
-                        onClose={() => setIsTourOpen(false)}
+                        onClose={() => {
+                            setIsTourOpen(false);
+                            setFirstTourRun(false);
+                            localStorage.setItem('tourCompleted', 'true');
+                        }}
                         disableInteraction={false}
                         showButtons={true}
                         showNavigation={true}
                         nextButton={({ currentStep, setCurrentStep, setIsOpen, stepsLength }) => {
-                            const blockedSteps = [1];
+                            const blockedSteps = [1]; // your original blocked steps
                             if (blockedSteps.includes(currentStep)) {
                                 return null;
                             }
 
-                            if (currentStep === 8 && !agentCreated) {
-                                return null; // нельзя нажать Next пока агент не создан
+                            // нельзя нажать Next пока агент не создан (step index 8)
+                            if (currentStep === 8 && !agentCreated && firstTourRun) {
+                                return null; // блокируем Next только если первый запуск
+                            }
+                            if (currentStep === 10 && !chatOpened && firstTourRun) {
+                                return null;
+                            }
+                            // step index 12 (chat-close) — Next всегда заблокирован, только крестик
+                            if (currentStep === 12) {
+                                return null;
                             }
 
-                            if (currentStep === 10 && !chatOpened) {
-                                return null; // нельзя нажать Next пока не кликнули Chat
+                            // step index 13 (deploy-button) — Next заблокирован пока деплой не завершён
+                            if (currentStep === 13 && !agentDeployed && firstTourRun) {
+                                return null;
                             }
 
                             if (currentStep === 2 || currentStep === 3) {
@@ -207,9 +242,13 @@ function Root() {
                         setBlueprintInteracted={(value: boolean) => setBlueprintInteracted(value)}
                         setSkipBlueprint={(fn: () => void) => setSkipBlueprint(() => fn)}
                         setAgentCreated={(value: boolean) => setAgentCreated(value)}
-                        setChatOpened={(value: boolean) => setChatOpened(value)} // <-- пробрасываем внутрь
+                        setChatOpened={(value: boolean) => setChatOpened(value)}
+                        setAgentDeployed={(value: boolean) => setAgentDeployed(value)}
                     >
-                        <App setAgentCreated={setAgentCreated} setChatOpened={setChatOpened} />
+                        <App
+                            setChatOpened={setChatOpened}
+                            setAgentDeployed={setAgentDeployed}
+                        />
                     </TourProvider>
                 </CookiesProvider>
             </ThemeProvider>

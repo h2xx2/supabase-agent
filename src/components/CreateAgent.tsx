@@ -67,7 +67,6 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     const tour = useTour() as any; // reactour typings vary; cast to any for flexibility
 
     const blueprints: Blueprint[] = [
-        // ... (blueprints array unchanged from your provided code)
         {
             blueprint_name: 'Translator',
             agent_name: 'German Translator',
@@ -121,7 +120,57 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             http_request_action: false,
             kb_required: true,
             kb_filename: 'smartphones_inventory.txt',
-            kb_content: '...', // Truncated for brevity; use your original content
+            kb_content: 'ID,Product Name,Brand,Model,Price (USD),Stock,Rating,Screen Size (inches),Battery (mAh),RAM (GB),Storage (GB),Camera (MP),5G,Category\n' +
+                '1,iPhone 16 Pro Max,Apple,AP-1000,450,30,4.1,5.9,4106,16,512,143,Yes,Smartphones\n' +
+                '2,iPhone 16,Apple,AP-1001,900,57,4.1,7.0,4894,6,512,198,Yes,Smartphones\n' +
+                '3,Galaxy S25 Ultra,Samsung,SA-1002,1300,98,4.4,6.2,3764,12,128,153,Yes,Smartphones\n' +
+                '4,Galaxy S25,Samsung,SA-1003,550,46,5.0,6.7,5456,6,64,98,No,Smartphones\n' +
+                '5,Galaxy Z Fold6,Samsung,SA-1004,1450,27,4.6,6.6,4665,8,128,159,Yes,Smartphones\n' +
+                '6,Pixel 9 Pro,Google,GO-1005,1400,57,4.4,5.8,4411,12,512,53,Yes,Smartphones\n' +
+                '7,Pixel 9,Google,GO-1006,600,10,4.8,5.6,4252,12,1024,191,Yes,Smartphones\n' +
+                '8,OnePlus 13 Pro,OnePlus,ON-1007,1100,5,4.3,6.2,5796,4,256,148,No,Smartphones\n' +
+                '9,OnePlus 13,OnePlus,ON-1008,1350,100,4.7,6.3,4590,12,256,104,Yes,Smartphones\n' +
+                '10,Xiaomi 14 Ultra,Xiaomi,XI-1009,1050,57,4.6,6.7,3633,12,64,90,No,Smartphones\n' +
+                '11,Xiaomi 14,Xiaomi,XI-1010,850,86,4.6,5.8,4832,4,1024,113,Yes,Smartphones\n' +
+                '12,Xperia 1 VI,Sony,SO-1011,1050,61,4.1,5.7,5114,6,1024,17,No,Smartphones\n' +
+                '13,Xperia 5 VI,Sony,SO-1012,1400,75,4.5,5.5,5937,12,512,155,Yes,Smartphones\n' +
+                '14,Edge 50 Ultra,Motorola,MO-1013,1450,47,4.2,6.5,4608,8,512,52,No,Smartphones\n' +
+                '15,Edge 50 Pro,Motorola,MO-1014,500,9,4.3,6.1,5305,4,64,118,Yes,Smartphones\n' +
+                '16,Find X7 Ultra,Oppo,OP-1015,600,63,4.7,5.7,4119,8,256,74,Yes,Smartphones\n' +
+                '17,Find X7,Oppo,OP-1016,900,79,4.7,5.6,4594,8,128,123,No,Smartphones\n' +
+                '18,X100 Pro,Vivo,VI-1017,1050,68,4.6,6.1,5782,12,64,148,No,Smartphones\n' +
+                '19,X100,Vivo,VI-1018,1050,95,4.7,6.5,3886,16,128,164,Yes,Smartphones\n' +
+                '20,ROG Phone 8 Pro,Asus,AS-1019,1400,70,4.7,5.6,5911,12,128,154,Yes,Smartphones\n' +
+                '21,Zenfone 11 Ultra,Asus,AS-1020,850,24,4.3,5.6,4125,12,1024,134,Yes,Smartphones\n' +
+                '22,GT 6 Pro,Realme,RE-1021,700,56,4.4,6.0,5481,8,128,33,No,Smartphones\n' +
+                '23,GT 6,Realme,RE-1022,550,18,4.4,6.1,4890,12,256,181,No,Smartphones\n' +
+                '24,P70 Pro,Huawei,HU-1023,550,11,4.1,5.9,5269,4,256,25,No,Smartphones\n' +
+                '25,P70,Huawei,HU-1024,800,11,4.1,6.1,3516,8,1024,25,Yes,Smartphones\n' +
+                '26,Magic 6 Pro,Honor,HO-1025,700,15,4.4,6.6,4712,6,1024,169,Yes,Smartphones\n' +
+                '27,Magic 6,Honor,HO-1026,1450,65,5.0,6.3,5503,12,1024,104,No,Smartphones\n' +
+                '28,Phone 3,Nothing,NO-1027,1400,43,4.5,6.0,4641,4,64,58,Yes,Smartphones\n' +
+                '29,Phone 2a,Nothing,NO-1028,1250,65,4.7,5.9,5489,8,1024,98,No,Smartphones\n' +
+                '30,F6 Pro,Poco,PO-1029,1300,61,4.6,5.9,4813,4,256,168,No,Smartphones\n' +
+                '31,F6,Poco,PO-1030,1150,36,4.9,5.7,4474,16,512,192,Yes,Smartphones\n' +
+                '32,Note 13 Pro+,Redmi,RE-1031,1050,60,4.4,6.4,5207,12,128,153,Yes,Smartphones\n' +
+                '33,Note 13 Pro,Redmi,RE-1032,1050,87,4.9,6.5,5513,12,128,60,No,Smartphones\n' +
+                '34,Zero Ultra,Infinix,IN-1033,450,34,4.4,5.6,5454,16,1024,198,Yes,Smartphones\n' +
+                '35,Zero 5G,Infinix,IN-1034,1050,58,4.6,6.6,4505,12,1024,124,No,Smartphones\n' +
+                '36,Phantom X3 Pro,Tecno,TE-1035,1400,60,4.2,5.9,4001,8,1024,131,Yes,Smartphones\n' +
+                '37,Phantom X3,Tecno,TE-1036,850,12,4.8,6.0,3997,8,64,114,No,Smartphones\n' +
+                '38,XR21,Nokia,NO-1037,1300,30,4.1,6.7,5846,8,128,97,Yes,Smartphones\n' +
+                '39,G400,Nokia,NO-1038,950,90,4.6,6.8,5490,4,512,151,Yes,Smartphones\n' +
+                '40,Fairphone 5,Fairphone,FA-1039,1450,10,4.7,6.9,5888,16,64,149,Yes,Smartphones\n' +
+                '41,Fairphone 4,Fairphone,FA-1040,450,74,4.7,6.2,5612,4,64,88,Yes,Smartphones\n' +
+                '42,Axon 60 Ultra,ZTE,ZT-1041,850,8,4.9,5.8,3933,16,1024,19,No,Smartphones\n' +
+                '43,Axon 60,ZTE,ZT-1042,850,46,4.4,6.4,5313,4,256,39,No,Smartphones\n' +
+                '44,21 Pro,Meizu,ME-1043,700,87,5.0,6.1,4213,12,128,49,No,Smartphones\n' +
+                '45,21,Meizu,ME-1044,400,53,4.7,6.8,4138,8,256,103,No,Smartphones\n' +
+                '46,Legion Phone Duel 3,Lenovo,LE-1045,650,97,4.1,6.2,5956,6,1024,133,Yes,Smartphones\n' +
+                '47,Legion Phone Duel 2,Lenovo,LE-1046,550,27,5.0,6.9,4797,8,1024,178,Yes,Smartphones\n' +
+                '48,AQUOS R8 Pro,Sharp,SH-1047,850,42,4.8,6.9,4740,4,512,191,Yes,Smartphones\n' +
+                '49,AQUOS R8,Sharp,SH-1048,1000,100,4.7,6.5,4523,6,64,82,No,Smartphones\n' +
+                '50,Pixel 9,Google,GO-1049,1150,67,4.0,5.6,5538,12,256,16,Yes,Smartphones',
         },
         {
             blueprint_name: 'Cities Game',
@@ -237,11 +286,11 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             );
             await fetchAgents();
         } catch (error: any) {
-            console.error('Ошибка при создании алиаса:', error);
+            console.error('Error creating alias:', error);
             setErrorMessage(
-                error.message === 'Токен авторизации отсутствует в куки'
-                    ? 'Пожалуйста, войдите в систему'
-                    : `Ошибка при создании алиаса: ${error.message || 'Неизвестная ошибка'}`
+                error.message === 'Authorization token missing in cookies'
+                    ? 'Please log in'
+                    : `Error creating alias: ${error.message || 'Unknown error'}`
             );
         } finally {
             setGlobalLoading(false);
@@ -258,7 +307,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             );
             return response.data.statusInDb || 'UNKNOWN';
         } catch (error: any) {
-            console.error('Ошибка при получении статуса агента:', error);
+            console.error('Error fetching agent status:', error);
             throw error;
         }
     };
@@ -335,6 +384,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             setAgents(updatedAgents);
 
             onAddAgent();
+
         } catch (error: any) {
             console.error('Error creating agent or knowledge base:', error);
             setErrorMessage(
@@ -344,6 +394,9 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             );
         } finally {
             setGlobalLoading(false);
+            // Add this: trigger the tour jump only after successful creation
+                setAgentCreated(true);
+
         }
     };
 
@@ -364,34 +417,33 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             setNewFile(null);
         }
 
-        // Обновляем состояние селекта и флаг взаимодействия
+        // Update select state and interaction flag
         setSelectedBlueprint(blueprintName);
         setBlueprintInteracted(true);
 
-        // Логи для отладки
+        // Debug logs
         console.log('Selected blueprint:', blueprintName);
         console.log('Tour state:', { isOpen: tour.isOpen, currentStep: tour.currentStep });
 
-        // Планируем переход на шаг 4
+        // Schedule transition to step 4
         intendedTourStepRef.current = 4;
 
-        // Если выбран "Custom agent" или другой шаблон, пробуем перейти на шаг 4
+        // If "Custom agent" or another template is selected, attempt to move to step 4
         if (tour.isOpen) {
             try {
-                // Проверяем, не находится ли тур уже на шаге 4
+                // Check if the tour is not already on step 4
                 if (tour.currentStep !== 4) {
                     tour.setCurrentStep(4);
                     console.log('Tour moved to step 4');
                 } else {
                     console.log('Tour already on step 4, no change needed');
                 }
-                intendedTourStepRef.current = null; // Сбрасываем, чтобы избежать повторного перехода
+                intendedTourStepRef.current = null; // Reset to avoid repeated transitions
             } catch (e) {
                 console.error('Error setting tour step:', e);
             }
         }
     };
-
 
     // skipBlueprint: reset the select to custom and move tour forward
     const skipBlueprint = () => {
@@ -431,12 +483,12 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>
             <DialogTitle sx={{ fontSize: deviceType === 'mobile' ? '1.25rem' : '1.375rem', textAlign: 'left' }}>
-                Добавить нового агента
+                Add New Agent
             </DialogTitle>
 
             <DialogContent sx={{ textAlign: 'left', overflowX: 'hidden' }}>
                 <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
-                    Шаблон
+                    Template
                 </Typography>
 
                 <Box sx={{ mb: 2 }}>
@@ -504,25 +556,25 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                 </Box>
 
                 <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
-                    Общие настройки
+                    General Settings
                 </Typography>
 
                 <TextField
                     autoFocus
                     margin="dense"
-                    label="Имя"
+                    label="Name"
                     type="text"
                     data-tour="name-input"
                     fullWidth
                     value={newAgent.name}
                     onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                    helperText="Используйте только буквы, цифры, _ или -"
+                    helperText="Use only letters, numbers, _ or -"
                     sx={{ mb: 2 }}
                 />
 
                 <TextField
                     margin="dense"
-                    label="Инструкции"
+                    label="Instructions"
                     type="text"
                     fullWidth
                     data-tour="instructions-input"
@@ -530,25 +582,25 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                     rows={deviceType === 'mobile' ? 3 : 4}
                     value={newAgent.instructions}
                     onChange={(e) => setNewAgent({ ...newAgent, instructions: e.target.value })}
-                    helperText="Минимальная длина 40 символов"
+                    helperText="Minimum length 40 characters"
                     sx={{ mb: 2 }}
                 />
 
                 <Box sx={{ display: 'flex', gap: 2, mb: 2 }} data-tour="actions-checkboxes">
                     <FormControlLabel
                         control={<Checkbox checked={enableHttpAction} onChange={(e) => setEnableHttpAction(e.target.checked)} />}
-                        label="Включить HTTP-действие"
+                        label="Enable HTTP Action"
                     />
                     <FormControlLabel
                         control={<Checkbox checked={enableEmailAction} onChange={(e) => setEnableEmailAction(e.target.checked)} />}
-                        label="Включить Email-действие"
+                        label="Enable Email Action"
                     />
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
 
                 <Typography variant="h6" sx={{ mb: 1 }}>
-                    База знаний (опционально)
+                    Knowledge Base (Optional)
                 </Typography>
 
                 <input
@@ -560,16 +612,16 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                 />
 
                 <Typography variant="caption" color="textSecondary">
-                    Загрузите файл (PDF или TXT) для создания базы знаний для агента.
+                    Upload a file (PDF or TXT) to create a knowledge base for the agent.
                 </Typography>
             </DialogContent>
 
             <DialogActions sx={{ justifyContent: 'center' }}>
                 <Button onClick={onClose} color="primary">
-                    Отмена
+                    Cancel
                 </Button>
                 <Button data-tour="add-agent-button" onClick={handleAddAgent} color="primary">
-                    Добавить
+                    Add
                 </Button>
             </DialogActions>
         </Dialog>

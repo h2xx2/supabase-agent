@@ -81,8 +81,13 @@ const Page = {
     PRIVACY_POLICY: "Privacy Policy",
     TERMS_AND_CONDITIONS: "Terms and Conditions",
 };
+interface AppProps {
+    setChatOpened?: (value: boolean) => void;
+    setAgentDeployed?: (value: boolean) => void;
+    // если у вас есть другие пропсы от Root — добавьте их здесь
+}
 
-const App: React.FC = () => {
+const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgentDeployed }) => {
     const [cookies, , removeCookie] = useCookies(['authToken']);
     const [globalLoading, setGlobalLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
@@ -123,6 +128,7 @@ const App: React.FC = () => {
     const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
     const deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
     const [messageListHeight, setMessageListHeight] = useState<number>(0);
+    const tour = useTour() as any;
 
     useEffect(() => {
         if (!chatOpen) {
@@ -212,18 +218,6 @@ const App: React.FC = () => {
             throw new Error('Невозможно извлечь user_id из токена');
         }
     };
-    const [hasJumpedToAgentCard, setHasJumpedToAgentCard] = useState(false);
-
-    useEffect(() => {
-        if (agents.length > 0 && !hasJumpedToAgentCard) {
-            try {
-                setCurrentStep(9); // шаг "agent-card"
-                setHasJumpedToAgentCard(true); // Устанавливаем флаг, чтобы не повторять
-            } catch (e) {
-                console.warn('Не удалось установить шаг тура:', e);
-            }
-        }
-    }, [agents, setCurrentStep]);
 
     useEffect(() => {
         if (user) {
@@ -266,6 +260,23 @@ const App: React.FC = () => {
             return [];
         }
     };
+
+    const handleCloseChat = () => {
+        setChatOpen(false);
+
+        if (typeof setChatOpenedFromRoot === 'function') {
+            try { setChatOpenedFromRoot(false); } catch (e) { /* ignore */ }
+        }
+
+        try {
+            if (tour && tour.isOpen) {
+                tour.setCurrentStep(13);
+            }
+        } catch (e) {
+            console.warn('Cannot move tour to deploy step', e);
+        }
+    };
+
 
     const toggleDrawer = () => setDrawerOpen(!drawerOpen);
 
@@ -568,19 +579,29 @@ const App: React.FC = () => {
     };
 
     const handleOpenChat = (agent: Agent) => {
-        if (agent.agent_id && agent.alias_id) {
-            setSelectedAgent(agent);
-            setChatMessages([]);
-            setSessionIds((prev) => {
-                const newSessionIds = { ...prev };
-                delete newSessionIds[agent.agent_id];
-                return newSessionIds;
-            });
-            setChatOpen(true);
-        } else {
-            console.warn('Agent ID or Alias ID missing:', agent);
+        // ваш существующий код открытия чата
+        setSelectedAgent(agent);
+        setChatMessages([]);
+        setSessionIds((prev) => {
+            const newSessionIds = { ...prev };
+            if (agent.agent_id) delete newSessionIds[agent.agent_id];
+            return newSessionIds;
+        });
+        setChatOpen(true);
+
+        // уведомим Root (если он передал функцию)
+        if (typeof setChatOpenedFromRoot === 'function') {
+            try { setChatOpenedFromRoot(true); } catch (e) { /* ignore */ }
+        }
+
+        // переводим тур на шаг chat-dialog (index 11)
+        try {
+            if (tour && tour.isOpen) tour.setCurrentStep(11);
+        } catch (e) {
+            console.warn('Tour not available or cannot set step', e);
         }
     };
+
 
     const deployChat = async (agent: Agent) => {
         setGlobalLoading(true);
@@ -592,8 +613,22 @@ const App: React.FC = () => {
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
             );
             const { publicUrl, apkKey } = response.data;
-            setAgents(agents.map((a) => (a.id === agent.id ? { ...a, public_url: publicUrl } : a)));
+            setAgents((prev) => prev.map((a) => (a.id === agent.id ? { ...a, public_url: publicUrl } : a)));
             alert(`Публичная URL: ${publicUrl}\nAPK Key: ${apkKey}\nСкопируйте и используйте для доступа!`);
+
+            // Если Root передал setAgentDeployed — уведомим его, иначе просто продолжим
+            if (typeof setAgentDeployed === 'function') {
+                try { setAgentDeployed(true); } catch (e) { /* ignore */ }
+            }
+
+            // Перейти на шаг public-link (index 14)
+            try {
+                if (tour && tour.isOpen) {
+                    tour.setCurrentStep(14);
+                }
+            } catch (e) {
+                console.warn('Cannot move tour to public-link step', e);
+            }
         } catch (error: any) {
             console.error('Ошибка при деплое чата:', error);
             setErrorMessage(
@@ -605,6 +640,7 @@ const App: React.FC = () => {
             setGlobalLoading(false);
         }
     };
+
 
     const revokeChat = async (agent: Agent) => {
         setGlobalLoading(true);
@@ -991,6 +1027,7 @@ const App: React.FC = () => {
                                                                                         py: deviceType === 'tablet' ? 0.75 : 1,
                                                                                         width: deviceType === 'tablet' ? 140 : 160,
                                                                                     }}
+                                                                                    data-tour="open-chat-button"
                                                                                 >
                                                                                     Chat
                                                                                 </Button>
@@ -1005,6 +1042,7 @@ const App: React.FC = () => {
                                                                                             py: deviceType === 'tablet' ? 0.75 : 1,
                                                                                             width: deviceType === 'tablet' ? 140 : 160,
                                                                                         }}
+                                                                                        data-tour="deploy-button"
                                                                                     >
                                                                                         Deploy
                                                                                     </Button>
@@ -1098,7 +1136,7 @@ const App: React.FC = () => {
                                                                     height: '100%',
                                                                     backgroundColor: '#f0f0f0',
                                                                 }}
-                                                                data-tour="add-button"
+                                                                data-tour="integration-script"
                                                             >
                                                                 <Typography
                                                                     sx={{
@@ -1677,7 +1715,7 @@ const App: React.FC = () => {
                                         touchAction: 'none',
                                     }}
                                 >
-                                    <IconButton onClick={() => setChatOpen(false)} sx={{ mr: 1 }} data-tour="chat-close">
+                                    <IconButton onClick={() => handleCloseChat()} sx={{ mr: 1 }} data-tour="chat-close">
                                         <CloseIcon />
                                     </IconButton>
                                     <Typography
