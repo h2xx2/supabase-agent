@@ -238,7 +238,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
     useEffect(() => {
         const tourCompleted = localStorage.getItem('tourCompleted') === 'true';
-        if (user && !tourCompleted && !termsDialogOpen) {
+        if (user && !termsDialogOpen) {
             try {
                 setIsOpen(true);
             } catch (e) {
@@ -1176,7 +1176,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     }}
                                                                 >
                                                                     {`<script
-  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
+  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
@@ -1192,7 +1192,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     onClick={() => {
                                                                         navigator.clipboard
                                                                             .writeText(`<script
-  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
+  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
