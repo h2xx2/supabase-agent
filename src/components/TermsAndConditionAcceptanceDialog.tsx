@@ -6,14 +6,16 @@ import { useCookies } from "react-cookie";
 
 interface TermsAndConditionAcceptanceDialogProps {
     isUserLoggedIn: boolean;
-    user: any; // Полный объект user, содержащий email и profile
-    onUpdateUser: (updatedProfile: any) => void; // Обновление профиля
+    user: any;
+    onUpdateUser: (updatedProfile: any) => void;
+    onDialogStateChange?: (isOpen: boolean) => void; // новое
 }
 
 const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogProps> = ({
                                                                                            isUserLoggedIn,
                                                                                            user,
-                                                                                           onUpdateUser
+                                                                                           onUpdateUser,
+                                                                                           onDialogStateChange
                                                                                        }) => {
     const [isDialogOpened, setIsDialogOpened] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -25,12 +27,14 @@ const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogPro
             user?.terms_and_conditions_of_use ??
             user?.profileData?.terms_and_conditions_of_use;
 
-        if (isUserLoggedIn && termsAccepted === false) {
-            setIsDialogOpened(true);
-        } else {
-            setIsDialogOpened(false);
+        const shouldOpen = isUserLoggedIn && termsAccepted === false;
+        setIsDialogOpened(shouldOpen);
+
+        if (onDialogStateChange) {
+            onDialogStateChange(shouldOpen);
         }
-    }, [isUserLoggedIn, user]);
+    }, [isUserLoggedIn, user, onDialogStateChange]);
+
 
 
     const handleAccept = async () => {
@@ -55,15 +59,19 @@ const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogPro
 
             onUpdateUser(updatedProfile);
             setIsDialogOpened(false);
+            if (onDialogStateChange) onDialogStateChange(false);
         } catch (error) {
-            console.error("Ошибка при сохранении условий:", error);
+            console.error("Error saving conditions:", error);
         } finally {
             setLoading(false);
         }
     };
 
+    const handleDecline = () => {
+        setIsDialogOpened(false);
+        if (onDialogStateChange) onDialogStateChange(false);
+    };
 
-    const handleDecline = () => setIsDialogOpened(false);
 
     return (
         <Dialog open={isDialogOpened} onClose={handleDecline} maxWidth="lg">

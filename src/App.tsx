@@ -119,7 +119,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [isTourOpen, setIsTourOpen] = useState(false);
     const { currentStep, setCurrentStep } = useTour()
     const { setIsOpen } = useTour();
-
+    const [termsDialogOpen, setTermsDialogOpen] = useState(false);
     const messageListRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLDivElement | null>(null);
 
@@ -204,7 +204,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const getAuthToken = (): string => {
         const token = cookies.authToken;
         if (!token) {
-            throw new Error('Токен авторизации отсутствует в куки');
+            throw new Error('The authorization token is missing from the cookie');
         }
         return token;
     };
@@ -214,8 +214,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             const payload = JSON.parse(atob(token.split('.')[1]));
             return payload.sub;
         } catch (error) {
-            console.error('Ошибка декодирования токена:', error);
-            throw new Error('Невозможно извлечь user_id из токена');
+            console.error('Token decoding error:', error);
+            throw new Error('It is not possible to extract the user_id from the token');
         }
     };
 
@@ -226,8 +226,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     const agentsData = await fetchAgents();
                     setAgents(agentsData);
                 } catch (error: any) {
-                    console.error('Ошибка при загрузке агентов:', error);
-                    setErrorMessage('Не удалось загрузить агентов');
+                    console.error('Error loading agents:', error);
+                    setErrorMessage('Failed to load agents');
                 }
             };
             loadAgents();
@@ -238,19 +238,19 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
     useEffect(() => {
         const tourCompleted = localStorage.getItem('tourCompleted') === 'true';
-        if (user && !tourCompleted) {
+        if (user && !tourCompleted && !termsDialogOpen) {
             try {
                 setIsOpen(true);
             } catch (e) {
                 console.warn('Cannot open tour programmatically', e);
             }
         } else {
-            // Если пользователь вышел — убедимся, что тур закрыт
-            if (!user) {
+            if (!user || termsDialogOpen) {
                 try { setIsOpen(false); } catch (e) { /* ignore */ }
             }
         }
-    }, [user, setIsOpen]);
+    }, [user, termsDialogOpen, setIsOpen]);
+
 
 
 
@@ -264,11 +264,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             );
             return response.data.agents || [];
         } catch (error: any) {
-            console.error('Ошибка при получении агентов:', error);
+            console.error('Error receiving agents:', error);
             setErrorMessage(
-                error.message === 'Токен авторизации отсутствует в куки'
-                    ? 'Пожалуйста, войдите в систему'
-                    : 'Не удалось загрузить агентов'
+                error.message === 'The authorization token is missing from the cookie'
+                    ? 'Please log in.'
+                    : 'Failed to load agents'
             );
             return [];
         }
@@ -306,7 +306,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                 );
             }
         } catch (error: any) {
-            console.error('Ошибка при выходе:', error);
+            console.error('Exit error:', error);
         } finally {
             setUser(null);
             setAgents([]);
@@ -343,11 +343,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             );
             await fetchAgents();
         } catch (error: any) {
-            console.error('Ошибка при создании алиаса:', error);
+            console.error('Error when creating alias:', error);
             setErrorMessage(
-                error.message === 'Токен авторизации отсутствует в куки'
-                    ? 'Пожалуйста, войдите в систему'
-                    : `Ошибка при создании алиаса: ${error.message || 'Неизвестная ошибка'}`
+                error.message === 'The authorization token is missing from the cookie'
+                    ? 'Please log in'
+                    : `Error when creating an alias: ${error.message || 'Unknown error'}`
             );
         } finally {
             setGlobalLoading(false);
@@ -384,13 +384,13 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             !editAgent.instructions.trim() ||
             editAgent.instructions.length < 40
         ) {
-            setErrorMessage('Имя и инструкции (мин. 40 символов) обязательны');
+            setErrorMessage('Name and instructions (min. 40 characters) are required');
             return;
         }
 
         const sanitizedName = editAgent.name.replace(/[^a-zA-Z0-9_-]/g, '');
         if (!sanitizedName) {
-            setErrorMessage('Недопустимое имя агента');
+            setErrorMessage('Invalid agent name');
             return;
         }
 
@@ -401,7 +401,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             const fileData = editFile ? await convertFileToBase64(editFile) : null;
             const fileName = editFile ? editFile.name : null;
             if (deleteKnowledgeBase && fileData) {
-                setErrorMessage('Нельзя выбрать новый файл при удалении базы знаний');
+                setErrorMessage('You cannot select a new file when deleting the knowledge base.');
                 return;
             }
 
@@ -425,11 +425,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             await fetchAgents();
             handleCloseEditDialog();
         } catch (error: any) {
-            console.error('Ошибка при обновлении агента:', error);
+            console.error('Error updating agent:', error);
             setErrorMessage(
-                error.message === 'Токен авторизации отсутствует в куки'
-                    ? 'Пожалуйста, войдите в систему'
-                    : `Ошибка при обновлении агента: ${error.message || 'Неизвестная ошибка'}`
+                error.message === 'The authorization token is missing from the cookie'
+                    ? 'Please log in'
+                    : `Error updating agent: ${error.message || 'Unknown error'}`
             );
         } finally {
             setGlobalLoading(false);
@@ -457,7 +457,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             );
 
             const presignedUrl = response.data.url;
-            if (!presignedUrl) throw new Error('Не удалось получить ссылку на файл');
+            if (!presignedUrl) throw new Error('Couldn\'t get a link to the file');
 
             const fileResponse = await fetch(presignedUrl);
             const blob = await fileResponse.blob();
@@ -472,24 +472,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             link.remove();
             URL.revokeObjectURL(link.href);
         } catch (error) {
-            console.error('Ошибка при скачивании базы знаний:', error);
-            setErrorMessage('Не удалось скачать файл базы знаний');
+            console.error('Error when downloading the knowledge base:', error);
+            setErrorMessage('Couldn\'t download knowledge base file');
         } finally {
             setGlobalLoading(false);
         }
-    };
-
-    const downloadBlueprintKnowledgeBase = (blueprint: Blueprint) => {
-        if (!blueprint.kb_content || !blueprint.kb_filename) return;
-
-        const blob = new Blob([blueprint.kb_content], { type: 'text/plain' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', blueprint.kb_filename);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(link.href);
     };
 
     const sendChatMessage = async (text: string) => {
@@ -549,20 +536,20 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                 { headers: { Authorization: `Bearer ${token}` } }
             );
         } catch (error: any) {
-            console.error('Ошибка при отправке сообщения:', error);
-            let errorMessageText = 'Ошибка: Неизвестная ошибка';
+            console.error('Error when sending a message:', error);
+            let errorMessageText = 'Error: Unknown error';
             if (error.response) {
                 if (error.response.status === 403 && error.response.data.error) {
                     errorMessageText = error.response.data.error;
                 } else if (error.response.data.error) {
-                    errorMessageText = `Ошибка: ${error.response.data.error}`;
+                    errorMessageText = `Error: ${error.response.data.error}`;
                 } else {
-                    errorMessageText = `Ошибка: ${error.response.statusText || 'Неизвестная ошибка'}`;
+                    errorMessageText = `Error: ${error.response.statusText || 'Unknown error'}`;
                 }
-            } else if (error.message === 'Токен авторизации отсутствует в куки') {
-                errorMessageText = 'Пожалуйста, войдите в систему';
+            } else if (error.message === 'The authorization token is missing in the cookie') {
+                errorMessageText = 'Please log in';
             } else {
-                errorMessageText = `Ошибка: ${error.message || 'Неизвестная ошибка'}`;
+                errorMessageText = `Error: ${error.message || 'Unknown error'}`;
             }
 
             const errorMessage: MessageModel = {
@@ -586,7 +573,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
             } catch (saveError) {
-                console.error('Ошибка при сохранении вызова:', saveError);
+                console.error('Error saving the call:', saveError);
             }
         }
     };
@@ -627,7 +614,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             );
             const { publicUrl, apkKey } = response.data;
             setAgents((prev) => prev.map((a) => (a.id === agent.id ? { ...a, public_url: publicUrl } : a)));
-            alert(`Публичная URL: ${publicUrl}\nAPK Key: ${apkKey}\nСкопируйте и используйте для доступа!`);
+            alert(`Public URL: ${publicUrl}\nAPK Key: ${apkKey}\nCopy it and use it for access!`);
 
             // Если Root передал setAgentDeployed — уведомим его, иначе просто продолжим
             if (typeof setAgentDeployed === 'function') {
@@ -643,11 +630,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                 console.warn('Cannot move tour to public-link step', e);
             }
         } catch (error: any) {
-            console.error('Ошибка при деплое чата:', error);
+            console.error('Error when dispatching the chat:', error);
             setErrorMessage(
-                error.message === 'Токен авторизации отсутствует в куки'
-                    ? 'Пожалуйста, войдите в систему'
-                    : `Ошибка при деплое чата: ${error.message || 'Неизвестная ошибка'}`
+                error.message === 'The authorization token is missing from the cookie'
+                    ? 'Please log in'
+                    : `Error when dispatching the chat: ${error.message || 'Unknown error'}`
             );
         } finally {
             setGlobalLoading(false);
@@ -667,11 +654,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             setAgents(agents.map((a) => (a.id === agent.id ? { ...a, public_url: undefined } : a)));
             await fetchAgents();
         } catch (error: any) {
-            console.error('Ошибка при revoke чата:', error);
+            console.error('Error when revoking the chat:', error);
             setErrorMessage(
-                error.message === 'Токен авторизации отсутствует в куки'
-                    ? 'Пожалуйста, войдите в систему'
-                    : `Ошибка при revoke чата: ${error.message || 'Неизвестная ошибка'}`
+                error.message === 'The authorization token is missing from the cookie'
+                    ? 'Please log in'
+                    : `Error when revoke chat: ${error.message || 'Unknown error'}`
             );
         } finally {
             setGlobalLoading(false);
@@ -690,7 +677,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
     const handleDeleteAgent = async () => {
         if (!agentToDelete?.agent_id || !agentToDelete.id || !user?.id) {
-            setErrorMessage('Невозможно удалить агента: отсутствуют необходимые данные');
+            setErrorMessage('Agent cannot be deleted: necessary data is missing');
             handleCloseDeleteDialog();
             return;
         }
@@ -710,11 +697,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             setAgents(agents.filter((a) => a.id !== agentToDelete.id));
             handleCloseDeleteDialog();
         } catch (error: any) {
-            console.error('Ошибка при удалении агента:', error);
+            console.error('Error deleting the agent:', error);
             setErrorMessage(
-                error.message === 'Токен авторизации отсутствует в куки'
-                    ? 'Пожалуйста, войдите в систему'
-                    : `Ошибка при удалении агента: ${error.message || 'Неизвестная ошибка'}`
+                error.message === 'The authorization token is missing from the cookie'
+                    ? 'Please log in.'
+                    : `Error deleting the agent: ${error.message || 'Unknown error'}`
             );
         } finally {
             setGlobalLoading(false);
@@ -1189,7 +1176,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     }}
                                                                 >
                                                                     {`<script
-  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
@@ -1205,7 +1192,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     onClick={() => {
                                                                         navigator.clipboard
                                                                             .writeText(`<script
-  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
@@ -1407,8 +1394,9 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
                     <TermsAndConditionAcceptanceDialog
                         isUserLoggedIn={!!user}
-                        user={user} // Передаем весь объект user
+                        user={user}
                         onUpdateUser={(updatedProfile) => setUser({ ...user, profile: updatedProfile })}
+                        onDialogStateChange={setTermsDialogOpen}
                     />
 
                     <AddAgentDialog
