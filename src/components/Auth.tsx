@@ -483,6 +483,33 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                             <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
                                 {authMode === "signin" ? "Sign In" : "Sign Up"}
                             </Button>
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                sx={{ mt: 2, mb: 2 }}
+                                onClick={async () => {
+                                    try {
+                                        const res = await axios.post(
+                                            `${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`,
+                                            {},
+                                            { headers: { "Content-Type": "application/json" } }
+                                        );
+
+                                        const { url } = res.data;
+                                        if (url) {
+                                            window.location.href = url; // редиректим на Google
+                                        } else {
+                                            setError("Failed to start Google sign-in");
+                                        }
+                                    } catch (err: any) {
+                                        console.error("Google auth error:", err);
+                                        setError("Google sign-in failed");
+                                    }
+                                }}
+                            >
+                                Sign in with Google
+                            </Button>
+
 
                             <Box sx={{ display: "flex", justifyContent: "center", width: "100%" }}>
                                 <Box sx={{ textAlign: "center", width: "100%" }}>
