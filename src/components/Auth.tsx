@@ -35,15 +35,48 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [resendSuccess, setResendSuccess] = useState<string | null>(null);
-
-    // cooldown state: seconds remaining (0 = ready)
     const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
     const cooldownRef = useRef<number | null>(null);
-
-    // Для отладки: показываем "сырые" данные ответа (можешь убрать)
     const [, setLastErrorRaw] = useState<any>(null);
 
     useEffect(() => {
+        const handleOAuthCallback = async () => {
+            const hash = window.location.hash;
+            if (hash.includes("access_token")) {
+                try {
+                    const params = new URLSearchParams(hash.replace("#", ""));
+                    const accessToken = params.get("access_token");
+
+                    if (!accessToken) {
+                        setError("Токен доступа отсутствует");
+                        return;
+                    }
+
+                    // Отправляем access_token на бэкенд
+                    const response = await axios.post(
+                        `${import.meta.env.VITE_API_GATEWAY_URL}/auth-google-callback`,
+                        { access_token: accessToken },
+                        { headers: { "Content-Type": "application/json" } }
+                    );
+
+                    const { user, token } = response.data;
+                    if (user && token) {
+                        setUser(user);
+                        setCookie("authToken", token, { path: '/' });
+                        onAuthChange(user);
+                        // Очищаем фрагмент URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    } else {
+                        setError("Не удалось обработать ответ сервера");
+                    }
+                } catch (err: any) {
+                    const { message } = extractErrorMessage(err);
+                    setError(message);
+                }
+            }
+        };
+
+        // Проверка сохранённого токена или OAuth callback
         const storedToken = cookies["authToken"];
         if (storedToken) {
             validateToken(storedToken)
@@ -56,14 +89,12 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                     }
                 })
                 .catch(() => removeCookie("authToken"))
-                .finally(() => {
-                    setIsLoading(false);
-                });
+                .finally(() => setIsLoading(false));
         } else {
-            setIsLoading(false);
+            handleOAuthCallback().finally(() => setIsLoading(false));
         }
 
-        // cleanup on unmount
+        // Очистка при размонтировании
         return () => {
             if (cooldownRef.current) {
                 clearInterval(cooldownRef.current);
@@ -71,7 +102,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         };
     }, [onAuthChange, cookies, removeCookie]);
 
-    // управляем интервалом отсчёта
+    // Управление интервалом отсчёта для повторной отправки email
     useEffect(() => {
         if (cooldownSeconds > 0 && !cooldownRef.current) {
             cooldownRef.current = window.setInterval(() => {
@@ -88,15 +119,12 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             }, 1000);
         }
 
-        // если cooldownSeconds сброшен вручную, очистим интервал
         if (cooldownSeconds === 0 && cooldownRef.current) {
             clearInterval(cooldownRef.current);
             cooldownRef.current = null;
         }
 
-        return () => {
-            // не очищаем интервал каждый рендер, оставляем в cleanup выше
-        };
+        return () => {};
     }, [cooldownSeconds]);
 
     const validateToken = async (token: string): Promise<any> => {
@@ -159,13 +187,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     };
 
     const startCooldown = (seconds = 60) => {
-        // сбрасываем существующие
         if (cooldownRef.current) {
             clearInterval(cooldownRef.current);
             cooldownRef.current = null;
         }
         setCooldownSeconds(seconds);
-        // интервал создаётся эффектом выше
     };
 
     const handleSignUp = async () => {
@@ -189,7 +215,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                     ? JSON.parse(outerData.body)
                     : outerData.body ?? outerData;
 
-            // Если сервер вернул ошибку внутри успешного ответа — отработаем её
             if (parsedBody && (parsedBody.error || parsedBody.message)) {
                 setLastErrorRaw(parsedBody);
                 if (rawIndicatesEmailNotConfirmed(parsedBody, parsedBody.error || parsedBody.message)) {
@@ -212,7 +237,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 }
                 setUser(user);
                 if (token) {
-                    setCookie("authToken", token);
+                    setCookie("authToken", token, { path: '/' });
                 }
                 onAuthChange(user);
             } else {
@@ -254,7 +279,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                     ? JSON.parse(outerData.body)
                     : outerData.body ?? outerData;
 
-            // Если сервер поместил ошибку внутрь ответа (200) — отработаем её
             if (data && (data.error || data.message)) {
                 setLastErrorRaw(data);
                 if (rawIndicatesEmailNotConfirmed(data, data.error || data.message)) {
@@ -270,7 +294,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             const { user, token } = data || {};
             if (user && token) {
                 setUser(user);
-                setCookie("authToken", token);
+                setCookie("authToken", token, { path: '/' });
                 onAuthChange(user);
             } else {
                 console.warn("DEBUG: signin returned without token or user:", data);
@@ -298,7 +322,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             return;
         }
 
-        // Блокируем сразу при клике — но если запрос упадёт, откатим (см. catch)
         startCooldown(60);
 
         try {
@@ -309,7 +332,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             );
             setResendSuccess("Verification email sent to " + email);
         } catch (err: any) {
-            // если ошибка — откатываем cooldown, показываем ошибку
             if (cooldownRef.current) {
                 clearInterval(cooldownRef.current);
                 cooldownRef.current = null;
@@ -327,17 +349,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         authMode === "signin" ? handleSignIn() : handleSignUp();
     };
 
-    // @ts-ignore
     return isLoading ? (
         <></>
     ) : (
         <ThemeProvider theme={theme}>
-
             <Box
                 sx={{
                     width: { xs: "min(90vw, 320px)", md: "400px" },
                     mx: 'auto',
-                    // mt: { xs: 2, md: 3 },
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -367,7 +386,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                     <CssBaseline />
                     <Box
                         sx={{
-                            // minHeight: "50vh",
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
@@ -497,7 +515,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
 
                                         const { url } = res.data;
                                         if (url) {
-                                            window.location.href = url; // редиректим на Google
+                                            window.location.href = url;
                                         } else {
                                             setError("Failed to start Google sign-in");
                                         }
@@ -509,7 +527,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                             >
                                 Sign in with Google
                             </Button>
-
 
                             <Box sx={{ display: "flex", justifyContent: "center", width: "100%" }}>
                                 <Box sx={{ textAlign: "center", width: "100%" }}>
