@@ -101,6 +101,15 @@ const Pricing: React.FC = () => {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             console.log('Request sent successfully:', response.data);
+
+            if (window.gtag) {
+                window.gtag('event', 'conversion', {
+                    send_to: 'AW-17635043348/hdSeCM-EsakbEJTQhdlB',
+                    value: 1.0,
+                    currency: 'USD',
+                });
+            }
+
             handleClose();
         } catch (error: any) {
             console.error('Error sending upgrade request:', error);
@@ -111,6 +120,7 @@ const Pricing: React.FC = () => {
             );
         }
     };
+
 
     return (
         <Container
