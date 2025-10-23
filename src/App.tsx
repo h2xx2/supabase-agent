@@ -122,6 +122,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [termsDialogOpen, setTermsDialogOpen] = useState(false);
     const messageListRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLDivElement | null>(null);
+    const [showNotification, setShowNotification] = useState(true);
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -1248,6 +1249,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                 }, {month: 0, year: 0}),
                 deviceType,
                 user,
+                setUser,
                 setGlobalLoading
             }} />
             case Page.PRIVACY_POLICY:
@@ -1321,7 +1323,106 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                 onNewAgent: () => setOpenAddDialog(true)
                             }}
                         />
-
+                        {showNotification &&
+                            user?.plan_type === 'free' &&
+                            !user?.action_used && (
+                                <Alert
+                                    severity="warning"
+                                    sx={{
+                                        backgroundColor: '#fff8e1',
+                                        color: '#5d4037',
+                                        border: '1px solid #ffe082',
+                                        borderRadius: 2,
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                                        p: deviceType === 'mobile' ? 2 : 2.5,
+                                        display: 'flex',
+                                        flexDirection: deviceType === 'mobile' ? 'column' : 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: deviceType === 'mobile' ? 1.5 : 2,
+                                        position: 'relative',
+                                    }}
+                                    action={
+                                        deviceType === 'mobile' ? (
+                                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                                <Button
+                                                    fullWidth
+                                                    variant="contained"
+                                                    color="primary"
+                                                    onClick={() => {
+                                                        setPage(Page.SETTINGS);
+                                                        setDrawerOpen(false);
+                                                        setShowNotification(false);
+                                                    }}
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        textTransform: 'none',
+                                                        borderRadius: 2,
+                                                    }}
+                                                >
+                                                    Upgrade Now
+                                                </Button>
+                                            </Box>
+                                        ) : (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    size="small"
+                                                    onClick={() => {
+                                                        setPage(Page.SETTINGS);
+                                                        setDrawerOpen(false);
+                                                        setShowNotification(false);
+                                                    }}
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        textTransform: 'none',
+                                                        borderRadius: 2,
+                                                    }}
+                                                >
+                                                    Upgrade Now
+                                                </Button>
+                                                <IconButton
+                                                    aria-label="close"
+                                                    color="inherit"
+                                                    size="small"
+                                                    onClick={() => setShowNotification(false)}
+                                                    sx={{
+                                                        color: '#5d4037',
+                                                        transition: '0.2s',
+                                                        '&:hover': { color: '#3e2723' },
+                                                    }}
+                                                >
+                                                    <CloseIcon fontSize="small" />
+                                                </IconButton>
+                                            </Box>
+                                        )
+                                    }
+                                >
+                                    {deviceType === 'mobile' && (
+                                        <IconButton
+                                            aria-label="close"
+                                            color="inherit"
+                                            size="small"
+                                            onClick={() => setShowNotification(false)}
+                                            sx={{
+                                                position: 'absolute',
+                                                top: 8,
+                                                right: 8,
+                                                color: '#5d4037',
+                                                transition: '0.2s',
+                                                '&:hover': { color: '#3e2723' },
+                                            }}
+                                        >
+                                            <CloseIcon fontSize="small" />
+                                        </IconButton>
+                                    )}
+                                    <Box sx={{ fontSize: 15, lineHeight: 1.5 }}>
+                                        <strong>You’re on the Free plan.</strong> To unlock more features and higher limits,
+                                        upgrade to the <strong>Personal plan</strong>. Enjoy a 3-month free trial — no credit card required.
+                                    </Box>
+                                </Alert>
+                            )}
 
                         <Drawer
                             open={drawerOpen}

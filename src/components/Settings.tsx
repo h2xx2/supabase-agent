@@ -4,20 +4,19 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from 'axios';
 import StatCard from "./StatCard";
-// @ts-ignore
-import StatCardProps from "./StatCard";
 import ChangePassword from "./ChangePassword";
 import Pricing from "./Pricing";
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 
 interface SettingsProps {
     callCount: any,
     deviceType: string,
     user: any,
+    setUser: (user: any) => void,
     setGlobalLoading: (state: any) => void
 }
 
-const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlobalLoading }) => {
+const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setUser, setGlobalLoading }) => {
     const [error, setError] = React.useState<string | null>(null);
     const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
 
@@ -45,12 +44,10 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
         }
     ];
 
-
-    // @ts-ignore
-    const statisticData: StatCardProps[] = [
+    const statisticData = [
         {
             title: 'Messages per month',
-            value: callCount.month,
+            value: user?.message_limit || callCount.month,
         },
         {
             title: 'Messages per year',
@@ -65,7 +62,6 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
     const save = async (event: React.FormEvent) => {
         event.preventDefault();
         setError(null);
-        // @ts-ignore
         const formData = new FormData(event.currentTarget);
         const { first_name, last_name } = Object.fromEntries((formData as any).entries());
         if (!first_name?.trim() || !last_name?.trim()) {
@@ -74,7 +70,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
         }
         setGlobalLoading(true);
         const data = {
-            email: user.email,  // Добавлено для Lambda
+            email: user.email,
             first_name,
             last_name,
             date_of_birth: dateOfBirth
@@ -97,21 +93,19 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
         } finally {
             setGlobalLoading(false);
         }
-    }
+    };
+
     useEffect(() => {
         if (!user) return;
-        // ищем дату в нескольких местах, чтобы покрыть оба варианта ответа сервера
         const dob =
             user.date_of_birth ??
-            user.dateOfBirth ?? // если вы когда-то юзали camelCase
+            user.dateOfBirth ??
             user.profile?.date_of_birth ??
             user.profileData?.date_of_birth ??
             null;
         setDateOfBirth(dob || null);
     }, [user]);
-    // @ts-ignore
-    // @ts-ignore
-    // @ts-ignore
+
     return (
         <Box
             sx={{
@@ -258,7 +252,18 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
                 ))}
             </Grid>
 
-            <Pricing />
+            <Box sx={{ mt: 2, mb: 2 }}>
+                {user.is_trial_active && (
+                    <Alert severity="success">
+                        You are on a 3-month free trial for the Personal plan. {user.trial_days_remaining} days remaining.
+                    </Alert>
+                )}
+            </Box>
+            <Pricing
+                user={user}
+                setUser={setUser}
+                setGlobalLoading={setGlobalLoading}
+            />
         </Box>
     );
 }
