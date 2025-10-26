@@ -60,7 +60,8 @@ const tiers = [
 ];
 
 const Pricing: React.FC<PricingProps> = ({ setGlobalLoading, user, setUser }) => {
-    const [open, setOpen] = React.useState(false);
+    const [openUpgrade, setOpenUpgrade] = React.useState(false);
+    const [openDowngrade, setOpenDowngrade] = React.useState(false); // New state for downgrade dialog
     const [selectedPlan, setSelectedPlan] = React.useState('');
     const [userEmail, setUserEmail] = React.useState('');
     const [desiredLimits, setDesiredLimits] = React.useState('');
@@ -127,18 +128,23 @@ const Pricing: React.FC<PricingProps> = ({ setGlobalLoading, user, setUser }) =>
         }
     };
 
-    const handleOpen = (plan: string) => {
+    const handleOpenUpgrade = (plan: string) => {
         const currentPlan = user?.plan_type?.toLowerCase() || 'free';
         if (currentPlan === plan.toLowerCase()) return;
         setSelectedPlan(plan);
-        setOpen(true);
+        setOpenUpgrade(true);
     };
 
-    const handleClose = () => {
-        setOpen(false);
+    const handleCloseUpgrade = () => {
+        setOpenUpgrade(false);
         setUserEmail('');
         setDesiredLimits('');
         setComments('');
+        setErrorMessage('');
+    };
+
+    const handleCloseDowngrade = () => {
+        setOpenDowngrade(false);
         setErrorMessage('');
     };
 
@@ -152,7 +158,6 @@ const Pricing: React.FC<PricingProps> = ({ setGlobalLoading, user, setUser }) =>
             const currentDate = new Date().toISOString().split('T')[0];
 
             if (selectedPlan === 'Personal' && !user?.action_used) {
-                // Start free trial if action_used is false
                 const response = await axios.post(
                     `${import.meta.env.VITE_API_GATEWAY_URL}/start-free-trial`,
                     {
@@ -168,7 +173,6 @@ const Pricing: React.FC<PricingProps> = ({ setGlobalLoading, user, setUser }) =>
                 const endDate = new Date();
                 endDate.setDate(endDate.getDate() + 90);
 
-                // Update user state
                 const updatedUser = {
                     ...user,
                     id: user_id,
@@ -189,7 +193,6 @@ const Pricing: React.FC<PricingProps> = ({ setGlobalLoading, user, setUser }) =>
                     });
                 }
             } else {
-                // Send contact-us request for Personal (if action_used is true) or other plans
                 const response = await axios.post(
                     `${import.meta.env.VITE_API_GATEWAY_URL}/contact-us`,
                     {
@@ -215,7 +218,7 @@ const Pricing: React.FC<PricingProps> = ({ setGlobalLoading, user, setUser }) =>
                 }
             }
 
-            handleClose();
+            handleCloseUpgrade();
         } catch (error: any) {
             console.error('Error processing request:', error.response?.data || error);
             setErrorMessage(
@@ -226,6 +229,62 @@ const Pricing: React.FC<PricingProps> = ({ setGlobalLoading, user, setUser }) =>
         } finally {
             setGlobalLoading(false);
         }
+    };
+
+    const handleDowngrade = async () => {
+        try {
+            const token = getAuthToken();
+            const user_id = getUserIdFromToken(token);
+
+            setGlobalLoading(true);
+
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/downgrade-plan`,
+                {
+                    user_id,
+                    plan: 'free',
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            console.log('Downgrade request sent:', response.data);
+
+            const updatedUser = {
+                ...user,
+                id: user_id,
+                plan_type: 'free',
+                is_trial_active: false,
+                trial_days_remaining: 0,
+                trial_end_date: null,
+                action_used: user?.action_used || false,
+            };
+            setUser(updatedUser);
+            console.log('Updated user state after downgrade:', updatedUser);
+
+            if (window.gtag) {
+                window.gtag('event', 'conversion', {
+                    send_to: 'AW-17635043348/hdSeCM-EsakbEJTQhdlB',
+                    value: 0.0,
+                    currency: 'USD',
+                    event_category: 'Downgrade',
+                });
+            }
+
+            handleCloseDowngrade();
+        } catch (error: any) {
+            console.error('Error processing downgrade:', error.response?.data || error);
+            setErrorMessage(
+                error.response?.data?.error === 'Invalid user_id format'
+                    ? 'Invalid user ID format. Please contact support.'
+                    : error.response?.data?.error || 'Failed to downgrade plan'
+            );
+        } finally {
+            setGlobalLoading(false);
+        }
+    };
+
+    const handleOpenDowngrade = () => {
+        setOpenDowngrade(true);
     };
 
     return (
@@ -251,10 +310,14 @@ const Pricing: React.FC<PricingProps> = ({ setGlobalLoading, user, setUser }) =>
                 {tiers.map((tier) => {
                     const currentPlan = user?.plan_type?.toLowerCase() || 'free';
                     const isCurrentPlan = currentPlan === tier.planKey.toLowerCase();
-                    const buttonText =
-                        tier.title === 'Personal' && user?.action_used && !isCurrentPlan
-                            ? 'Contact us'
-                            : tier.buttonText;
+                    let buttonText = tier.buttonText;
+                    let buttonAction = () => handleOpenUpgrade(tier.title);
+                    if (tier.title === 'Free' && currentPlan === 'personal' && !isCurrentPlan) {
+                        buttonText = 'Downgrade';
+                        buttonAction = handleOpenDowngrade; // Open downgrade confirmation dialog
+                    } else if (tier.title === 'Personal' && user?.action_used && !isCurrentPlan) {
+                        buttonText = 'Contact us';
+                    }
 
                     console.log(`Plan: ${tier.planKey}, currentPlan: ${currentPlan}, isCurrentPlan: ${isCurrentPlan}, buttonText: ${buttonText}`);
 
@@ -332,7 +395,7 @@ const Pricing: React.FC<PricingProps> = ({ setGlobalLoading, user, setUser }) =>
                                         variant={tier.buttonVariant as 'outlined' | 'contained'}
                                         color={tier.buttonColor as 'primary' | 'secondary'}
                                         disabled={isCurrentPlan}
-                                        onClick={() => handleOpen(tier.title)}
+                                        onClick={buttonAction}
                                         sx={{
                                             ...(isCurrentPlan && tier.buttonColor === 'secondary' && {
                                                 backgroundColor: 'secondary.main',
@@ -363,7 +426,7 @@ const Pricing: React.FC<PricingProps> = ({ setGlobalLoading, user, setUser }) =>
                 })}
             </Grid>
 
-            <Dialog open={open} onClose={handleClose}>
+            <Dialog open={openUpgrade} onClose={handleCloseUpgrade}>
                 <DialogTitle>Upgrade to {selectedPlan}</DialogTitle>
                 <DialogContent>
                     <Typography variant="body1" gutterBottom>
@@ -415,9 +478,29 @@ const Pricing: React.FC<PricingProps> = ({ setGlobalLoading, user, setUser }) =>
                     )}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose}>Cancel</Button>
+                    <Button onClick={handleCloseUpgrade}>Cancel</Button>
                     <Button onClick={handleRequestUpgrade} variant="contained">
                         {selectedPlan === 'Personal' && !user?.action_used ? 'Start Free Trial' : 'Request Upgrade'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={openDowngrade} onClose={handleCloseDowngrade}>
+                <DialogTitle>Confirm Downgrade to Free Plan</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" gutterBottom>
+                        Are you sure you want to downgrade to the Free plan? This will limit you to 100 requests per month.
+                    </Typography>
+                    {errorMessage && (
+                        <Typography color="error" variant="body2" gutterBottom>
+                            {errorMessage}
+                        </Typography>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDowngrade}>Cancel</Button>
+                    <Button onClick={handleDowngrade} variant="contained">
+                        Confirm Downgrade
                     </Button>
                 </DialogActions>
             </Dialog>

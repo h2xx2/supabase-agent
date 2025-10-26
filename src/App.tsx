@@ -1502,7 +1502,16 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
                     <AddAgentDialog
                         open={openAddDialog}
-                        onClose={() => setOpenAddDialog(false)}
+                        onClose={() => {
+                            setOpenAddDialog(false);
+                            setNewAgent({ name: '', instructions: '' });
+                            setEnableHttpAction(false);
+                            setEnableEmailAction(false);
+                            setNewFile(null);
+                            setSelectedBlueprint('');
+                            setInitialKnowledgeBaseFile(null);
+                            setErrorMessage(null);
+                        }}
                         onAddAgent={() => setOpenAddDialog(false)}
                         deviceType={deviceType}
                         getAuthToken={getAuthToken}
