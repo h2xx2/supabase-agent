@@ -39,6 +39,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import PolicyIcon from '@mui/icons-material/Policy';
 import DescriptionIcon from '@mui/icons-material/Description';
+import CodeIcon from '@mui/icons-material/Code';
 import Auth from './components/Auth';
 import GlobalLoader from './components/GlobalLoader';
 import {
@@ -55,6 +56,7 @@ import Copyright from './components/Copyright';
 import PrivacyPolicy from "./components/PrivacyPolicy.tsx";
 import TermsAndConditions from "./components/TermsAndConditions";
 import TermsAndConditionAcceptanceDialog from "./components/TermsAndConditionAcceptanceDialog";
+import DevelopmentPage from './components/DevelopmentPage';
 import AddAgentDialog from "./components/CreateAgent.tsx";
 
 interface Agent {
@@ -77,6 +79,7 @@ interface Agent {
 
 const Page = {
     AGENTS: "My Agents",
+    DEVELOPMENT: "Development",
     SETTINGS: "Settings",
     PRIVACY_POLICY: "Privacy Policy",
     TERMS_AND_CONDITIONS: "Terms and Conditions",
@@ -1224,6 +1227,113 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                 </Button>
                                                             </AccordionDetails>
                                                         </Accordion>
+                                                        <Accordion sx={{ mt: 2, width: '100%' }}>
+                                                            <AccordionSummary
+                                                                expandIcon={<ExpandMoreIcon />}
+                                                                aria-controls="api-credentials-content"
+                                                                id="api-credentials-header"
+                                                                sx={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    backgroundColor: '#f0f0f0',
+                                                                }}
+                                                            >
+                                                                <Typography
+                                                                    sx={{
+                                                                        fontWeight: 'bold',
+                                                                        fontSize:
+                                                                            deviceType === 'mobile'
+                                                                                ? '0.9rem'
+                                                                                : deviceType === 'tablet'
+                                                                                    ? '0.95rem'
+                                                                                    : '1rem',
+                                                                    }}
+                                                                >
+                                                                    API Credentials
+                                                                </Typography>
+                                                            </AccordionSummary>
+                                                            <AccordionDetails
+                                                                sx={{
+                                                                    backgroundColor: '#e0e0e0',
+                                                                    p: 2,
+                                                                    borderRadius: '4px',
+                                                                }}
+                                                            >
+                                                                <Box
+                                                                    sx={{
+                                                                        fontFamily: 'monospace',
+                                                                        fontSize:
+                                                                            deviceType === 'mobile'
+                                                                                ? '0.85rem'
+                                                                                : deviceType === 'tablet'
+                                                                                    ? '0.9rem'
+                                                                                    : '0.95rem',
+                                                                        lineHeight: 1.6,
+                                                                        mb: 2,
+                                                                    }}
+                                                                >
+                                                                    <div><strong>AGENT_ID</strong> = "{agent.agent_id}"</div>
+                                                                    <div><strong>API_KEY</strong> = "{agent.key}"</div>
+                                                                    <div><strong>API_ENDPOINT</strong> = "https://api.youagent.me"</div>
+                                                                </Box>
+                                                                <Typography
+                                                                    variant="body2"
+                                                                    sx={{
+                                                                        fontSize:
+                                                                            deviceType === 'mobile'
+                                                                                ? '0.8rem'
+                                                                                : deviceType === 'tablet'
+                                                                                    ? '0.85rem'
+                                                                                    : '0.9rem',
+                                                                        color: 'text.secondary',
+                                                                        mb: 1,
+                                                                    }}
+                                                                >
+                                                                    <strong>Note:</strong> Check the{' '}
+                                                                    <Link
+                                                                        href="#"
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            setPage(Page.DEVELOPMENT);
+                                                                        }}
+                                                                        sx={{
+                                                                            color: '#1976d2',
+                                                                            textDecoration: 'underline',
+                                                                            cursor: 'pointer',
+                                                                            fontWeight: 500,
+                                                                        }}
+                                                                    >
+                                                                        Development page
+                                                                    </Link>{' '}
+                                                                     to learn how to programmatically access the agent.
+                                                                </Typography>
+                                                                <Button
+                                                                    variant="outlined"
+                                                                    size="small"
+                                                                    onClick={() => {
+                                                                        const credentials = `AGENT_ID = "${agent.agent_id}"
+API_KEY = "${agent.key}"
+API_ENDPOINT = "https://api.youagent.me"`;
+                                                                        navigator.clipboard.writeText(credentials).then(() => {
+                                                                            alert('API credentials copied to clipboard!');
+                                                                        }).catch(() => {
+                                                                            alert('Failed to copy credentials');
+                                                                        });
+                                                                    }}
+                                                                    sx={{
+                                                                        fontSize:
+                                                                            deviceType === 'mobile'
+                                                                                ? '0.8rem'
+                                                                                : deviceType === 'tablet'
+                                                                                    ? '0.85rem'
+                                                                                    : '0.9rem',
+                                                                        textTransform: 'none',
+                                                                    }}
+                                                                >
+                                                                    Copy Credentials
+                                                                </Button>
+                                                            </AccordionDetails>
+                                                        </Accordion>
                                                     </TableCell>
                                                 </TableRow>
                                             )}
@@ -1241,6 +1351,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     </Box>
                 </Box>
             );
+            case Page.DEVELOPMENT:
+                return <DevelopmentPage deviceType={deviceType} />;
             case Page.SETTINGS: return <Settings {...{
                 callCount: agents.reduce((callCount, agent) => {
                     callCount.month += agent.call_count || 0;
@@ -1455,6 +1567,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                         <ViewListIcon />
                                     </ListItemIcon>
                                     <ListItemText primary="Agents" sx={{ textAlign: 'left' }} />
+                                </ListItemButton>
+
+                                <ListItemButton onClick={() => { toggleDrawer(); setPage(Page.DEVELOPMENT); }}>
+                                    <ListItemIcon><CodeIcon /></ListItemIcon>
+                                    <ListItemText primary="Development" />
                                 </ListItemButton>
 
                                 <ListItemButton onClick={() => {
