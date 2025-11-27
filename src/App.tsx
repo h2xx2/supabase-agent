@@ -1224,11 +1224,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                 : deviceType === 'tablet'
                                                                                     ? '0.85rem'
                                                                                     : '0.9rem',
-                                                                        whiteSpace: 'pre-wrap',   // перенос строк
-                                                                        wordBreak: 'break-word',  // ломаем длинные слова
-                                                                        overflowX: 'auto',        // горизонтальный скролл, если совсем не помещается
+                                                                        whiteSpace: 'pre-wrap',
+                                                                        wordBreak: 'break-word',
+                                                                        overflowX: 'auto',
                                                                         mb: 1,
-                                                                        maxWidth: '100%',         // ограничиваем ширину
+                                                                        maxWidth: '100%',
                                                                     }}
                                                                 >
                                                                     {`<script
@@ -1236,10 +1236,12 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
-  data-bottom-desktop="25"
-  data-right-desktop="25"
-  data-bottom-mobile="10"
-  data-right-mobile="10"
+  data-vert-align="bottom"
+  data-hor-align="right"
+  data-hor-offset-desktop="25"
+  data-vert-offset-desktop="25"
+  data-hor-offset-mobile="10"
+  data-vert-offset-mobile="10"
 ></script>`}
                                                                 </Box>
                                                                 <Button
@@ -1252,10 +1254,12 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
-  data-bottom-desktop="25"
-  data-right-desktop="25"
-  data-bottom-mobile="10"
-  data-right-mobile="10"
+  data-vert-align="bottom"
+  data-hor-align="right"
+  data-hor-offset-desktop="25"
+  data-vert-offset-desktop="25"
+  data-hor-offset-mobile="10"
+  data-vert-offset-mobile="10"
 ></script>`)
                                                                             .then(() => {
                                                                                 alert('The script has been copied to the clipboard!');
@@ -1444,12 +1448,6 @@ API_ENDPOINT = "https://api.youagent.me"`;
                     },
                 }}
             />
-            {/*<ChatWidget*/}
-            {/*    agents={agents}*/}
-            {/*    user={user}*/}
-            {/*    deviceType={deviceType}*/}
-            {/*    getAuthToken={getAuthToken} // Передайте функцию для авторизованных чатов, если нужно*/}
-            {/*/>*/}
             <Box
                 sx={{
                     display: 'flex',
@@ -1690,10 +1688,8 @@ API_ENDPOINT = "https://api.youagent.me"`;
                         setAgents={setAgents}
                         fetchAgents={fetchAgents}
                         setAgentCreated={(value: boolean) => {
-                            // когда диалог сообщает, что агент создан — продвигаем тур
                             if (value) {
                                 try {
-                                    // 9 — тот индекс шага, на который вы раньше пытались переходить
                                     setCurrentStep(9);
                                 } catch (e) {
                                     console.warn('Не удалось установить шаг тура:', e);
@@ -2031,7 +2027,6 @@ API_ENDPOINT = "https://api.youagent.me"`;
                                         if (isUserMessage && hasFile && textMessage) {
                                             return (
                                                 <React.Fragment key={index}>
-                                                    {/* Текстовое сообщение */}
                                                     <Message
                                                         model={{
                                                             message: textMessage,
@@ -2158,7 +2153,6 @@ API_ENDPOINT = "https://api.youagent.me"`;
                                     }}
                                     data-tour="chat-dialog"
                                 >
-                                    {/* Превью прикреплённого файла */}
                                     {attachedFileName && (
                                         <Box
                                             sx={{
