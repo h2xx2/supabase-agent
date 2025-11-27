@@ -4,6 +4,8 @@ import App from './App';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CookiesProvider } from 'react-cookie';
 import { type StepType, TourProvider } from '@reactour/tour';
+import { I18nextProvider } from 'react-i18next';
+import { i18n } from './utils/i18n/i18n.config';
 
 const theme = createTheme({
     palette: {
@@ -171,127 +173,129 @@ function Root() {
 
     return (
         <React.StrictMode>
-            <ThemeProvider theme={theme}>
-                <CookiesProvider defaultSetOptions={cookieOptions}>
-                    <TourProvider
-                        steps={steps}
-                        open={isTourOpen}
-                        // используем closeTour здесь
-                        onClose={() => {
-                            closeTour();
-                        }}
-                        disableInteraction={false}
-                        showButtons={true}
-                        showNavigation={true}
-                        nextButton={({ currentStep, setCurrentStep, setIsOpen, stepsLength }) => {
-                            const blockedSteps = [1]; // your original blocked steps
-                            if (blockedSteps.includes(currentStep)) {
-                                return null;
-                            }
+            <I18nextProvider i18n={i18n}>
+                <ThemeProvider theme={theme}>
+                    <CookiesProvider defaultSetOptions={cookieOptions}>
+                        <TourProvider
+                            steps={steps}
+                            open={isTourOpen}
+                            // используем closeTour здесь
+                            onClose={() => {
+                                closeTour();
+                            }}
+                            disableInteraction={false}
+                            showButtons={true}
+                            showNavigation={true}
+                            nextButton={({ currentStep, setCurrentStep, setIsOpen, stepsLength }) => {
+                                const blockedSteps = [1]; // your original blocked steps
+                                if (blockedSteps.includes(currentStep)) {
+                                    return null;
+                                }
 
-                            // нельзя нажать Next пока агент не создан (step index 8)
-                            if (currentStep === 8 && !agentCreated && firstTourRun) {
-                                return null; // блокируем Next только если первый запуск
-                            }
-                            if (currentStep === 10 && !chatOpened && firstTourRun) {
-                                return null;
-                            }
-                            // step index 12 (chat-close) — Next всегда заблокирован, только крестик
-                            if (currentStep === 12) {
-                                return null;
-                            }
+                                // нельзя нажать Next пока агент не создан (step index 8)
+                                if (currentStep === 8 && !agentCreated && firstTourRun) {
+                                    return null; // блокируем Next только если первый запуск
+                                }
+                                if (currentStep === 10 && !chatOpened && firstTourRun) {
+                                    return null;
+                                }
+                                // step index 12 (chat-close) — Next всегда заблокирован, только крестик
+                                if (currentStep === 12) {
+                                    return null;
+                                }
 
-                            // step index 13 (deploy-button) — Next заблокирован пока деплой не завершён
-                            if (currentStep === 13 && !agentDeployed && firstTourRun) {
-                                return null;
-                            }
+                                // step index 13 (deploy-button) — Next заблокирован пока деплой не завершён
+                                if (currentStep === 13 && !agentDeployed && firstTourRun) {
+                                    return null;
+                                }
 
-                            if (currentStep === 2 || currentStep === 3) {
+                                if (currentStep === 2 || currentStep === 3) {
+                                    return (
+                                        <button
+                                            style={buttonStyle}
+                                            onClick={() => {
+                                                if (!blueprintInteracted && skipBlueprint) {
+                                                    skipBlueprint();
+                                                } else {
+                                                    setCurrentStep(4);
+                                                }
+                                            }}
+                                        >
+                                            Next
+                                        </button>
+                                    );
+                                }
+
+                                const isLast = currentStep === stepsLength - 1;
                                 return (
                                     <button
                                         style={buttonStyle}
                                         onClick={() => {
-                                            if (!blueprintInteracted && skipBlueprint) {
-                                                skipBlueprint();
+                                            if (isLast) {
+                                                // вместо просто setIsOpen(false) — используем centralized close
+                                                // note: всё ещё можно вызвать setIsOpen(false) чтобы закрыть тур UI, но важно синхронно обновить локальное состояние и localStorage
+                                                try {
+                                                    // закрываем UI тура через контекстную функцию (если нужно)
+                                                    setIsOpen(false);
+                                                } catch (e) {
+                                                    // игнорируем если setIsOpen недоступна
+                                                }
+                                                // гарантируем, что наш локальный state и localStorage установлены
+                                                closeTour();
                                             } else {
-                                                setCurrentStep(4);
+                                                setCurrentStep(currentStep + 1);
                                             }
                                         }}
                                     >
-                                        Next
+                                        {isLast ? 'Close' : 'Next'}
                                     </button>
                                 );
-                            }
+                            }}
+                            prevButton={({ currentStep, setCurrentStep }) => {
+                                if (currentStep === 0) {
+                                    return null;
+                                }
 
-                            const isLast = currentStep === stepsLength - 1;
-                            return (
-                                <button
-                                    style={buttonStyle}
-                                    onClick={() => {
-                                        if (isLast) {
-                                            // вместо просто setIsOpen(false) — используем centralized close
-                                            // note: всё ещё можно вызвать setIsOpen(false) чтобы закрыть тур UI, но важно синхронно обновить локальное состояние и localStorage
-                                            try {
-                                                // закрываем UI тура через контекстную функцию (если нужно)
-                                                setIsOpen(false);
-                                            } catch (e) {
-                                                // игнорируем если setIsOpen недоступна
-                                            }
-                                            // гарантируем, что наш локальный state и localStorage установлены
-                                            closeTour();
-                                        } else {
-                                            setCurrentStep(currentStep + 1);
-                                        }
-                                    }}
-                                >
-                                    {isLast ? 'Close' : 'Next'}
-                                </button>
-                            );
-                        }}
-                        prevButton={({ currentStep, setCurrentStep }) => {
-                            if (currentStep === 0) {
-                                return null;
-                            }
+                                if (currentStep === 4) {
+                                    return (
+                                        <button
+                                            style={buttonStyle}
+                                            onClick={() => {
+                                                setCurrentStep(2);
+                                            }}
+                                        >
+                                            Prev
+                                        </button>
+                                    );
+                                }
 
-                            if (currentStep === 4) {
                                 return (
                                     <button
                                         style={buttonStyle}
                                         onClick={() => {
-                                            setCurrentStep(2);
+                                            if (currentStep > 0) {
+                                                setCurrentStep(currentStep - 1);
+                                            }
                                         }}
                                     >
                                         Prev
                                     </button>
                                 );
-                            }
-
-                            return (
-                                <button
-                                    style={buttonStyle}
-                                    onClick={() => {
-                                        if (currentStep > 0) {
-                                            setCurrentStep(currentStep - 1);
-                                        }
-                                    }}
-                                >
-                                    Prev
-                                </button>
-                            );
-                        }}
-                        setBlueprintInteracted={(value: boolean) => setBlueprintInteracted(value)}
-                        setSkipBlueprint={(fn: () => void) => setSkipBlueprint(() => fn)}
-                        setAgentCreated={(value: boolean) => setAgentCreated(value)}
-                        setChatOpened={(value: boolean) => setChatOpened(value)}
-                        setAgentDeployed={(value: boolean) => setAgentDeployed(value)}
-                    >
-                        <App
-                            setChatOpened={setChatOpened}
-                            setAgentDeployed={setAgentDeployed}
-                        />
-                    </TourProvider>
-                </CookiesProvider>
-            </ThemeProvider>
+                            }}
+                            setBlueprintInteracted={(value: boolean) => setBlueprintInteracted(value)}
+                            setSkipBlueprint={(fn: () => void) => setSkipBlueprint(() => fn)}
+                            setAgentCreated={(value: boolean) => setAgentCreated(value)}
+                            setChatOpened={(value: boolean) => setChatOpened(value)}
+                            setAgentDeployed={(value: boolean) => setAgentDeployed(value)}
+                        >
+                            <App
+                                setChatOpened={setChatOpened}
+                                setAgentDeployed={setAgentDeployed}
+                            />
+                        </TourProvider>
+                    </CookiesProvider>
+                </ThemeProvider>
+            </I18nextProvider>
         </React.StrictMode>
     );
 }

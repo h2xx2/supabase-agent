@@ -14,6 +14,7 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import axios from "axios";
 import { useCookies } from "react-cookie";
+import { useTranslation } from "react-i18next";
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
@@ -23,6 +24,8 @@ interface AuthProps {
 const theme = createTheme();
 
 const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
+    const { t } = useTranslation();
+
     const [cookies, setCookie, removeCookie] = useCookies(["authToken"]);
     const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
     const [email, setEmail] = useState("");
@@ -525,7 +528,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                     }
                                 }}
                             >
-                                Sign in with Google
+                               { t("signInWithGoogle") }
                             </Button>
 
                             <Box sx={{ display: "flex", justifyContent: "center", width: "100%" }}>
