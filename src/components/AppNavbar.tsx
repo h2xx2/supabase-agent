@@ -11,6 +11,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
 import { useTour } from "@reactour/tour";
+import { useTranslation } from "react-i18next";
 
 interface AppNavbarProps {
     deviceType: string;
@@ -21,6 +22,7 @@ interface AppNavbarProps {
 }
 
 const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDrawer, page, onNewAgent }) => {
+    const { t } = useTranslation();
     // ✅ Теперь хук внутри компонента
     const { currentStep, setCurrentStep } = useTour();
 
@@ -59,7 +61,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDr
                             }}
                             data-tour="new-agent-button"
                         >
-                            New Agent
+                            { t("navbar.newAgent") } 
                         </Button>
                     )}
                 </Box>
@@ -89,7 +91,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDr
                         alignItems: "center"
                     }}
                 >
-                    Logout
+                    { t("navbar.logout") }
                 </Button>
             </Toolbar>
         </AppBar>

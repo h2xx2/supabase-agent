@@ -7,6 +7,7 @@ import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import axios from 'axios';
+import { useTranslation } from "react-i18next";
 
 export interface AgentMini {
     id: string;
@@ -39,6 +40,8 @@ const ChatWidget: React.FC<Props> = ({
                                          bottom = 24,
                                          right = 24,
                                      }) => {
+    const { t } = useTranslation();
+
     const [expanded, setExpanded] = React.useState(false);
     const [messages, setMessages] = React.useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = React.useState('');
@@ -176,7 +179,7 @@ const ChatWidget: React.FC<Props> = ({
                         <Box sx={{ flexGrow: 1 }}>
                             <Typography variant="subtitle2">{agentName}</Typography>
                             <Typography variant="caption" color="text.secondary">
-                                {isOnline ? 'Online' : 'Offline'}
+                                {isOnline ? t("chatWidget.online") : t("chatWidget.offline")}
                             </Typography>
                         </Box>
                         <IconButton size="small" onClick={() => setExpanded(false)}>
@@ -213,7 +216,7 @@ const ChatWidget: React.FC<Props> = ({
                             onKeyDown={(e) =>
                                 e.key === 'Enter' && !isSending && sendMessage()
                             }
-                            placeholder="Type a message"
+                            placeholder={ t("chatWidget.typeMessage") }
                             fullWidth
                             InputProps={{
                                 endAdornment: (
@@ -224,7 +227,7 @@ const ChatWidget: React.FC<Props> = ({
                                             onClick={sendMessage}
                                             disabled={isSending}
                                         >
-                                            Send
+                                            { t("chatWidget.send") }
                                         </Button>
                                     </InputAdornment>
                                 ),

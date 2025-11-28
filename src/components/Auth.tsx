@@ -401,7 +401,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                         }}
                     >
                         <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
-                            {authMode === "signin" ? "Sign In" : "Sign Up"}
+                            {authMode === "signin" ? t("auth.signIn") : t("auth.signUp")}
                         </Typography>
 
                         {error && (
@@ -448,7 +448,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                         margin="normal"
                                         required
                                         fullWidth
-                                        label="First Name"
+                                        label={ t("auth.labelFirstName") }
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
                                         autoFocus
@@ -458,7 +458,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                         margin="normal"
                                         required
                                         fullWidth
-                                        label="Last Name"
+                                        label={ t("auth.labelLastName") }
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
                                         sx={{ mb: 2 }}
@@ -469,7 +469,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                 margin="normal"
                                 required
                                 fullWidth
-                                label="Email Address"
+                                label={ t("auth.labelEmail") }
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 autoFocus={authMode === "signin"}
@@ -479,7 +479,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                 margin="normal"
                                 required
                                 fullWidth
-                                label="Password"
+                                label={ t("auth.labelPassword") }
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -496,13 +496,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                             color="primary"
                                         />
                                     }
-                                    label="Remember me"
+                                    label={ t("auth.labelRememberMe") }
                                     sx={{ mb: 2 }}
                                 />
                             )}
 
                             <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
-                                {authMode === "signin" ? "Sign In" : "Sign Up"}
+                                {authMode === "signin" ? t("auth.signIn") : t("auth.signUp")}
                             </Button>
                             <Button
                                 fullWidth
@@ -528,7 +528,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                     }
                                 }}
                             >
-                               { t("signInWithGoogle") }
+                               { t("auth.signInWithGoogle") }
                             </Button>
 
                             <Box sx={{ display: "flex", justifyContent: "center", width: "100%" }}>
@@ -547,8 +547,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                         sx={{ textDecoration: "underline", color: "primary.main" }}
                                     >
                                         {authMode === "signin"
-                                            ? "Don't have an account? Sign Up"
-                                            : "Already have an account? Sign In"}
+                                            ? t("auth.notHaveAccount")
+                                            : t("auth.haveAccount")}
                                     </Link>
                                 </Box>
                             </Box>

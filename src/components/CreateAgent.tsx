@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import { useTour } from '@reactour/tour';
+import { useTranslation } from "react-i18next";
 
 interface Blueprint {
     blueprint_name: string;
@@ -56,6 +57,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                                                            setAgents,
                                                            setAgentCreated,
                                                        }) => {
+    const { t } = useTranslation();
+
     const [newAgent, setNewAgent] = useState({ name: '', instructions: '' });
     const [enableHttpAction, setEnableHttpAction] = useState(false);
     const [enableEmailAction, setEnableEmailAction] = useState(false);
@@ -68,10 +71,9 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
 
     const blueprints: Blueprint[] = [
         {
-            blueprint_name: 'Translator',
-            agent_name: 'German Translator',
-            agent_instructions:
-                'Translate all incoming messages to German. Do not ask users any questions. Just respond with the translated sentence.',
+            blueprint_name: t("createAgent.translatorAgent.blueprintName"),
+            agent_name: t("createAgent.translatorAgent.agentName"),
+            agent_instructions: t("createAgent.translatorAgent.agentInstructions"),
             email_action: false,
             http_request_action: false,
             kb_required: false,
@@ -79,25 +81,9 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             kb_content: null,
         },
         {
-            blueprint_name: 'Personal Assistant',
-            agent_name: 'Personal Assistant of John Doe',
-            agent_instructions:
-                'You are the personal assistant of John Doe, the CEO of JD Inc. JD Inc. performs the Software Development with the following technologies: \n' +
-                ' - Web Development (React, Angular, NodeJS) \n' +
-                ' - Cloud Computing (AWS) \n' +
-                ' - iOS/Android Software Development \n' +
-                ' - AI / LLM \n' +
-                'John Doe is available for the scheduled meetings on the following days: \n' +
-                ' - Wednesday 10:00 - 14:00 \n' +
-                ' - Friday 11:00 - 15:00 \n\n' +
-                '- If the user will ask for the guidance regarding what JD Inc. does - provide him the necessary answers. \n' +
-                '- If the user will ask the preliminary feasibility of the project - ask the project details and say that John Doe will contact him back. In the meantime send the email to john.doe@example.com with the provided project details.\n' +
-                '- If the user will ask to schedule the meeting with John Doe - request the following information from user: \n' +
-                '  - email \n' +
-                '  - first and last name \n' +
-                '  - topic of the discussion \n' +
-                '  - desired day and time (verify it according to John Doe availability) \n' +
-                'Once the information above is provided - send the meeting invitation to john.doe@example.com.',
+            blueprint_name: t("createAgent.personalAssistant.blueprintName"),
+            agent_name: t("createAgent.personalAssistant.agentName"),
+            agent_instructions: t("createAgent.personalAssistant.agentInstructions"),
             email_action: true,
             http_request_action: false,
             kb_required: false,
@@ -105,17 +91,9 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             kb_content: null,
         },
         {
-            blueprint_name: 'Sales Agent',
-            agent_name: 'Smartphones Sales Agent',
-            agent_instructions:
-                'You are a sales agent guiding the user over the available smartphones in the shop. The info about the available smartphones is stored in the knowledge base attached.\n\n' +
-                'Be polite, introduce yourself first.\n\n' +
-                'Make sure the list of selected smartphones is included in the recommendations response.\n\n' +
-                'Try to be proactive and always offer something out of the available options.\n\n' +
-                'Once user has chosen the smartphone do the following:\n' +
-                ' - Ask user for his first name, last name and email\n' +
-                ' - Generate the text of the commercial offer\n' +
-                ' - Send the commercial offer using the available email action to example@example.com and to user\'s email',
+            blueprint_name: t("createAgent.salesAgent.blueprintName"),
+            agent_name: t("createAgent.salesAgent.agentName"),
+            agent_instructions: t("createAgent.salesAgent.agentInstructions"),
             email_action: true,
             http_request_action: false,
             kb_required: true,
@@ -173,10 +151,9 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                 '50,Pixel 9,Google,GO-1049,1150,67,4.0,5.6,5538,12,256,16,Yes,Smartphones',
         },
         {
-            blueprint_name: 'Cities Game',
-            agent_name: 'Cities Agent',
-            agent_instructions:
-                'You are an agent to play in Cities with the user. User will write you the name of the city. You have to write back the name starting with the last letter of the city name user has provided. Then user have to do the same, and vice versa, until no more options left, or user surrenders.',
+            blueprint_name: t("createAgent.citiesAgent.blueprintName"),
+            agent_name: t("createAgent.citiesAgent.agentName"),
+            agent_instructions: t("createAgent.citiesAgent.agentInstructions"),
             email_action: false,
             http_request_action: false,
             kb_required: false,
@@ -184,10 +161,9 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             kb_content: null,
         },
         {
-            blueprint_name: 'Joke Agent',
-            agent_name: 'Joke Agent',
-            agent_instructions:
-                'You are an agent to tell a joke to the user. Whatever the user will say - try to make a corresponding joke. Do not ask for any clarification, just generate the best joke you can.',
+            blueprint_name: t("createAgent.jokeAgent.blueprintName"),
+            agent_name: t("createAgent.jokeAgent.agentName"),
+            agent_instructions: t("createAgent.jokeAgent.agentInstructions"),
             email_action: false,
             http_request_action: false,
             kb_required: false,
@@ -195,28 +171,9 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             kb_content: null,
         },
         {
-            blueprint_name: 'Barista',
-            agent_name: 'Barista Agent',
-            agent_instructions:
-                'Rules: \n\n' +
-                ' - You are a coffee maker agent who is to take an order from customer and to submit send it over email in a human-readable format for further processing\n' +
-                ' - The email address is example@example.com. You can send it using the action available for you as an agent.\n' +
-                ' - Once the order is taken - please first send the email, then reply to user that the preparation of the coffee has been started\n\n' +
-                'Coffee machine supports the following coffee types:\n' +
-                ' - espresso\n' +
-                ' - americano\n' +
-                ' - latte\n' +
-                ' - cappuccino\n\n' +
-                'the cup size is: \n' +
-                ' - 40 ml (for espresso only)\n' +
-                ' - 150 ml\n' +
-                ' - 250 ml\n' +
-                ' - 350 ml\n\n' +
-                'Sugar amount:\n' +
-                ' - 0\n' +
-                ' - 1 spoon\n' +
-                ' - 2 spoons\n' +
-                ' - 3 spoons',
+            blueprint_name: t("createAgent.baristaAgent.blueprintName"),
+            agent_name: t("createAgent.baristaAgent.agentName"),
+            agent_instructions: t("createAgent.baristaAgent.agentInstructions"),
             email_action: true,
             http_request_action: false,
             kb_required: false,
@@ -224,38 +181,9 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             kb_content: null,
         },
         {
-            blueprint_name: "YouAgentMe Help",
-            agent_name: "YouAgentMe Help Agent",
-            agent_instructions: "You are the agent consulting the user on the features of the web service\n" +
-                "Service Name: youagent.me\n" +
-                "Service Functions:\n" +
-                " - Create AI Agent\n" +
-                " - Edit AI Agent\n" +
-                " - Deploy the chat with the ai agent to be publicly available through the pre-signed URL\n" +
-                " - Revoke the deployment of AI Agent \n" +
-                " - Delete AI Agent\n" +
-                "The agent has the following attributes:\n" +
-                " - Name\n" +
-                " - Instructions\n" +
-                " - Knowledge Base file  [optional]\n" +
-                " - HTTP request action (true/false) [optional]\n" +
-                " - Email Action (true/false) [optional]\n" +
-                "The agent chats with the end user according to the functions provided by the youagent.me user.\n" +
-                "The service has the following payment plans:\n" +
-                "1) Free\n" +
-                " - Unlimited agents\n" +
-                " - Up to 200 requests (messages) per month (for all agents of the user)\n" +
-                " - $0/month\n" +
-                "2) Personal\n" +
-                " - Unlimited agents\n" +
-                " - Up to 1,000 requests (messages) per month (for all agents of the user)\n" +
-                " - $15/month\n" +
-                "3) Custom\n" +
-                " - Unlimited agents\n" +
-                " - Number of requests is negotiable\n" +
-                " - Custom Integrations are possible\n" +
-                " - Price is negotiable \n" +
-                "\nIf user would like to upgrade to either Personal or Custom plan - please propose his to create the plan upgrade request. Collect first and last name of the user and his email address. And send the request details to sergei.nntu@gmail.com and to user's email address.",
+            blueprint_name: t("createAgent.helpAgent.blueprintName"),
+            agent_name: t("createAgent.helpAgent.agentName"),
+            agent_instructions: t("createAgent.helpAgent.agentInstructions"),
             email_action: true,
             http_request_action: false,
             kb_required: false,
@@ -483,12 +411,12 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}>
             <DialogTitle sx={{ fontSize: deviceType === 'mobile' ? '1.25rem' : '1.375rem', textAlign: 'left' }}>
-                Add New Agent
+                { t("createAgent.addNewAgent") }
             </DialogTitle>
 
             <DialogContent sx={{ textAlign: 'left', overflowX: 'hidden' }}>
                 <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
-                    Template
+                    { t("createAgent.template") }
                 </Typography>
 
                 <Box sx={{ mb: 2 }}>
@@ -540,7 +468,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                             onClick={() => handleBlueprintSelect('')}
                             data-tour="blueprint-item-custom"
                         >
-                            <em>Custom agent</em>
+                            <em>{ t("createAgent.customAgent") }</em>
                         </MenuItem>
                         {blueprints.map((blueprint) => (
                             <MenuItem
@@ -556,25 +484,25 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                 </Box>
 
                 <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
-                    General Settings
+                    { t("createAgent.generalSettings") }
                 </Typography>
 
                 <TextField
                     autoFocus
                     margin="dense"
-                    label="Name"
+                    label={ t("createAgent.labelName") }
                     type="text"
                     data-tour="name-input"
                     fullWidth
                     value={newAgent.name}
                     onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                    helperText="Use only letters, numbers, _ or -"
+                    helperText={ t("createAgent.helperTextName") }
                     sx={{ mb: 2 }}
                 />
 
                 <TextField
                     margin="dense"
-                    label="Instructions"
+                    label={ t("createAgent.labelInstructions") }
                     type="text"
                     fullWidth
                     data-tour="instructions-input"
@@ -582,25 +510,25 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                     rows={deviceType === 'mobile' ? 3 : 4}
                     value={newAgent.instructions}
                     onChange={(e) => setNewAgent({ ...newAgent, instructions: e.target.value })}
-                    helperText="Minimum length 40 characters"
+                    helperText={ t("createAgent.helperTextInstructions") }
                     sx={{ mb: 2 }}
                 />
 
                 <Box sx={{ display: 'flex', gap: 2, mb: 2 }} data-tour="actions-checkboxes">
                     <FormControlLabel
                         control={<Checkbox checked={enableHttpAction} onChange={(e) => setEnableHttpAction(e.target.checked)} />}
-                        label="Enable HTTP Action"
+                        label={ t("createAgent.labelHttpAction") }
                     />
                     <FormControlLabel
                         control={<Checkbox checked={enableEmailAction} onChange={(e) => setEnableEmailAction(e.target.checked)} />}
-                        label="Enable Email Action"
+                        label={ t("createAgent.labelEmailAction") }
                     />
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
 
                 <Typography variant="h6" sx={{ mb: 1 }}>
-                    Knowledge Base (Optional)
+                    { t("createAgent.knowledgeBase") }
                 </Typography>
 
                 <input
@@ -612,16 +540,16 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                 />
 
                 <Typography variant="caption" color="textSecondary">
-                    Upload a file (PDF or TXT) to create a knowledge base for the agent.
+                    { t("createAgent.uploadFile") }
                 </Typography>
             </DialogContent>
 
             <DialogActions sx={{ justifyContent: 'center' }}>
                 <Button onClick={onClose} color="primary">
-                    Cancel
+                    { t("cancel") }
                 </Button>
                 <Button data-tour="add-agent-button" onClick={handleAddAgent} color="primary">
-                    Add
+                    { t("createAgent.add") }
                 </Button>
             </DialogActions>
         </Dialog>

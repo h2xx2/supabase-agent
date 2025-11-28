@@ -9,6 +9,7 @@ import {
     Alert
 } from "@mui/material";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 
 interface ChangePasswordProps {
     user: any,
@@ -17,6 +18,8 @@ interface ChangePasswordProps {
 }
 
 const ChangePassword: React.FC<ChangePasswordProps> = ({ user, token, setGlobalLoading }) => {
+    const { t } = useTranslation();
+    
     const [open, setOpen] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
 
@@ -75,9 +78,9 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ user, token, setGlobalL
 
     return (
         <>
-            <Button variant="outlined" onClick={handleClickOpen}>Change Password</Button>
+            <Button variant="outlined" onClick={handleClickOpen}>{ t("changePassword.changePassword") }</Button>
             <Dialog open={open} onClose={handleClose}>
-                <DialogTitle>Change Password</DialogTitle>
+                <DialogTitle>{ t("changePassword.changePassword")}</DialogTitle>
                 <DialogContent>
                     {error && (
                         <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
@@ -89,7 +92,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ user, token, setGlobalL
                             required
                             margin="dense"
                             name="currentPassword"
-                            label="Current Password"
+                            label={ t("changePassword.labelCurrentPassword") }
                             type="password"
                             fullWidth
                             variant="standard"
@@ -98,7 +101,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ user, token, setGlobalL
                             required
                             margin="dense"
                             name="newPassword"
-                            label="New Password"
+                            label={ t("changePassword.labelNewPassword") }
                             type="password"
                             fullWidth
                             variant="standard"
@@ -107,7 +110,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ user, token, setGlobalL
                             required
                             margin="dense"
                             name="confirmPassword"
-                            label="Confirm Password"
+                            label={ t("changePassword.labelConfirmPassword") }
                             type="password"
                             fullWidth
                             variant="standard"
@@ -115,9 +118,9 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ user, token, setGlobalL
                     </form>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose}>Cancel</Button>
+                    <Button onClick={handleClose}>{ t("cancel") }</Button>
                     <Button type="submit" form="change-password-form">
-                        Change
+                        { t("changePassword.change") }
                     </Button>
                 </DialogActions>
             </Dialog>

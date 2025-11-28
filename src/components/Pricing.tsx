@@ -15,41 +15,42 @@ import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import axios from 'axios';
+import { useTranslation } from "react-i18next";
 
 const tiers = [
     {
-        title: 'Free',
+        title: 'pricing.freeTiers.title',
         price: '0',
         description: [
-            'Up to 5 agents',
-            'Up to 100 requests/month',
+            'pricing.freeTiers.desc1',
+            'pricing.freeTiers.desc2',
         ],
-        buttonText: 'Your current plan',
+        buttonText: 'pricing.freeTiers.buttonText',
         buttonVariant: 'outlined',
         buttonColor: 'primary',
         buttonDisabled: true,
     },
     {
-        title: 'Personal',
+        title: 'pricing.personalTiers.title',
         price: '15',
         description: [
-            'Unlimited agents',
-            'Up to 1,000 requests/month',
+            'pricing.personalTiers.desc1',
+            'pricing.personalTiers.desc2'
         ],
-        buttonText: 'Contact Us',
+        buttonText: 'pricing.personalTiers.buttonText',
         buttonVariant: 'contained',
         buttonColor: 'secondary',
         buttonDisabled: false,
     },
     {
-        title: 'Custom',
+        title: 'pricing.customTiers.title',
         description: [
-            'Unlimited agents',
-            'Number of requests is negotiable',
-            'Price is negotiable',
-            'Extended Support'
+            'pricing.customTiers.desc1',
+            'pricing.customTiers.desc2',
+            'pricing.customTiers.desc3',
+            'pricing.customTiers.desc4',
         ],
-        buttonText: 'Contact us',
+        buttonText: 'pricing.customTiers.buttonText',
         buttonVariant: 'outlined',
         buttonColor: 'primary',
         buttonDisabled: false,
@@ -61,6 +62,7 @@ interface User {
 }
 
 const Pricing: React.FC = () => {
+    const { t } = useTranslation();
     const [open, setOpen] = React.useState(false);
     const [selectedPlan, setSelectedPlan] = React.useState('');
     const [userEmail, setUserEmail] = React.useState('');
@@ -137,7 +139,7 @@ const Pricing: React.FC = () => {
                     gutterBottom
                     sx={{ color: 'text.primary' }}
                 >
-                    Pricing
+                    { t("pricing.pricing") }
                 </Typography>
             </Box>
             <Grid
@@ -147,7 +149,7 @@ const Pricing: React.FC = () => {
             >
                 {tiers.map((tier) => (
                     <Grid
-                        size={{ xs: 12, sm: tier.title === 'Custom' ? 12 : 6, md: 4 }}
+                        size={{ xs: 12, sm: tier.title === 'pricing.customTiers.title' ? 12 : 6, md: 4 }}
                         key={tier.title}
                     >
                         <Card
@@ -188,7 +190,7 @@ const Pricing: React.FC = () => {
                                     ]}
                                 >
                                     <Typography component="h3" variant="h6">
-                                        {tier.title}
+                                        { t(tier.title) }
                                     </Typography>
                                 </Box>
                                 {tier.price && (
@@ -207,7 +209,7 @@ const Pricing: React.FC = () => {
                                             ${tier.price}
                                         </Typography>
                                         <Typography component="h3" variant="h6">
-                                            &nbsp; per month
+                                            &nbsp;{ t('pricing.perMonth') }
                                         </Typography>
                                     </Box>
                                 )}
@@ -236,7 +238,7 @@ const Pricing: React.FC = () => {
                                                     : { color: null },
                                             ]}
                                         >
-                                            {line}
+                                            { t(line) }
                                         </Typography>
                                     </Box>
                                 ))}
@@ -249,7 +251,7 @@ const Pricing: React.FC = () => {
                                     disabled={tier.buttonDisabled}
                                     onClick={() => handleOpen(tier.title)}
                                 >
-                                    {tier.buttonText}
+                                    { t(tier.buttonText) }
                                 </Button>
                             </CardActions>
                         </Card>
@@ -257,11 +259,10 @@ const Pricing: React.FC = () => {
                 ))}
             </Grid>
             <Dialog open={open} onClose={handleClose}>
-                <DialogTitle>Upgrade to {selectedPlan}</DialogTitle>
+                <DialogTitle>{ t("pricing.updateTo", { plan: selectedPlan }) }</DialogTitle>
                 <DialogContent>
                     <Typography variant="body1" gutterBottom>
-                        You are requesting an upgrade to the {selectedPlan} plan. Please provide the
-                        following details to proceed with your request.
+                        { t("pricing.requestingUpgrade", { plan: selectedPlan }) }
                     </Typography>
                     {errorMessage && (
                         <Typography color="error" variant="body2" gutterBottom>
@@ -271,7 +272,7 @@ const Pricing: React.FC = () => {
                     <TextField
                         autoFocus
                         margin="dense"
-                        label="Your Email"
+                        label={ t("pricing.labelEmail") }
                         type="email"
                         fullWidth
                         variant="outlined"
@@ -280,7 +281,7 @@ const Pricing: React.FC = () => {
                     />
                     <TextField
                         margin="dense"
-                        label="Desired Limits"
+                        label={ t("pricing.labelLimits") }
                         type="text"
                         fullWidth
                         variant="outlined"
@@ -289,7 +290,7 @@ const Pricing: React.FC = () => {
                     />
                     <TextField
                         margin="dense"
-                        label="Reason/Comments"
+                        label={ t("pricing.labelReasonComments") }
                         type="text"
                         fullWidth
                         variant="outlined"
@@ -300,9 +301,9 @@ const Pricing: React.FC = () => {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose}>Cancel</Button>
+                    <Button onClick={handleClose}>{ t("cancel") }</Button>
                     <Button onClick={handleRequestUpgrade} variant="contained">
-                        Request Upgrade
+                        { t("pricing.requestUpgrade") }
                     </Button>
                 </DialogActions>
             </Dialog>
