@@ -149,7 +149,7 @@ const Pricing: React.FC = () => {
             >
                 {tiers.map((tier) => (
                     <Grid
-                        size={{ xs: 12, sm: tier.title === 'pricing.customTiers.title' ? 12 : 6, md: 4 }}
+                        size={{ xs: 12, sm: tier.title === 'Custom' ? 12 : 6, md: 4 }}
                         key={tier.title}
                     >
                         <Card
@@ -259,10 +259,10 @@ const Pricing: React.FC = () => {
                 ))}
             </Grid>
             <Dialog open={open} onClose={handleClose}>
-                <DialogTitle>{ t("pricing.updateTo", { plan: selectedPlan }) }</DialogTitle>
+                <DialogTitle>{ t("pricing.updateTo", { plan: t(selectedPlan) }) }</DialogTitle>
                 <DialogContent>
                     <Typography variant="body1" gutterBottom>
-                        { t("pricing.requestingUpgrade", { plan: selectedPlan }) }
+                        { t("pricing.requestingUpgrade", { plan: t(selectedPlan) }) }
                     </Typography>
                     {errorMessage && (
                         <Typography color="error" variant="body2" gutterBottom>

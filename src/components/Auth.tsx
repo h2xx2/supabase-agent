@@ -479,7 +479,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                 margin="normal"
                                 required
                                 fullWidth
-                                label={ t("auth.labelPassword") }
+                                label={ t("password") }
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}

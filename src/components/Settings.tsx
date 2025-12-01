@@ -9,6 +9,7 @@ import StatCardProps from "./StatCard";
 import ChangePassword from "./ChangePassword";
 import Pricing from "./Pricing";
 import {useEffect, useState} from "react";
+import { useTranslation } from "react-i18next";
 
 interface SettingsProps {
     callCount: any,
@@ -20,26 +21,27 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlobalLoading }) => {
     const [error, setError] = React.useState<string | null>(null);
     const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
+    const { t } = useTranslation();
 
     const settings = [
         {
             name: 'first_name',
-            label: "First Name",
+            label: t("settings.labelFirstName"),
             defaultValue: user?.first_name || user?.profile?.first_name || user?.profileData?.first_name || '',
         },
         {
             name: 'last_name',
-            label: "Last Name",
+            label: t("settings.labelLastName"),
             defaultValue: user?.last_name || user?.profile?.last_name || user?.profileData?.last_name || '',
         },
         {
             name: 'date_of_birth',
-            label: "Date of Birth (optional)",
+            label: t("settings.labelDateOfBirth"),
             defaultValue: dateOfBirth || '',
         },
         {
             name: 'username',
-            label: "Username",
+            label: t("settings.labelUsername"),
             defaultValue: user?.email || '',
             readOnly: true
         }
@@ -49,11 +51,11 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
     // @ts-ignore
     const statisticData: StatCardProps[] = [
         {
-            title: 'Messages per month',
+            title: t("settings.titlePerMonth"),
             value: callCount.month,
         },
         {
-            title: 'Messages per year',
+            title: t("settings.titlePerYear"),
             value: callCount.year,
         },
     ];
@@ -138,7 +140,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
                         color='secondary'
                         type="submit"
                         form='save-settings-form'
-                    >Save</Button>
+                    >{ t("settings.buttonSave")}</Button>
                 </Box>
                 {settings.map(({ name, label, defaultValue, readOnly }, index) => (
                     <Box key={index} sx={{
@@ -173,7 +175,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
                                     selected={dateOfBirth ? new Date(dateOfBirth) : null}
                                     onChange={onChangeDate}
                                     dateFormat="yyyy-MM-dd"
-                                    placeholderText="YYYY-MM-DD"
+                                    placeholderText={ t("settings.placeHolderText") }
                                     showMonthDropdown
                                     showYearDropdown
                                     dropdownMode="select"
@@ -231,7 +233,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
                             fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
                         }}
                     >
-                        Password
+                        { t("password")}
                     </Typography>
                 </Box>
                 <Box sx={{

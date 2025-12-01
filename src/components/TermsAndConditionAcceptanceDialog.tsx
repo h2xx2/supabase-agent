@@ -3,6 +3,7 @@ import { Button, Dialog, DialogActions, DialogContent } from "@mui/material";
 import { useEffect, useState, type FC } from "react";
 import axios from "axios";
 import { useCookies } from "react-cookie";
+import { useTranslation } from "react-i18next";
 
 interface TermsAndConditionAcceptanceDialogProps {
     isUserLoggedIn: boolean;
@@ -20,6 +21,7 @@ const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogPro
     const [isDialogOpened, setIsDialogOpened] = useState(false);
     const [loading, setLoading] = useState(false);
     const [cookies] = useCookies(["authToken"]);
+    const { t } = useTranslation();
 
     useEffect(() => {
         const termsAccepted =
@@ -80,10 +82,10 @@ const TermsAndConditionAcceptanceDialog: FC<TermsAndConditionAcceptanceDialogPro
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleAccept} disabled={loading} color="success" variant="contained">
-                    Accept
+                    { t("termsAndConditionAcceptanceDialog.accept") }
                 </Button>
                 <Button onClick={handleDecline} disabled={loading} color="error" variant="contained">
-                    Decline
+                    { t("termsAndConditionAcceptanceDialog.decline") }
                 </Button>
             </DialogActions>
         </Dialog>

@@ -19,7 +19,6 @@ interface ChangePasswordProps {
 
 const ChangePassword: React.FC<ChangePasswordProps> = ({ user, token, setGlobalLoading }) => {
     const { t } = useTranslation();
-    
     const [open, setOpen] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
 
