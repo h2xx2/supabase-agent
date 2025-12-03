@@ -77,7 +77,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDr
                         textAlign: "center"
                     }}
                 >
-                    {page}
+                    {t(`page.${page}`)}
                 </Typography>
 
                 {/* Правая часть: Logout */}

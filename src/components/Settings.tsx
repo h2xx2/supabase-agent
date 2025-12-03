@@ -71,7 +71,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
         const formData = new FormData(event.currentTarget);
         const { first_name, last_name } = Object.fromEntries((formData as any).entries());
         if (!first_name?.trim() || !last_name?.trim()) {
-            setError("Please fill first name and last name");
+            setError(t('settings.fillFirstLastName'));
             return;
         }
         setGlobalLoading(true);
@@ -94,7 +94,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
                 }
             );
         } catch (error) {
-            setError("Failed to save settings. Please try again.");
+            setError(t('settings.saveFailed'));
             console.error("Save error:", error);
         } finally {
             setGlobalLoading(false);
@@ -140,7 +140,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
                         color='secondary'
                         type="submit"
                         form='save-settings-form'
-                    >{ t("settings.buttonSave")}</Button>
+                    >{ t("buttonSave") }</Button>
                 </Box>
                 {settings.map(({ name, label, defaultValue, readOnly }, index) => (
                     <Box key={index} sx={{

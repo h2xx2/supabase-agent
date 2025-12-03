@@ -40,11 +40,11 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ user, token, setGlobalL
         const { currentPassword, newPassword, confirmPassword } = Object.fromEntries((formData as any).entries());
 
         if (!currentPassword?.trim() || !newPassword?.trim() || !confirmPassword?.trim()) {
-            setError("Please fill current password, new password and confirm password fields");
+            setError(t('auth.fillPasswordFields'));
             return;
         }
         if (newPassword !== confirmPassword) {
-            setError("New password and confirm password should be the same");
+            setError(t('auth.passwordMismatch'));
             return;
         }
 
@@ -70,7 +70,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ user, token, setGlobalL
             handleClose();
         } catch (e: any) {
             console.error("Password change failed:", e);
-            setError(e.response?.data?.error || "Could not change password");
+            setError(e.response?.data?.error || t('auth.changePasswordFailed'));
             setGlobalLoading(false);
         }
     };

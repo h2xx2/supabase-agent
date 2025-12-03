@@ -2,6 +2,10 @@ export default {
     translations: {
         cancel: 'Cancel',
         password: 'Password',
+        generalSettings: 'General Settings',
+        knowledgeBase: 'Knowledge Base (Optional)',
+        buttonSave: 'Save',
+        buttonDelete: 'Delete',
         navbar: {
             newAgent: 'New Agent',
             logout: 'Logout'
@@ -10,19 +14,38 @@ export default {
             signInWithGoogle: 'Sign in with Google',
             signIn: 'Sign In',
             signUp: 'Sign Up',
+            didntReceiveEmail: "Didn't receive the email?",
+            resendVerificationSeconds: 'Resend verification email ({{seconds}}s)',
+            resendVerification: 'Resend verification email',
             labelEmail: 'Email Address',
             labelRememberMe: 'Remember Me',
             labelFirstName: 'First Name',
             labelLastName: 'Last Name',
+            failedGoogleSignIn: 'Failed to start Google sign-in',
+            googleSignInFailed: 'Google sign-in failed',
             notHaveAccount: "Don't have an account? Sign Up",
-            haveAccount: "Already have an account? Sign In"
+            haveAccount: "Already have an account? Sign In",
+            msgUnexpectedError: 'Unexpected error. Please try again later.',
+            msgEmailNotConfirmed: 'Email not confirmed',
+            msgErrFillFields: 'Please fill email, password, first name, and last name',
+            msgErrNotConfirmedCheckEmail: 'Email not confirmed. Please check your email.',
+            msgSignUpErr: 'Sign Up error',
+            msgConfirmYourAccount: 'Please confirm your account via email. Sign in after confirmation',
+            msgSignUpSuccessUserNotFound: 'Sign Up has succeeded, but user was not found',
+            msgFillEmailAndPassword: 'Please fill email and password',
+            msgErrIncorrectServerResponse: 'Incorrect server response',
+            msgErrEnterEmailResendLink: 'Please enter an email to resend the verification link',
+            msgVerificationEmailSent: 'Verification email sent to ',
         },
         changePassword: {
             changePassword: 'Change Password',
             change: 'Change',
             labelCurrentPassword: 'Current Password',
             labelNewPassword: 'New Password',
-            labelConfirmPassword: 'Confirm Password'
+            labelConfirmPassword: 'Confirm Password',
+            fillPasswordFields: 'Please fill current password, new password and confirm password fields',
+            passwordMismatch: 'New password and confirm password should be the same',
+            changePasswordFailed: 'Could not change password'
         },
         chatWidget: {
             send: 'Send',
@@ -30,11 +53,13 @@ export default {
             offline: 'Offline',
             typeMessage:'Type a message'
         },
+        copyright: {
+            copyright: 'Copyright © {{year}} Telemetry Balkan doo Belgrade.'
+        },
         createAgent: {
             addNewAgent: 'Add New Agent',
             template: 'Template',
             generalSettings: 'General Settings',
-            knowledgeBase: 'Knowledge Base (Optional)',
             uploadFile: 'Upload a file (PDF or TXT) to create a knowledge base for the agent.',
             add: 'Add',
             labelName: 'Name',
@@ -147,7 +172,15 @@ export default {
                 ' - Custom Integrations are possible\n' +
                 ' - Price is negotiable \n' +
                 '\nIf user would like to upgrade to either Personal or Custom plan - please propose his to create the plan upgrade request. Collect first and last name of the user and his email address. And send the request details to sergei.nntu@gmail.com and to user\'s email address.',
-            }
+            },
+            loginRequired: 'Please log in',
+            aliasCreationError: 'Error creating alias: {{message}}',
+            nameInstructionsRequired: 'Name and instructions (min. 40 characters) are required',
+            invalidAgentName: 'Invalid agent name',
+            agentIdMissing: 'agentId not received in response',
+            knowledgeBaseIdMissing: 'knowledgeBaseId not received in response',
+            statusNotPrepared: 'Agent status did not become PREPARED',
+            creationError: 'Error creating agent or knowledge base: {{message}}',
         },
         pricing: {
             freeTiers: {
@@ -258,9 +291,9 @@ export default {
             labelUsername: 'Username',
             titlePerMonth: 'Messages per month',
             titlePerYear: 'Messages per year',
-            buttonSave: 'Save',
             placeHolderText: 'YYYY-MM-DD',
-            
+            fillFirstLastName: 'Please fill first name and last name',
+            saveFailed: 'Failed to save settings. Please try again.',
         },
         termsAndConditionAcceptanceDialog: {
             accept: 'Accept',
@@ -332,6 +365,59 @@ export default {
             contactText1: 'For questions or concerns about these Terms, please contact us at:',
             contactText2: 'Telemetry Balkan doo',
             contactText3: '11118, Cara Nikolaja II, 11, Belgrade, Serbia',
-        }, 
+        },
+        main: {
+            welcomeMessageTitle: 'Welcome to YouAgent.me Agentic AI service.',
+            welcomeMessageDescription: 'This tour will guide you through the agent creation process. Click next to continue.',
+            newAgentButton: 'Press “New Agent” button in order to start the new agent creation.',
+            blueprintSelect: 'Choose the blueprint to run the agent examples or proceed from scratch by going straight to the next step.',
+            blueprintMenuList: 'This is a drop-down list of templates. Select one of them or select "custom agent" to create an agent from scratch.',
+            nameInput: 'Insert your agent name. Use Letters and Digits only, avoid special symbols.',
+            instructionsInput: 'Write the instructions to your agents how it must communicate with your users. Describe his duties in the same way as you would describe them to human.',
+            actionsCheckboxes: 'If your agent needs to send emails or make HTTP requests, set the corresponding checkbox to True. If no - go to the next step.',
+            kbSection: 'If your agent is to consult the user over the information from the document or table - please upload this document in the Knowledge base section. If no - go to the next step.',
+            addAgentButton: 'Click Add to complete your Agent creation.',
+            agentCard: 'Congratulations! Your first Agent is ready. Click Next to learn what you can do with it.',
+            openChatButton: 'Click “Chat” button to instantly start chatting with your agent.',
+            chatDialog: 'Write your first message to the agent and Click “Send button”.',
+            chatClose: 'Chat as long as you like. Then press “Close” button to close the chat dialog.',
+            deployButton: 'To make your agent publicly available press the Deploy button.',
+            publicLink: 'Share the public link with your users. They can now also chat with your agent.',
+            integrationScript: 'You can also copy and paste the integration script into your Website, to make the agent widget to be available for your visitors.',
+            congratulations: 'Congratulations!',
+            conclusionMessage:'You have learned the basics of AI Agents creation with YouAgent.me platform. Hope you enjoyed it! If you have any more questions - please feel free to contact our support.',
+            buttonNext: 'Next',
+            buttonClose: 'Close',
+            buttonPrev: 'Prev'
+        },
+        app: {
+            actions: 'Actions',
+            agent: 'Agent', 
+            yearRequestsCount: 'Yearly Requests Count:',
+            monthRequestsCount: 'Month Requests Count:',
+            downloadKnowledgeBase: 'Download Knowledge Base',
+            knowledgeBaseFile: 'Knowledge Base File:',
+            publicLink: 'Public Link:',
+            buttonChat: 'Chat',
+            buttonDeploy: 'Deploy',
+            buttonRevoke: 'Revoke',
+            buttonEdit: 'Edit',
+            buttonCreateAlias: 'Create Alias',
+            integrationScript: 'Integration Script',
+            copyScript: 'Copy Script',
+            noAgents: 'No Agents',
+            editAgent: 'Edit Agent',
+            fileMessage: '{{initialKnowledgeBaseFile}}. You can upload a new file to update or leave it as is.',
+            confirmDeletion: 'Confirm Deletion',
+            deleteAgentConfirm: 'Are you sure you want to delete the agent \"{{name}}\"? This action cannot be undone.',
+            chatWith: 'Chat with {{name}}',
+        },
+        page: {
+            AGENTS: "My Agents",
+            SETTINGS: "Settings",
+            PRIVACY_POLICY: "Privacy Policy",
+            TERMS_AND_CONDITIONS: "Terms and Conditions",
+            addAgents: 'Add Agents',
+  }
     }
 };

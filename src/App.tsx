@@ -56,6 +56,7 @@ import PrivacyPolicy from "./components/PrivacyPolicy.tsx";
 import TermsAndConditions from "./components/TermsAndConditions";
 import TermsAndConditionAcceptanceDialog from "./components/TermsAndConditionAcceptanceDialog";
 import AddAgentDialog from "./components/CreateAgent.tsx";
+import { useTranslation } from "react-i18next";
 
 interface Agent {
     key: React.ReactNode;
@@ -76,11 +77,13 @@ interface Agent {
 }
 
 const Page = {
-    AGENTS: "My Agents",
-    SETTINGS: "Settings",
-    PRIVACY_POLICY: "Privacy Policy",
-    TERMS_AND_CONDITIONS: "Terms and Conditions",
-};
+    AGENTS: "AGENTS",
+    SETTINGS: "SETTINGS",
+    PRIVACY_POLICY: "PRIVACY_POLICY",
+    TERMS_AND_CONDITIONS: "TERMS_AND_CONDITIONS",
+} as const;
+
+type PageKey = keyof typeof Page;
 interface AppProps {
     setChatOpened?: (value: boolean) => void;
     setAgentDeployed?: (value: boolean) => void;
@@ -115,13 +118,14 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [selectedBlueprint, setSelectedBlueprint] = useState<string>('');
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
-    const [page, setPage] = useState<string>(Page.AGENTS);
+    const [page, setPage] = useState<PageKey>(Page.AGENTS);
     const [isTourOpen, setIsTourOpen] = useState(false);
     const { currentStep, setCurrentStep } = useTour()
     const { setIsOpen } = useTour();
     const [termsDialogOpen, setTermsDialogOpen] = useState(false);
     const messageListRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLDivElement | null>(null);
+    const { t } = useTranslation();
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -708,7 +712,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         }
     };
 
-    const pageContent = (page: any) => {
+    const pageContent = (page: PageKey) => {
         switch(page) {
             case Page.AGENTS: return (
                 <Box
@@ -751,7 +755,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                             textAlign: 'left',
                                         }}
                                     >
-                                        Agent
+                                        { t("app.agent") }
                                     </TableCell>
                                     {deviceType !== 'mobile' && (
                                         <TableCell
@@ -763,7 +767,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                 textAlign: 'center',
                                             }}
                                         >
-                                            Actions
+                                            { t("app.actions") }
                                         </TableCell>
                                     )}
                                 </TableRow>
@@ -825,7 +829,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                         textAlign: 'left',
                                                                     }}
                                                                 >
-                                                                    <strong>Knowledge Base File:</strong>{' '}
+                                                                    <strong>{ t("app.knowledgeBaseFile") }</strong>{' '}
                                                                     <a
                                                                         href="#"
                                                                         onClick={(e) => {
@@ -834,7 +838,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                         }}
                                                                         style={{ cursor: 'pointer', textDecoration: 'underline' }}
                                                                     >
-                                                                        Download Knowledge Base
+                                                                        { t("app.downloadKnowledgeBase") }
                                                                     </a>
                                                                 </Typography>
                                                             )}
@@ -846,7 +850,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     textAlign: 'left',
                                                                 }}
                                                             >
-                                                                <strong>Month requests count:</strong> {agent.call_count || 0}
+                                                                <strong>{ t("app.monthRequestsCount") }</strong> {agent.call_count || 0}
                                                             </Typography>
                                                             <Typography
                                                                 sx={{
@@ -856,7 +860,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     textAlign: 'left',
                                                                 }}
                                                             >
-                                                                <strong>Year requests count:</strong> {agent.call_count_year || 0}
+                                                                <strong>{ t("app.yearRequestsCount") }</strong> {agent.call_count_year || 0}
                                                             </Typography>
                                                             {agent.public_url && (
                                                             <Typography
@@ -868,7 +872,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                 }}
                                                                 data-tour="public-link"
                                                             >
-                                                                <strong>Public Link:</strong>{' '}
+                                                                <strong>{ t("app.publicLink") }</strong>{' '}
                                                                 <Link
                                                                     href={agent.public_url}
                                                                     target="_blank"
@@ -909,7 +913,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                         }}
                                                                                         data-tour="open-chat-button"
                                                                                     >
-                                                                                        Chat
+                                                                                        { t("app.buttonChat") }
                                                                                     </Button>
                                                                                     {!agent.public_url ? (
                                                                                         <Button
@@ -925,7 +929,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                             }}
                                                                                             data-tour="deploy-button"
                                                                                         >
-                                                                                            Deploy
+                                                                                            { t("app.buttonDeploy") }
                                                                                         </Button>
                                                                                     ) : (
                                                                                         <Button
@@ -940,7 +944,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                                 height: 32,
                                                                                             }}
                                                                                         >
-                                                                                            Revoke
+                                                                                            { t("app.buttonRevoke") }
                                                                                         </Button>
                                                                                     )}
                                                                                     <Button
@@ -955,7 +959,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                             height: 32,
                                                                                         }}
                                                                                     >
-                                                                                        Edit
+                                                                                        { t("app.buttonEdit") }
                                                                                     </Button>
                                                                                 </>
                                                                             ) : (
@@ -971,7 +975,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                         height: 32,
                                                                                     }}
                                                                                 >
-                                                                                    Create Alias
+                                                                                    { t("app.buttonCreateAlias") }
                                                                                 </Button>
                                                                             )}
                                                                             <Button
@@ -986,7 +990,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                     height: 32,
                                                                                 }}
                                                                             >
-                                                                                Delete
+                                                                                { t("buttonDelete") }
                                                                             </Button>
                                                                         </>
                                                                     )}
@@ -1029,7 +1033,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                     }}
                                                                                     data-tour="open-chat-button"
                                                                                 >
-                                                                                    Chat
+                                                                                    { t("app.buttonChat") }
                                                                                 </Button>
                                                                                 {!agent.public_url ? (
                                                                                     <Button
@@ -1044,7 +1048,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                         }}
                                                                                         data-tour="deploy-button"
                                                                                     >
-                                                                                        Deploy
+                                                                                        { t("app.buttonDeploy") }
                                                                                     </Button>
                                                                                 ) : (
                                                                                     <Button
@@ -1058,7 +1062,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                             width: deviceType === 'tablet' ? 140 : 160,
                                                                                         }}
                                                                                     >
-                                                                                        Revoke
+                                                                                        { t("app.buttonRevoke") }
                                                                                     </Button>
                                                                                 )}
                                                                                 <Button
@@ -1072,7 +1076,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                         width: deviceType === 'tablet' ? 140 : 160,
                                                                                     }}
                                                                                 >
-                                                                                    Edit
+                                                                                    { t("app.buttonEdit") }
                                                                                 </Button>
                                                                             </>
                                                                         ) : (
@@ -1087,7 +1091,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                     width: deviceType === 'tablet' ? 140 : 160,
                                                                                 }}
                                                                             >
-                                                                                Create Alias
+                                                                                { t("app.buttonCreateAlias") }
                                                                             </Button>
                                                                         )}
                                                                     </>
@@ -1103,7 +1107,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                         width: deviceType === 'tablet' ? 140 : 160,
                                                                     }}
                                                                 >
-                                                                    Delete
+                                                                    { t("buttonDelete") }
                                                                 </Button>
                                                             </>
                                                         </Box>
@@ -1149,7 +1153,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                     : '1rem',
                                                                     }}
                                                                 >
-                                                                    Integration Script
+                                                                    { t("app.integrationScript") }
                                                                 </Typography>
                                                             </AccordionSummary>
                                                             <AccordionDetails
@@ -1219,7 +1223,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                         textTransform: 'none',
                                                                     }}
                                                                 >
-                                                                    Copy script
+                                                                    { t("app.copyScript") }
                                                                 </Button>
                                                             </AccordionDetails>
                                                         </Accordion>
@@ -1231,7 +1235,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={deviceType === 'mobile' ? 1 : 2} sx={{ textAlign: 'left' }}>
-                                            No agents
+                                            { t("app.noAgents") }
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -1341,7 +1345,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     <ListItemIcon>
                                         <AddIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary="Add agent" sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary={ t('page.addAgents') } sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
                                 <Divider />
@@ -1353,7 +1357,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     <ListItemIcon>
                                         <ViewListIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary="Agents" sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary={ t(`page.${Page.AGENTS}`) } sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
                                 <ListItemButton onClick={() => {
@@ -1363,7 +1367,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     <ListItemIcon>
                                         <SettingsIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary={Page.SETTINGS} sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary={ t(`page.${Page.SETTINGS}`) } sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
                                 <ListItemButton onClick={() => {
@@ -1373,7 +1377,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     <ListItemIcon>
                                         <PolicyIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary={Page.PRIVACY_POLICY} sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary={ t(`page.${Page.PRIVACY_POLICY}`) } sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
                                 <ListItemButton onClick={() => {
@@ -1383,7 +1387,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     <ListItemIcon>
                                         <DescriptionIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary={Page.TERMS_AND_CONDITIONS} sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary={ t(`page.${Page.TERMS_AND_CONDITIONS}`) } sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
                             </List>
                         </Drawer>
@@ -1436,7 +1440,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                 textAlign: 'left',
                             }}
                         >
-                            Edit agent
+                            { t("app.editAgent") }
                         </DialogTitle>
                         <DialogContent sx={{ textAlign: 'left', overflowX: 'hidden' }}>
                             {errorMessage && (
@@ -1462,7 +1466,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                             textAlign: 'left',
                                         }}
                                     >
-                                        General settings
+                                        { t("generalSettings") }
                                     </Typography>
                                     <TextField
                                         autoFocus
@@ -1528,7 +1532,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                             textAlign: 'left',
                                         }}
                                     >
-                                        Knowledge base (optional)
+                                        { t("knowledgeBase") }
                                     </Typography>
                                     {initialKnowledgeBaseFile && (
                                         <Alert
@@ -1540,7 +1544,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                 textAlign: 'left',
                                             }}
                                         >
-                                            {initialKnowledgeBaseFile}. You can upload a new file to update or leave it as is.
+                                            { t("app.fileMessage", { initialKnowledgeBaseFile }) }
                                         </Alert>
                                     )}
                                     <FormControlLabel
@@ -1591,14 +1595,14 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                 color="primary"
                                 sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
                             >
-                                Cancel
+                                { t("cancel") }
                             </Button>
                             <Button
                                 onClick={handleEditAgent}
                                 color="primary"
                                 sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
                             >
-                                Save
+                                { t("buttonSave") }
                             </Button>
                         </DialogActions>
                     </Dialog>
@@ -1615,7 +1619,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                 textAlign: 'left',
                             }}
                         >
-                            Confirm Deletion
+                            { t('app.confirmDeletion') }
                         </DialogTitle>
                         <DialogContent sx={{ textAlign: 'left', overflowX: 'hidden' }}>
                             {errorMessage && (
@@ -1637,7 +1641,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     textAlign: 'left',
                                 }}
                             >
-                                Are you sure you want to delete the agent "{agentToDelete?.name}"? This action cannot be undone.
+                                { t("app.deleteAgentConfirm", { name: agentToDelete?.name }) }
                             </Typography>
                         </DialogContent>
                         <DialogActions sx={{ justifyContent: 'center' }}>
@@ -1646,14 +1650,14 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                 color="primary"
                                 sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
                             >
-                                Cancel
+                                { t('cancel') }
                             </Button>
                             <Button
                                 onClick={handleDeleteAgent}
                                 color="error"
                                 sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
                             >
-                                Delete
+                                { t('buttonDelete') }
                             </Button>
                         </DialogActions>
                     </Dialog>
@@ -1727,7 +1731,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                             textAlign: 'left',
                                         }}
                                     >
-                                        Chat with {selectedAgent.name}
+                                        { t("app.chatWith", { name: selectedAgent.name }) }
                                     </Typography>
                                 </Box>
 

@@ -170,7 +170,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             const msg =
                 (serverData && (serverData.message || serverData.error)) ||
                 err?.message ||
-                "Unexpected error. Please try again later.";
+                t("auth.msgUnexpectedError");
 
             return { message: String(msg), raw: serverData ?? rawResponse };
         } catch (ex) {
@@ -183,7 +183,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         try {
             if (typeof message === "string" && message.includes("Email not confirmed")) return true;
             const rawString = typeof raw === "string" ? raw : JSON.stringify(raw || {});
-            return rawString.includes("Email not confirmed");
+            return rawString.includes(t("auth.msgEmailNotConfirmed"));
         } catch {
             return false;
         }
@@ -202,7 +202,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         setResendSuccess(null);
         setLastErrorRaw(null);
         if (!email.trim() || !password.trim() || !firstName.trim() || !lastName.trim()) {
-            setError("Please fill email, password, first name, and last name");
+            setError(t("auth.msgErrFillFields"));
             return;
         }
         try {
@@ -222,10 +222,10 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 setLastErrorRaw(parsedBody);
                 if (rawIndicatesEmailNotConfirmed(parsedBody, parsedBody.error || parsedBody.message)) {
                     setEmailConfirmationRequired(true);
-                    setError("Email not confirmed. Please check your email.");
+                    setError(t("auth.msgErrNotConfirmedCheckEmail"));
                     return;
                 } else {
-                    setError(parsedBody.error || parsedBody.message || "Sign Up error");
+                    setError(parsedBody.error || parsedBody.message || t("auth.msgSignUpErr"));
                     return;
                 }
             }
@@ -235,7 +235,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             if (user) {
                 if (requires_email_confirmation || !token) {
                     setEmailConfirmationRequired(true);
-                    setError("Please confirm your account via email. Sign in after confirmation");
+                    setError(t("auth.msgConfirmYourAccount"));
                     return;
                 }
                 setUser(user);
@@ -244,14 +244,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 }
                 onAuthChange(user);
             } else {
-                setError("Sign Up has succeeded, but user was not found");
+                setError(t("auth.msgSignUpSuccessUserNotFound"));
                 setLastErrorRaw(parsedBody);
             }
         } catch (err: any) {
             const { message, raw } = extractErrorMessage(err);
             if (rawIndicatesEmailNotConfirmed(raw, message)) {
                 setEmailConfirmationRequired(true);
-                setError("Email not confirmed. Please check your email.");
+                setError(t("auth.msgErrNotConfirmedCheckEmail"));
             } else {
                 setError(message);
             }
@@ -265,7 +265,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         setEmailConfirmationRequired(false);
 
         if (!email.trim() || !password.trim()) {
-            setError("Please fill email and password");
+            setError(t("auth.msgFillEmailAndPassword"));
             return;
         }
 
@@ -286,10 +286,10 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 setLastErrorRaw(data);
                 if (rawIndicatesEmailNotConfirmed(data, data.error || data.message)) {
                     setEmailConfirmationRequired(true);
-                    setError("Email not confirmed. Please check your email.");
+                    setError(t("auth.msgErrNotConfirmedCheckEmail"));
                     return;
                 } else {
-                    setError(data.error || data.message || "Incorrect server response");
+                    setError(data.error || data.message || t("auth.msgErrIncorrectServerResponse"));
                     return;
                 }
             }
@@ -301,14 +301,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 onAuthChange(user);
             } else {
                 console.warn("DEBUG: signin returned without token or user:", data);
-                setError("Incorrect server response");
+                setError(t("auth.msgErrIncorrectServerResponse"));
                 setLastErrorRaw(data);
             }
         } catch (err: any) {
             const { message, raw } = extractErrorMessage(err);
             if (rawIndicatesEmailNotConfirmed(raw, message)) {
                 setEmailConfirmationRequired(true);
-                setError("Email not confirmed. Please check your email.");
+                setError(t("auth.msgErrNotConfirmedCheckEmail"));
             } else {
                 setError(message);
             }
@@ -321,7 +321,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         setLastErrorRaw(null);
 
         if (!email.trim()) {
-            setError("Please enter an email to resend the verification link");
+            setError(t("auth.msgErrEnterEmailResendLink"));
             return;
         }
 
@@ -333,7 +333,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 { email },
                 { headers: { "Content-Type": "application/json" } }
             );
-            setResendSuccess("Verification email sent to " + email);
+            setResendSuccess(t('auth.msgVerificationEmailSent') + email);
         } catch (err: any) {
             if (cooldownRef.current) {
                 clearInterval(cooldownRef.current);
@@ -417,13 +417,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                         {emailConfirmationRequired && (
                             <Box sx={{ mb: 2, width: "100%", textAlign: "center" }}>
                                 <Typography variant="body2" sx={{ mb: 1 }}>
-                                    Didn't receive the email?{" "}
+                                    { t('auth.didntReceiveEmail') }
                                     {cooldownSeconds > 0 ? (
                                         <Typography
                                             component="span"
                                             sx={{ color: "text.disabled", fontWeight: 500 }}
                                         >
-                                            Resend verification email ({cooldownSeconds}s)
+                                            { t('auth.resendVerificationSeconds', { seconds: cooldownSeconds }) }
                                         </Typography>
                                     ) : (
                                         <Link
@@ -434,7 +434,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                             }}
                                             sx={{ textDecoration: "underline", color: "primary.main" }}
                                         >
-                                            Resend verification email
+                                            { t('auth.resendVerification') }
                                         </Link>
                                     )}
                                 </Typography>
@@ -520,11 +520,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                         if (url) {
                                             window.location.href = url;
                                         } else {
-                                            setError("Failed to start Google sign-in");
+                                            setError(t('auth.failedGoogleSignIn'));
                                         }
                                     } catch (err: any) {
                                         console.error("Google auth error:", err);
-                                        setError("Google sign-in failed");
+                                        setError(t('auth.googleSignInFailed'));
                                     }
                                 }}
                             >

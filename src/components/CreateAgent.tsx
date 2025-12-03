@@ -217,8 +217,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             console.error('Error creating alias:', error);
             setErrorMessage(
                 error.message === 'Authorization token missing in cookies'
-                    ? 'Please log in'
-                    : `Error creating alias: ${error.message || 'Unknown error'}`
+                    ? t('createAgent.loginRequired')
+                    : t('createAgent.aliasCreationError', { message: error.message || 'Unknown error' })
             );
         } finally {
             setGlobalLoading(false);
@@ -242,13 +242,13 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
 
     const handleAddAgent = async () => {
         if (!newAgent.name.trim() || !newAgent.instructions.trim() || newAgent.instructions.length < 40) {
-            setErrorMessage('Name and instructions (min. 40 characters) are required');
+            setErrorMessage(t('createAgent.nameInstructionsRequired'));
             return;
         }
 
-        const sanitizedName = newAgent.name.replace(/[^a-zA-Z0-9_-]/g, '');
+        const sanitizedName = newAgent.name.replace(/[^a-zA-Z0-9а-яА-ЯёЁ_-]/g, '');
         if (!sanitizedName) {
-            setErrorMessage('Invalid agent name');
+            setErrorMessage(t('createAgent.invalidAgentName'));
             return;
         }
 
@@ -276,7 +276,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             );
 
             const createdAgentId = agentResponse.data.agentId;
-            if (!createdAgentId) throw new Error('agentId not received in response');
+            if (!createdAgentId) throw new Error(t('createAgent.agentIdMissing'));
 
             let knowledgeBaseId = null;
             if (fileData) {
@@ -291,7 +291,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                 );
 
                 knowledgeBaseId = kbResponse.data.knowledgeBaseId;
-                if (!knowledgeBaseId) throw new Error('knowledgeBaseId not received in response');
+                if (!knowledgeBaseId) throw new Error(t('createAgent.knowledgeBaseIdMissing'));
             }
 
             const waitForPrepared = async (agentId: string) => {
@@ -304,7 +304,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             };
 
             const isPrepared = await waitForPrepared(createdAgentId);
-            if (!isPrepared) throw new Error('Agent status did not become PREPARED');
+            if (!isPrepared) throw new Error(t('createAgent.statusNotPrepared'));
 
             await createAlias(createdAgentId, sanitizedName);
             onClose();
@@ -317,8 +317,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             console.error('Error creating agent or knowledge base:', error);
             setErrorMessage(
                 error.message === 'Authorization token missing in cookies'
-                    ? 'Please log in'
-                    : `Error creating agent or knowledge base: ${error.message || 'Unknown error'}`
+                    ? t('createAgent.loginRequired')
+                    : t('createAgent.creationError', { message: error.message || 'Unknown error' })
             );
         } finally {
             setGlobalLoading(false);
@@ -484,7 +484,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                 </Box>
 
                 <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
-                    { t("createAgent.generalSettings") }
+                    { t("generalSettings") }
                 </Typography>
 
                 <TextField
@@ -528,7 +528,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                 <Divider sx={{ my: 2 }} />
 
                 <Typography variant="h6" sx={{ mb: 1 }}>
-                    { t("createAgent.knowledgeBase") }
+                    { t("knowledgeBase") }
                 </Typography>
 
                 <input

@@ -46,58 +46,58 @@ const steps: StepType[] = [
         selector: '[data-tour="welcome"]',
         content: (): React.ReactNode => (
             <div>
-                <strong>Welcome to YouAgent.me Agentic AI service.</strong>
-                <div>This tour will guide you through the agent creation process. Click next to continue.</div>
+                <strong>{ i18n.t('main.welcomeMessageTitle') }</strong>
+                <div>{ i18n.t('main.welcomeMessageDescription') }</div>
             </div>
         ),
         position: 'center' as const,
     },
     {
         selector: '[data-tour="new-agent-button"]',
-        content: 'Press “New Agent” button in order to start the new agent creation.',
+        content: i18n.t('main.newAgentButton'),
         stepInteraction: true,
     },
     {
         selector: '[data-tour="blueprint-select"]',
-        content: 'Choose the blueprint to run the agent examples or proceed from scratch by going straight to the next step. ',
+        content: i18n.t('main.blueprintSelect'),
         stepInteraction: true,
     },
     {
         selector: "[data-tour='blueprint-menu-list']",
-        content: 'This is a drop-down list of templates. Select one of them or select "custom agent" to create an agent from scratch.',
+        content: i18n.t('main.blueprintMenuList'),
         observed: true,
         position: 'bottom' as const,
         stepInteraction: true,
     },
     {
         selector: '[data-tour="name-input"]',
-        content: 'Insert your agent name. Use Letters and Digits only, avoid special symbols.',
+        content: i18n.t('main.nameInput'),
     },
     {
         selector: '[data-tour="instructions-input"]',
-        content: 'Write the instructions to your agents how it must communicate with your users. Describe his duties in the same way as you would describe them to human.',
+        content: i18n.t('main.instructionsInput'),
     },
     {
         selector: '[data-tour="actions-checkboxes"]',
-        content: 'If your agent needs to send emails or make HTTP requests, set the corresponding checkbox to True. If no - go to the next step. ',
+        content: i18n.t('main.actionsCheckboxes'),
     },
     {
         selector: '[data-tour="kb-section"]',
-        content: ' If your agent is to consult the user over the information from the document or table - please upload this document in the Knowledge base section. If no - go to the next step. ',
+        content: i18n.t('main.kbSection'),
     },
     {
         selector: '[data-tour="add-agent-button"]',
-        content: 'Click Add to complete your Agent creation.',
+        content: i18n.t('main.addAgentButton'),
         stepInteraction: true,
     },
     {
         selector: '[data-tour="agent-card"]',
-        content: 'Congratulations! Your first Agent is ready. Click Next to learn what you can do with it.',
+        content: i18n.t('main.agentCard'),
         observed: true,
     },
     {
         selector: '[data-tour="open-chat-button"]',
-        content: 'Click “Chat” button to instantly start chatting with your agent.',
+        content: i18n.t('main.openChatButton'),
         stepInteraction: true,
         position: 'bottom' as const,
         action: async () => {
@@ -112,30 +112,30 @@ const steps: StepType[] = [
     },
     {
         selector: '[data-tour="chat-dialog"]',
-        content: 'Write your first message to the agent and Click “Send button”.',
+        content: i18n.t('main.chatDialog'),
     },
     {
         selector: '[data-tour="chat-close"]',
-        content: 'Chat as long as you like. Then press “Close” button to close the chat dialog.',
+        content: i18n.t('main.chatClose'),
     },
     {
         selector: '[data-tour="deploy-button"]',
-        content: 'To make your agent publicly available press the Deploy button.',
+        content: i18n.t('main.deployButton'),
     },
     {
         selector: '[data-tour="public-link"]',
-        content: 'Share the public link with your users. They can now also chat with your agent.',
+        content: i18n.t('main.publicLink'),
     },
     {
         selector: '[data-tour="integration-script"]',
-        content: 'You can also copy and paste the integration script into your Website, to make the agent widget to be available for your visitors.',
+        content: i18n.t('main.integrationScript'),
     },
     {
         selector: '#root',
         content: (
             <div>
-                <strong>Congratulations!</strong>
-                <div>You have learned the basics of AI Agents creation with YouAgent.me platform. Hope you enjoyed it! If you have any more questions - please feel free to contact our support.</div>
+                <strong>{ i18n.t('main.congratulations') }</strong>
+                <div>{ i18n.t('main.conclusionMessage') }</div>
             </div>
         ),
         position: 'center' as const,
@@ -247,7 +247,7 @@ function Root() {
                                             }
                                         }}
                                     >
-                                        {isLast ? 'Close' : 'Next'}
+                                        {isLast ? i18n.t('main.buttonClose') : i18n.t('main.buttonNext')}
                                     </button>
                                 );
                             }}
@@ -278,7 +278,7 @@ function Root() {
                                             }
                                         }}
                                     >
-                                        Prev
+                                        { i18n.t('main.buttonPrev') }
                                     </button>
                                 );
                             }}

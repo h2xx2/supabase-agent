@@ -1,14 +1,11 @@
 import * as React from 'react';
 import {Box, Typography} from '@mui/material';
+import { useTranslation } from "react-i18next";
 
 const Copyright: React.FC = () => {
-    const text = [
-        'Copyright © ',
-        'Telemetry Balkan doo Belgrade',
-        ' ',
-        new Date().getFullYear(),
-        '.'
-    ].join('');
+    const { t } = useTranslation();
+    const year = new Date().getFullYear();
+    
     return (
         <Box sx={{ color: 'text.secondary', justifyContent: 'center', width: '100%', mt: 5}}>
             <Typography
@@ -16,7 +13,8 @@ const Copyright: React.FC = () => {
                 align="center"
                 sx={{ color: 'text.secondary'}}
             >
-                {text}
+                { t("copyright.copyright", { year }) }
+
             </Typography>
         </Box>
     );
