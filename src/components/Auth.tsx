@@ -29,6 +29,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import axios from "axios";
 import { useCookies } from "react-cookie";
 import { useTranslation } from "react-i18next";
+import { i18n } from "../utils/i18n";
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
@@ -509,7 +510,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                         {authMode === "signin" && <FormControlLabel control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} color="primary" />} label={ t('auth.labelRememberMe') } />}
 
                                         <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>{authMode === "signin" ?  t('auth.signIn')  :  t('auth.signUp') }</Button> 
-                                        <Button fullWidth variant="outlined" sx={{ mt: 2 }} onClick={async () => {
+                                        {
+                                        i18n.language === 'en' && (
+                                            <Button fullWidth variant="outlined" sx={{ mt: 2 }} onClick={async () => {
                                             try {
                                                 const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
                                                 const { url } = res.data;
@@ -518,7 +521,10 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                             } catch (err: any) {
                                                 setError(t('auth.googleSignInFailed'));
                                             }
-                                        }}>{ t('auth.signInWithGoogle') }</Button>
+                                            }}>{ t('auth.signInWithGoogle') }
+                                            </Button>
+                                            )
+                                        }
 
                                         <Box sx={{ mt: 2, textAlign: "center" }}>
                                             <Link href="#" variant="body2" onClick={(e) => { e.preventDefault(); setAuthMode(authMode === "signin" ? "signup" : "signin"); setError(null); setEmailConfirmationRequired(false); setResendSuccess(null); setLastErrorRaw(null); }}>
@@ -581,16 +587,21 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                         {authMode === "signin" && <FormControlLabel control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} color="primary" />} label={ t('auth.labelRememberMe') } />}
 
                                         <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>{authMode === "signin" ? t('auth.signIn') : t('auth.signUp') }</Button>
-                                        <Button fullWidth variant="outlined" sx={{ mt: 2 }} onClick={async () => {
+                                        {
+                                        i18n.language === 'en' && (
+                                            <Button fullWidth variant="outlined" sx={{ mt: 2 }} onClick={async () => {
                                             try {
                                                 const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
                                                 const { url } = res.data;
                                                 if (url) window.location.href = url;
-                                                else setError(t('auth.failedGoogleSignIn')); 
+                                                else setError(t('auth.failedGoogleSignIn'));
                                             } catch (err: any) {
-                                                setError(t('auth.googleSignInFailed')); 
+                                                setError(t('auth.googleSignInFailed'));
                                             }
-                                        }}>{ t('auth.signInWithGoogle') }</Button>
+                                            }}>{ t('auth.signInWithGoogle') }
+                                            </Button>
+                                            )
+                                        }
 
                                         <Box sx={{ mt: 2, textAlign: "center" }}>
                                             <Link href="#" variant="body2" onClick={(e) => { e.preventDefault(); setAuthMode(authMode === "signin" ? "signup" : "signin"); setError(null); setEmailConfirmationRequired(false); setResendSuccess(null); setLastErrorRaw(null); }}>
