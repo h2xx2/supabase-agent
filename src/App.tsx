@@ -127,6 +127,12 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const inputRef = useRef<HTMLDivElement | null>(null);
     const { t } = useTranslation();
 
+    const [attachedFile, setAttachedFile] = useState<File | null>(null);
+    const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const SUPPORTED_EXTENSIONS = [
+        '.pdf', '.txt', '.doc', '.docx', '.csv', '.xls', '.xlsx'
+    ];
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
@@ -231,7 +237,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     setAgents(agentsData);
                 } catch (error: any) {
                     console.error('Error loading agents:', error);
-                    setErrorMessage('Failed to load agents');
+                    setErrorMessage(t('app.msgErrFailedLoadAgent'));
                 }
             };
             loadAgents();
@@ -271,8 +277,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error receiving agents:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in.'
-                    : 'Failed to load agents'
+                    ? t('loginRequired')
+                    : t('app.msgErrFailedLoadAgent')
             );
             return [];
         }
@@ -280,6 +286,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
     const handleCloseChat = () => {
         setChatOpen(false);
+        setAttachedFile(null);
+        setAttachedFileName(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
 
         if (typeof setChatOpenedFromRoot === 'function') {
             try { setChatOpenedFromRoot(false); } catch (e) { /* ignore */ }
@@ -350,8 +361,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error when creating alias:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in'
-                    : `Error when creating an alias: ${error.message || 'Unknown error'}`
+                    ? t('loginRequired')
+                    : t('aliasCreationError', { message: error.message || 'Unknown error' })
             );
         } finally {
             setGlobalLoading(false);
@@ -364,7 +375,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setEditEnableEmailAction(!!agent.email_action_enabled);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
-        setInitialKnowledgeBaseFile(agent.knowledge_base_id ? 'Knowledge base file exists' : null);
+        setInitialKnowledgeBaseFile(agent.knowledge_base_id ? t('app.initialKnowledgeBaseFile') : null);
         setOpenEditDialog(true);
     };
 
@@ -388,13 +399,13 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             !editAgent.instructions.trim() ||
             editAgent.instructions.length < 40
         ) {
-            setErrorMessage('Name and instructions (min. 40 characters) are required');
+            setErrorMessage(t('nameInstructionsRequired'));
             return;
         }
 
         const sanitizedName = editAgent.name.replace(/[^a-zA-Z0-9_-]/g, '');
         if (!sanitizedName) {
-            setErrorMessage('Invalid agent name');
+            setErrorMessage(t('invalidAgentName'));
             return;
         }
 
@@ -405,7 +416,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             const fileData = editFile ? await convertFileToBase64(editFile) : null;
             const fileName = editFile ? editFile.name : null;
             if (deleteKnowledgeBase && fileData) {
-                setErrorMessage('You cannot select a new file when deleting the knowledge base.');
+                setErrorMessage(t('app.cannotSelectNewFileWhileDeleting'));
                 return;
             }
 
@@ -432,8 +443,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error updating agent:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in'
-                    : `Error updating agent: ${error.message || 'Unknown error'}`
+                    ? t('loginRequired')
+                    : t('app.errorUpdatingAgent', {message: error.message || 'Unknown error'})
             );
         } finally {
             setGlobalLoading(false);
@@ -466,7 +477,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             const fileResponse = await fetch(presignedUrl);
             const blob = await fileResponse.blob();
             const fileName =
-                presignedUrl.split('/').pop()?.split('?')[0] || 'knowledge_base.pdf';
+                presignedUrl.split('/').pop()?.split('?')[0] || t('app.knowledgeBasePdf');
 
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -477,34 +488,63 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             URL.revokeObjectURL(link.href);
         } catch (error) {
             console.error('Error when downloading the knowledge base:', error);
-            setErrorMessage('Couldn\'t download knowledge base file');
+            setErrorMessage(t('app.couldntDownloadKbFile'));
         } finally {
             setGlobalLoading(false);
         }
     };
 
     const sendChatMessage = async (text: string) => {
-        if (!text.trim() || !selectedAgent?.agent_id || !selectedAgent.alias_id) return;
-        const newMessage: MessageModel = {
-            message: text,
+        if (!text.trim() && !attachedFile) return;
+        if (!selectedAgent?.agent_id || !selectedAgent.alias_id) return;
+
+        const userText = text.trim();
+        const hasFile = !!attachedFile;
+        const fileNameForDisplay = attachedFileName || 'file';
+
+        // Формируем сообщение пользователя
+        const userMessage: MessageModel = {
+            message: userText || fileNameForDisplay, // текст или имя файла
             sentTime: new Date().toISOString(),
             sender: 'user',
             direction: 'outgoing',
             position: 'single',
+            // Добавляем кастомное поле — chatscope его не трогает, но мы сможем использовать
+            attachedFileName: hasFile ? fileNameForDisplay : undefined,
         };
-        setChatMessages((prev) => [...prev, newMessage]);
-        let sessionId = sessionIds[selectedAgent.agent_id] || `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        setSessionIds((prev) => ({ ...prev, [selectedAgent.agent_id]: sessionId }));
+
+        // Сразу показываем сообщение в чате
+        setChatMessages(prev => [...prev, userMessage]);
+
+        let sessionId = sessionIds[selectedAgent.agent_id] ||
+            `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        setSessionIds(prev => ({ ...prev, [selectedAgent.agent_id]: sessionId }));
+
         try {
             const token = getAuthToken();
+
+            let fileBase64: string | null = null;
+            let fileName: string | null = null;
+
+            if (attachedFile) {
+                const dataUrl = await convertFileToBase64(attachedFile);
+                const match = dataUrl.match(/^data:.+?;base64,(.*)$/);
+                if (!match) throw new Error('Failed to encode file');
+                fileBase64 = match[1];
+                fileName = attachedFile.name;
+            }
+            setAttachedFile(null);
+            setAttachedFileName(null);
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/send`,
                 {
-                    message: text,
+                    message: userText,
                     agentId: selectedAgent.agent_id,
                     aliasId: selectedAgent.alias_id,
                     sessionId,
                     user_id: user?.id,
+                    fileBase64,
+                    fileName,
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -516,70 +556,82 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                 direction: 'incoming',
                 position: 'single',
             };
-            setChatMessages((prev) => [...prev, botMessage]);
+            setChatMessages(prev => [...prev, botMessage]);
 
-            await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/save-message`,
-                {
-                    agent_id: selectedAgent.agent_id,
-                    session_id: sessionId,
-                    message: text,
-                    sender: 'user',
-                    user_id: user?.id,
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            // Очищаем файл только после успешной отправки
 
-            await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/save-call`,
-                {
-                    agent_id: selectedAgent.agent_id,
-                    user_id: user?.id,
-                    status: 'success',
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            if (fileInputRef.current) fileInputRef.current.value = '';
+
+            // Сохраняем сообщение в истории (включая имя файла)
+            await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-message`, {
+                agent_id: selectedAgent.agent_id,
+                session_id: sessionId,
+                message: userText || `[File: ${fileName}]`,
+                sender: 'user',
+                user_id: user?.id,
+            }, { headers: { Authorization: `Bearer ${token}` } });
+
+            await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call`, {
+                agent_id: selectedAgent.agent_id,
+                user_id: user?.id,
+                status: 'success',
+            }, { headers: { Authorization: `Bearer ${token}` } });
+
         } catch (error: any) {
-            console.error('Error when sending a message:', error);
-            let errorMessageText = 'Error: Unknown error';
-            if (error.response) {
-                if (error.response.status === 403 && error.response.data.error) {
-                    errorMessageText = error.response.data.error;
-                } else if (error.response.data.error) {
-                    errorMessageText = `Error: ${error.response.data.error}`;
-                } else {
-                    errorMessageText = `Error: ${error.response.statusText || 'Unknown error'}`;
-                }
-            } else if (error.message === 'The authorization token is missing in the cookie') {
-                errorMessageText = 'Please log in';
-            } else {
-                errorMessageText = `Error: ${error.message || 'Unknown error'}`;
+            console.error('Error sending message with file:', error);
+
+            let errorText = t('app.failedSendMsg');
+            if (error.response?.data?.error) {
+                errorText = error.response.data.error;
+            } else if (error.message) {
+                errorText = `Error: ${error.message}`;
             }
 
-            const errorMessage: MessageModel = {
-                message: errorMessageText,
+            const errMsg: MessageModel = {
+                message: errorText,
                 sentTime: new Date().toISOString(),
                 sender: 'bot',
                 direction: 'incoming',
                 position: 'single',
             };
-            setChatMessages((prev) => [...prev, errorMessage]);
+            setChatMessages(prev => [...prev, errMsg]);
 
             try {
                 const token = getAuthToken();
-                await axios.post(
-                    `${import.meta.env.VITE_API_GATEWAY_URL}/save-call`,
-                    {
-                        agent_id: selectedAgent.agent_id,
-                        user_id: user?.id,
-                        status: 'failure',
-                    },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-            } catch (saveError) {
-                console.error('Error saving the call:', saveError);
-            }
+                await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call`, {
+                    agent_id: selectedAgent.agent_id,
+                    user_id: user?.id,
+                    status: 'failure',
+                }, { headers: { Authorization: `Bearer ${token}` } });
+            } catch { /* ignore */ }
         }
+    };
+
+    const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        if (!file) {
+            setAttachedFile(null);
+            setAttachedFileName(null);
+            return;
+        }
+
+        const lower = file.name.toLowerCase();
+        const allowed = SUPPORTED_EXTENSIONS.some(ext => lower.endsWith(ext));
+        if (!allowed) {
+            t('app.unsupportedFileType', { extensions: SUPPORTED_EXTENSIONS.join(', ') })
+            e.target.value = '';
+            return;
+        }
+
+        if (file.size > 3 * 1024 * 1024) { // ~9.5 MB
+            alert(t('app.fileTooLarge'));
+            e.target.value = '';
+            return;
+        }
+
+        setAttachedFile(file);
+        setAttachedFileName(file.name);
+        e.target.value = ''; // чтобы можно было выбрать тот же файл снова
     };
 
     const handleOpenChat = (agent: Agent) => {
@@ -618,7 +670,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             );
             const { publicUrl, apkKey } = response.data;
             setAgents((prev) => prev.map((a) => (a.id === agent.id ? { ...a, public_url: publicUrl } : a)));
-            alert(`Public URL: ${publicUrl}\nAPK Key: ${apkKey}\nCopy it and use it for access!`);
+            alert(t('app.publicInfo', { publicUrl, apkKey }));
 
             // Если Root передал setAgentDeployed — уведомим его, иначе просто продолжим
             if (typeof setAgentDeployed === 'function') {
@@ -637,8 +689,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error when dispatching the chat:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in'
-                    : `Error when dispatching the chat: ${error.message || 'Unknown error'}`
+                    ? t('loginRequired')
+                    : t('app.dispatchError', { message: error.message || 'Unknown error' })
             );
         } finally {
             setGlobalLoading(false);
@@ -661,8 +713,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error when revoking the chat:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in'
-                    : `Error when revoke chat: ${error.message || 'Unknown error'}`
+                    ? t('loginRequired')
+                    : t('app.revokeError', { message: error.message || 'Unknown error' })
             );
         } finally {
             setGlobalLoading(false);
@@ -681,7 +733,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
     const handleDeleteAgent = async () => {
         if (!agentToDelete?.agent_id || !agentToDelete.id || !user?.id) {
-            setErrorMessage('Agent cannot be deleted: necessary data is missing');
+            setErrorMessage(t('app.deleteMissingData'));
             handleCloseDeleteDialog();
             return;
         }
@@ -704,8 +756,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error deleting the agent:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in.'
-                    : `Error deleting the agent: ${error.message || 'Unknown error'}`
+                    ? t('loginRequired')
+                    : t('app.deleteError', { message: error.message || 'Unknown error' })
             );
         } finally {
             setGlobalLoading(false);
@@ -1206,11 +1258,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
   data-right-mobile="10"
 ></script>`)
                                                                             .then(() => {
-                                                                                alert('The script has been copied to the clipboard!');
+                                                                                alert(t('app.scriptCopied'));
                                                                             })
                                                                             .catch((err) => {
                                                                                 console.error('Copy error:', err);
-                                                                                alert('Error when copying the script');
+                                                                                alert(t('app.scriptCopyError'));
                                                                             });
                                                                     }}
                                                                     sx={{
@@ -1471,12 +1523,12 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     <TextField
                                         autoFocus
                                         margin="dense"
-                                        label="Name"
+                                        label={ t("labelName") }
                                         type="text"
                                         fullWidth
                                         value={editAgent.name}
                                         onChange={(e) => setEditAgent({ ...editAgent, name: e.target.value })}
-                                        helperText="Use only letters, numbers, _ or -"
+                                        helperText={ t("helperTextName") }
                                         sx={{
                                             mb: 2,
                                             '& .MuiInputBase-input': {
@@ -1487,14 +1539,14 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     />
                                     <TextField
                                         margin="dense"
-                                        label="Instructions"
+                                        label={ t("labelInstructions") }
                                         type="text"
                                         fullWidth
                                         multiline
                                         rows={deviceType === 'mobile' ? 3 : 4}
                                         value={editAgent.instructions}
                                         onChange={(e) => setEditAgent({ ...editAgent, instructions: e.target.value })}
-                                        helperText="Minimum length 40 characters"
+                                        helperText={ t("helperTextInstructions") }
                                         sx={{
                                             mb: 2,
                                             '& .MuiInputBase-input': {
@@ -1514,12 +1566,12 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     >
                                         <FormControlLabel
                                             control={<Checkbox checked={editEnableHttpAction} onChange={(e) => setEditEnableHttpAction(e.target.checked)} />}
-                                            label="Enable HTTP-action"
+                                            label={ t("labelHttpAction") }
                                             sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
                                         />
                                         <FormControlLabel
                                             control={<Checkbox checked={editEnableEmailAction} onChange={(e) => setEditEnableEmailAction(e.target.checked)} />}
-                                            label="Enable Email-action"
+                                            label={ t("labelEmailAction") }
                                             sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
                                         />
                                     </Box>
@@ -1557,7 +1609,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                 }}
                                             />
                                         }
-                                        label="Delete knowledge base"
+                                        label={ t('app.labelDeleteKnowledgeBase') }
                                         sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
                                     />
                                     {!deleteKnowledgeBase && (
@@ -1583,8 +1635,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                         }}
                                     >
                                         {deleteKnowledgeBase
-                                            ? 'Selected knowledge base deleting. File selection is not possible.'
-                                            : 'Upload a new file (PDF or TXT) to update the knowledge base. If no file is selected, the current knowledge base will remain unchanged.'}
+                                            ? t('app.kbDeleting')
+                                            : t('app.kbUploadInfo')}
                                     </Typography>
                                 </>
                             )}
@@ -1738,19 +1790,136 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                 <MessageList
                                     ref={messageListRef}
                                     style={{
-                                        height: messageListHeight > 0 ? messageListHeight : 0,
+                                        height: messageListHeight > 0 ? `${messageListHeight}px` : '0px',
                                         overflowY: 'auto',
                                         overflowX: 'hidden',
-                                        padding: deviceType === 'mobile' ? '8px' : '10px',
-                                        paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '0px',
-                                        WebkitTextSizeAdjust: '100%',
-                                        touchAction: 'pan-y',
-                                        overscrollBehavior: 'none',
+                                        padding: deviceType === 'mobile' ? '8px' : '12px',
+                                        paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '12px',
                                     }}
                                 >
-                                    {chatMessages.map((msg, index) => (
-                                        <Message key={index} model={msg} />
-                                    ))}
+                                    {chatMessages.map((msg, index) => {
+                                        const hasFile = !!(msg as any).attachedFileName;
+                                        const textMessage = msg.message?.trim();
+                                        const isUserMessage = msg.direction === 'outgoing';
+
+                                        // 1. Текст + файл — два отдельных облачка
+                                        if (isUserMessage && hasFile && textMessage) {
+                                            return (
+                                                <React.Fragment key={index}>
+                                                    {/* Текстовое сообщение */}
+                                                    <Message
+                                                        model={{
+                                                            message: textMessage,
+                                                            direction: 'outgoing',
+                                                            position: 'single',
+                                                            sender: 'user',
+                                                        }}
+                                                    />
+
+                                                        <Message.CustomContent>
+                                                            <Box
+                                                                sx={{
+                                                                    display: 'flex',
+                                                                    justifyContent: 'flex-end',   // вот это главное — прижимает вправо
+                                                                    padding: '4px 0px 4px 0px', // отступы как у обычных сообщений справа
+                                                                    width: '100%',
+                                                                }}
+                                                            >
+                                                            <Box
+                                                                sx={{
+                                                                    background: '#ffffff',
+                                                                    border: '1px solid #90caf9',
+                                                                    borderRadius: 2,
+                                                                    py: 1,
+                                                                    px: 1.5,
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 1,
+                                                                    boxShadow: '0 1px 3px rgba(25,118,210,0.12)',
+                                                                    fontSize: '0.85rem',
+                                                                }}
+                                                            >
+                                                                <DescriptionIcon sx={{ fontSize: 22, color: '#1976d2' }} />
+                                                                <Typography
+                                                                    fontWeight="600"
+                                                                    fontSize="0.85rem"
+                                                                    color="#0d47a1"
+                                                                    noWrap
+                                                                    sx={{
+                                                                        maxWidth: '150px',
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                    }}
+                                                                >
+                                                                    {(msg as any).attachedFileName}
+                                                                </Typography>
+                                                            </Box>
+                                                            </Box>
+                                                        </Message.CustomContent>
+                                                </React.Fragment>
+                                            );
+                                        }
+
+                                        // 2. Только файл (без текста)
+                                        if (isUserMessage && hasFile && !textMessage) {
+                                            return (
+                                                <Message
+                                                    key={index}
+                                                    model={{
+                                                        message: '',
+                                                        direction: 'outgoing',
+                                                        position: 'single',
+                                                        sender: 'user',
+                                                    }}
+                                                >
+                                                    <Message.CustomContent>
+                                                        <Box
+                                                            sx={{
+                                                                background: '#f5fbff',
+                                                                border: '1px solid #90caf9',
+                                                                borderRadius: 2,
+                                                                py: 1,
+                                                                px: 1.5,
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                gap: 1,
+                                                                maxWidth: '220px',
+                                                                boxShadow: '0 1px 3px rgba(25,118,210,0.12)',
+                                                            }}
+                                                        >
+                                                            <DescriptionIcon sx={{ fontSize: 22, color: '#1976d2' }} />
+                                                            <Typography
+                                                                fontWeight="600"
+                                                                fontSize="0.85rem"
+                                                                color="#0d47a1"
+                                                                noWrap
+                                                                sx={{
+                                                                    maxWidth: '150px',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis',
+                                                                }}
+                                                            >
+                                                                {(msg as any).attachedFileName}
+                                                            </Typography>
+                                                        </Box>
+                                                    </Message.CustomContent>
+                                                </Message>
+                                            );
+                                        }
+
+                                        // 3. Обычное текстовое сообщение
+                                        return (
+                                            <Message
+                                                key={index}
+                                                model={{
+                                                    message: msg.message,
+                                                    direction: msg.direction,
+                                                    position: 'single',
+                                                    sender: msg.sender,
+                                                }}
+                                            />
+                                        );
+                                    })}
                                 </MessageList>
 
                                 <Box
@@ -1758,44 +1927,68 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                         flexShrink: 0,
                                         background: '#fff',
                                         borderTop: 1,
-                                        borderColor: 'grey.200',
-                                        padding: deviceType === 'mobile' ? '8px env(safe-area-inset-right, 8px) 8px env(safe-area-inset-left, 8px)' : '10px',
-                                        paddingBottom: deviceType === 'mobile' ? 'env(safe-area-inset-bottom, 12px)' : '12px',
-                                        transition: 'none',
-                                        zIndex: 1500,
-                                        overscrollBehavior: 'contain',
-                                        touchAction: 'none',
+                                        borderColor: 'grey.300',
+                                        p: 1,
+                                        pb: `max(env(safe-area-inset-bottom, 12px), 12px)`,
                                         boxSizing: 'border-box',
                                     }}
                                     data-tour="chat-dialog"
                                 >
+                                    {/* Превью прикреплённого файла */}
+                                    {attachedFileName && (
+                                        <Box
+                                            sx={{
+                                                mx: 2,
+                                                mb: 1,
+                                                p: 1.5,
+                                                backgroundColor: '#f5f5f5',
+                                                borderRadius: 2,
+                                                border: '1px dashed #90caf9',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                gap: 1,
+                                            }}
+                                        >
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                <DescriptionIcon color="primary" />
+                                                <Box>
+                                                    <Typography fontSize="0.9rem" fontWeight="medium" noWrap>
+                                                        {attachedFileName}
+                                                    </Typography>
+                                                    <Typography fontSize="0.75rem" color="text.secondary">
+                                                        { t('readySend') }
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => {
+                                                    setAttachedFile(null);
+                                                    setAttachedFileName(null);
+                                                    if (fileInputRef.current) fileInputRef.current.value = '';
+                                                }}
+                                            >
+                                                <CloseIcon fontSize="small" />
+                                            </IconButton>
+                                        </Box>
+                                    )}
+
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx"
+                                        onChange={handleFileSelected}
+                                        style={{ display: 'none' }}
+                                    />
+
                                     <MessageInput
-                                        ref={inputRef}
-                                        placeholder="Enter a message..."
+                                        placeholder={ t('pHolderWriteMsg') }
                                         onSend={sendChatMessage}
-                                        attachButton={false}
-                                        onFocus={() => {
-                                            if (inputRef.current) {
-                                                const textarea = inputRef.current.querySelector('textarea');
-                                                if (textarea) {
-                                                    textarea.style.fontSize = '16px';
-                                                    textarea.style.padding = deviceType === 'mobile' ? '8px 12px' : '10px 14px';
-                                                }
-                                                setTimeout(() => {
-                                                    inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                                }, 100);
-                                            }
-                                        }}
-                                        style={{
-                                            width: '100%',
-                                            fontSize: '16px',
-                                            WebkitTextSizeAdjust: '100% !important',
-                                            textSizeAdjust: '100% !important',
-                                            touchAction: 'manipulation',
-                                            lineHeight: '1.5',
-                                            borderRadius: '8px',
-                                            padding: deviceType === 'mobile' ? '8px 12px' : '10px 14px',
-                                        }}
+                                        attachButton={true}
+                                        onAttachClick={() => fileInputRef.current?.click()}
+                                        sendButton={true}
+                                        autoFocus={deviceType !== 'mobile'}
                                     />
                                 </Box>
                             </Box>

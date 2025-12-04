@@ -217,8 +217,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             console.error('Error creating alias:', error);
             setErrorMessage(
                 error.message === 'Authorization token missing in cookies'
-                    ? t('createAgent.loginRequired')
-                    : t('createAgent.aliasCreationError', { message: error.message || 'Unknown error' })
+                    ? t('loginRequired')
+                    : t('aliasCreationError', { message: error.message || 'Unknown error' })
             );
         } finally {
             setGlobalLoading(false);
@@ -242,13 +242,13 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
 
     const handleAddAgent = async () => {
         if (!newAgent.name.trim() || !newAgent.instructions.trim() || newAgent.instructions.length < 40) {
-            setErrorMessage(t('createAgent.nameInstructionsRequired'));
+            setErrorMessage(t('nameInstructionsRequired'));
             return;
         }
 
         const sanitizedName = newAgent.name.replace(/[^a-zA-Z0-9а-яА-ЯёЁ_-]/g, '');
         if (!sanitizedName) {
-            setErrorMessage(t('createAgent.invalidAgentName'));
+            setErrorMessage(t('invalidAgentName'));
             return;
         }
 
@@ -317,7 +317,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             console.error('Error creating agent or knowledge base:', error);
             setErrorMessage(
                 error.message === 'Authorization token missing in cookies'
-                    ? t('createAgent.loginRequired')
+                    ? t('loginRequired')
                     : t('createAgent.creationError', { message: error.message || 'Unknown error' })
             );
         } finally {
@@ -490,19 +490,19 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                 <TextField
                     autoFocus
                     margin="dense"
-                    label={ t("createAgent.labelName") }
+                    label={ t("labelName") }
                     type="text"
                     data-tour="name-input"
                     fullWidth
                     value={newAgent.name}
                     onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                    helperText={ t("createAgent.helperTextName") }
+                    helperText={ t("helperTextName") }
                     sx={{ mb: 2 }}
                 />
 
                 <TextField
                     margin="dense"
-                    label={ t("createAgent.labelInstructions") }
+                    label={ t("labelInstructions") }
                     type="text"
                     fullWidth
                     data-tour="instructions-input"
@@ -510,18 +510,18 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                     rows={deviceType === 'mobile' ? 3 : 4}
                     value={newAgent.instructions}
                     onChange={(e) => setNewAgent({ ...newAgent, instructions: e.target.value })}
-                    helperText={ t("createAgent.helperTextInstructions") }
+                    helperText={ t("helperTextInstructions") }
                     sx={{ mb: 2 }}
                 />
 
                 <Box sx={{ display: 'flex', gap: 2, mb: 2 }} data-tour="actions-checkboxes">
                     <FormControlLabel
                         control={<Checkbox checked={enableHttpAction} onChange={(e) => setEnableHttpAction(e.target.checked)} />}
-                        label={ t("createAgent.labelHttpAction") }
+                        label={ t("labelHttpAction") }
                     />
                     <FormControlLabel
                         control={<Checkbox checked={enableEmailAction} onChange={(e) => setEnableEmailAction(e.target.checked)} />}
-                        label={ t("createAgent.labelEmailAction") }
+                        label={ t("labelEmailAction") }
                     />
                 </Box>
 

@@ -6,6 +6,18 @@ export default {
         knowledgeBase: 'Knowledge Base (Optional)',
         buttonSave: 'Save',
         buttonDelete: 'Delete',
+        loginRequired: 'Please log in.',
+        aliasCreationError: 'Error when creating an alias: {{message}}',
+        nameInstructionsRequired: 'Name and instructions (min. 40 characters) are required',
+        invalidAgentName: 'Invalid agent name',
+        labelName: 'Name',
+        helperTextName: 'Use only letters, numbers, _ or -',
+        labelInstructions: 'Instructions',
+        helperTextInstructions: 'Minimum length 40 characters',
+        labelHttpAction: 'Enable HTTP Action',
+        labelEmailAction: 'Enable Email Action',
+        pHolderWriteMsg: 'Write a message or attach a file...',
+        readySend: 'Ready to send',
         navbar: {
             newAgent: 'New Agent',
             logout: 'Logout'
@@ -15,7 +27,7 @@ export default {
             signIn: 'Sign In',
             signUp: 'Sign Up',
             didntReceiveEmail: "Didn't receive the email?",
-            resendVerificationSeconds: 'Resend verification email ({{seconds}}s)',
+            resendVerificationSeconds: 'Resend verification email ({{cooldownSeconds}}s)',
             resendVerification: 'Resend verification email',
             labelEmail: 'Email Address',
             labelRememberMe: 'Remember Me',
@@ -36,6 +48,29 @@ export default {
             msgErrIncorrectServerResponse: 'Incorrect server response',
             msgErrEnterEmailResendLink: 'Please enter an email to resend the verification link',
             msgVerificationEmailSent: 'Verification email sent to ',
+            agents: {
+                germanTranslator: {
+                name: 'German Translator',
+                desc: 'Translate all incoming messages to German. Do not ask any questions...'
+                },
+                frenchTranslator: {
+                    name: 'French Translator',
+                    desc: 'Translate all messages to French instantly.'
+                },
+                codeReviewer: {
+                    name: 'Code Reviewer',
+                    desc: 'Review code and suggest improvements.'
+                },
+                welcomeMsg: "Hello! I'm aurora. How can I help?",
+                temporaryAgents: 'Temporary agents',
+                selectAgent: 'Select an agent',
+            },
+            chat: {
+                aLabelOpenChat: 'Open chat',
+                ariaLabel: 'Chat with {{agentName}}',
+                openAgents: 'Open agents',
+                closeChat: 'Close chat'
+            }
         },
         changePassword: {
             changePassword: 'Change Password',
@@ -62,12 +97,6 @@ export default {
             generalSettings: 'General Settings',
             uploadFile: 'Upload a file (PDF or TXT) to create a knowledge base for the agent.',
             add: 'Add',
-            labelName: 'Name',
-            helperTextName: 'Use only letters, numbers, _ or -',
-            labelInstructions: 'Instructions',
-            helperTextInstructions: 'Minimum length 40 characters',
-            labelHttpAction: 'Enable HTTP Action',
-            labelEmailAction: 'Enable Email Action',
             customAgent: 'Custom Agent',
             translatorAgent: {
                 blueprintName: 'Translator',
@@ -173,10 +202,6 @@ export default {
                 ' - Price is negotiable \n' +
                 '\nIf user would like to upgrade to either Personal or Custom plan - please propose his to create the plan upgrade request. Collect first and last name of the user and his email address. And send the request details to sergei.nntu@gmail.com and to user\'s email address.',
             },
-            loginRequired: 'Please log in',
-            aliasCreationError: 'Error creating alias: {{message}}',
-            nameInstructionsRequired: 'Name and instructions (min. 40 characters) are required',
-            invalidAgentName: 'Invalid agent name',
             agentIdMissing: 'agentId not received in response',
             knowledgeBaseIdMissing: 'knowledgeBaseId not received in response',
             statusNotPrepared: 'Agent status did not become PREPARED',
@@ -411,6 +436,26 @@ export default {
             confirmDeletion: 'Confirm Deletion',
             deleteAgentConfirm: 'Are you sure you want to delete the agent \"{{name}}\"? This action cannot be undone.',
             chatWith: 'Chat with {{name}}',
+            msgErrFailedLoadAgent: 'Failed to load agents',
+            initialKnowledgeBaseFile: 'Knowledge base file exists',
+            cannotSelectNewFileWhileDeleting: 'You cannot select a new file when deleting the knowledge base.',
+            errorUpdatingAgent: 'Error updating agent: {{message}}',
+            knowledgeBasePdf: 'knowledge_base.pdf',
+            couldntDownloadKbFile: 'Couldn\'t download knowledge base file',
+            failedSendMsg: 'Error: Failed to send message',
+            unsupportedFileType: 'Unsupported file type. Allowed: {{extensions}}',
+            fileTooLarge: 'File too large. Maximum ~9.5 MB',
+            publicInfo: 'Public URL: {{publicUrl}}\nAPK Key: {{apkKey}}\nCopy it and use it for access!',
+            dispatchError: 'Error when dispatching the chat: {{message}}',
+            revokeError: 'Error when revoke chat: {{message}}',
+            deleteMissingData: 'Agent cannot be deleted: necessary data is missing',
+            deleteError: 'Error deleting the agent: {{message}}',
+            scriptCopied: 'The script has been copied to the clipboard!',
+            scriptCopyError: 'Error when copying the script',
+            labelDeleteKnowledgeBase: 'Delete knowledge base',
+            kbDeleting: 'Selected knowledge base deleting. File selection is not possible.',
+            kbUploadInfo: 'Upload a new file (PDF or TXT) to update the knowledge base. If no file is selected, the current knowledge base will remain unchanged.',
+
         },
         page: {
             AGENTS: "My Agents",

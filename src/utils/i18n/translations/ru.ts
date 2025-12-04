@@ -6,6 +6,18 @@ export default {
         knowledgeBase: 'База знаний (необязательно)',
         buttonSave: 'Сохранить',
         buttonDelete: 'Удалить',
+        loginRequired: 'Пожалуйста, войдите в систему',
+        aliasCreationError: 'Ошибка при создании алиаса: {{message}}',
+        nameInstructionsRequired: 'Требуются имя и инструкции (минимум 40 символов)',
+        invalidAgentName: 'Недопустимое имя агента',
+        labelName: 'Имя',
+        helperTextName: 'Используйте только буквы, цифры, _ или -',
+        labelInstructions: 'Инструкции',
+        helperTextInstructions: 'Минимальная длина 40 символов',
+        labelHttpAction: 'Включить HTTP-действие',
+        labelEmailAction: 'Включить Email-действие',
+        pHolderWriteMsg: 'Напишите сообщение или прикрепите файл...',
+        readySend: 'Готов к отправке',
         navbar: {
             newAgent: 'Новый агент',
             logout: 'Выйти'
@@ -15,7 +27,7 @@ export default {
             signIn: 'Войти',
             signUp: 'Зарегистрироваться',
             didntReceiveEmail: 'Не получили письмо?',
-            resendVerificationSeconds: 'Отправить повторно письмо подтверждения ({{seconds}}с)',
+            resendVerificationSeconds: 'Отправить повторно письмо для подтверждения ({{cooldownSeconds}}с)',
             resendVerification: 'Отправить повторно письмо подтверждения',
             labelEmail: 'Адрес электронной почты',
             labelRememberMe: 'Запомнить меня',
@@ -36,6 +48,29 @@ export default {
             msgErrIncorrectServerResponse: 'Некорректный ответ сервера',
             msgErrEnterEmailResendLink: 'Пожалуйста, введите адрес электронной почты, чтобы повторно отправить ссылку для подтверждения',
             msgVerificationEmailSent: 'Подтверждающее письмо отправлено на адрес ',
+            agents: {
+                germanTranslator: {
+                name: 'Немецкий переводчик',
+                desc: 'Переводите все входящие сообщения на немецкий. Не задавайте вопросов...'
+                },
+                frenchTranslator: {
+                    name: 'Французский переводчик',
+                    desc: 'Переводите все сообщения на французский мгновенно.'
+                },
+                codeReviewer: {
+                    name: 'Рецензент кода',
+                    desc: 'Проверяйте код и предлагайте улучшения.'
+                },
+                welcomeMsg: 'Здравствуйте! Я Аврора. Чем могу помочь?',
+                temporaryAgents: 'Временные агенты',
+                selectAgent: 'Выберите агента',
+            },
+            chat: {
+                aLabelOpenChat: 'Открыть чат',
+                ariaLabel: 'Чат с {{agentName}}',
+                openAgents: 'Открыть агентов',
+                closeChat: 'Закрыть чат'
+            }
         },
         changePassword: {
             changePassword: 'Изменить пароль',
@@ -61,12 +96,6 @@ export default {
             template: 'Шаблон',
             uploadFile: 'Загрузите файл (PDF или TXT), чтобы создать базу знаний для агента.',
             add: 'Добавить',
-            labelName: 'Имя',
-            helperTextName: 'Используйте только буквы, цифры, _ или -',
-            labelInstructions: 'Инструкции',
-            helperTextInstructions: 'Минимальная длина 40 символов',
-            labelHttpAction: 'Включить HTTP-действие',
-            labelEmailAction: 'Включить Email-действие',
             customAgent: 'Пользовательский агент',
             translatorAgent: {
                 blueprintName: 'Переводчик',
@@ -202,10 +231,6 @@ export default {
                 ' - Цена обсуждается \n' +
                 '\nЕсли пользователь желает перейти на тарифный план «Персональный» или «Индивидуальный», предложите ему создать запрос на переход на другой тарифный план. Соберите имя и фамилию пользователя, а также его адрес электронной почты. Отправьте детали запроса на sergei.nntu@gmail.com и на адрес электронной почты пользователя.'
             },
-            loginRequired: 'Пожалуйста, войдите в систему',
-            aliasCreationError: 'Ошибка при создании алиаса: {{message}}',
-            nameInstructionsRequired: 'Требуются имя и инструкции (минимум 40 символов)',
-            invalidAgentName: 'Недопустимое имя агента',
             agentIdMissing: 'agentId не получен в ответе',
             knowledgeBaseIdMissing: 'knowledgeBaseId не получен в ответе',
             statusNotPrepared: 'Статус агента не стал PREPARED',
@@ -464,6 +489,25 @@ export default {
             confirmDeletion: 'Подтвердить удаление',
             deleteAgentConfirm: 'Вы уверены, что хотите удалить агента «{{name}}»? Это действие нельзя отменить.',
             chatWith: 'Чат с {{name}}',
+            msgErrFailedLoadAgent: 'Не удалось загрузить агентов',
+            initialKnowledgeBaseFile: 'Файл базы знаний существует',
+            cannotSelectNewFileWhileDeleting: 'Нельзя выбрать новый файл при удалении базы знаний.',
+            errorUpdatingAgent: 'Ошибка обновления агента: {{message}}',
+            knowledgeBasePdf: 'база_знаний.pdf',
+            couldntDownloadKbFile: 'Не удалось скачать файл базы знаний',
+            failedSendMsg: 'Ошибка: не удалось отправить сообщение',
+            unsupportedFileType: 'Неподдерживаемый тип файла. Разрешённые: {{extensions}}',
+            fileTooLarge: 'Файл слишком большой. Максимум ~9.5 МБ',
+            publicInfo: 'Публичный URL: {{publicUrl}}\nAPK ключ: {{apkKey}}\nСкопируйте и используйте для доступа!',
+            dispatchError: 'Ошибка при отправке сообщения в чат: {{message}}',
+            revokeError: 'Ошибка при отмене чата: {{message}}',
+            deleteMissingData: 'Невозможно удалить агента: отсутствуют необходимые данные',
+            deleteError: 'Ошибка удаления агента: {{message}}',
+            scriptCopied: 'Скрипт скопирован в буфер обмена!',
+            scriptCopyError: 'Ошибка при копировании скрипта',
+            labelDeleteKnowledgeBase: 'Удалить базу знаний',
+            kbDeleting: 'Выбранная база знаний удаляется. Выбор файла невозможен.',
+            kbUploadInfo: 'Загрузите новый файл (PDF или TXT), чтобы обновить базу знаний. Если файл не выбран, текущая база останется без изменений.',
         },
         page: {
             AGENTS: "Мои агенты",
