@@ -41,6 +41,7 @@ type Agent = {
     agentId?: string;
     aliasId?: string;
     key?: string;
+    isNew?: boolean;
 };
 const AUTH_PANEL_WIDTH = 380;
 const AUTH_Z = 1600;
@@ -62,7 +63,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     // -----------------------
     // AUTH STATE / LOGIC
     // -----------------------
-    const [cookies, setCookie, removeCookie] = useCookies(["authToken", "isAnonymous", "userId"]);
+    const [cookies, setCookie, removeCookie] = useCookies(["authToken", "isAnonymous", "userId", "refreshToken"]);
     const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -90,6 +91,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [messagesByAgent, setMessagesByAgent] = useState<Record<string, Msg[]>>({});
     const [sessions, setSessions] = useState<Record<string, string>>({});
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(MAIN_PUBLIC_AGENT);
+    const canAttach = Boolean(selectedAgent && String(selectedAgent.id) !== String(MAIN_PUBLIC_AGENT.id));
+    const [agentsPollingInterval, setAgentsPollingInterval] = useState<NodeJS.Timeout | null>(null);
     useEffect(() => {
         setMessagesByAgent((prev) => {
             const copy = { ...prev };
@@ -115,6 +118,18 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     }, [agents]);
 
 
+    useEffect(() => {
+        const timers: NodeJS.Timeout[] = [];
+        agents.forEach(agent => {
+            if (agent.isNew) {
+                const timer = setTimeout(() => {
+                    setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, isNew: false } : a));
+                }, 3000);
+                timers.push(timer);
+            }
+        });
+        return () => timers.forEach(clearTimeout);
+    }, [agents]);
 
     useEffect(() => {
         const handleOAuthCallback = async () => {
@@ -199,6 +214,65 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             cooldownRef.current = null;
         }
     }, [cooldownSeconds]);
+
+    const startAgentsPolling = (userId: string) => {
+        if (agentsPollingInterval) clearInterval(agentsPollingInterval);
+
+        // Функция для одного запроса
+        const fetchAgents = async () => {
+            try {
+                const res = await fetch(`${import.meta.env.VITE_API_GATEWAY_URL}/agents-anonymous`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${cookies["authToken"]}`, // добавь токен, если нужно
+                    },
+                    body: JSON.stringify({ user_id: userId }),
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data.agents)) {
+                        const serverAgents: Agent[] = data.agents.map((a: any) => ({
+                            id: a.id,
+                            name: a.name,
+                            desc: a.instructions || a.name || "No description",
+                            agentId: a.agent_id,
+                            aliasId: a.alias_id,
+                            key: a.key,
+                            isNew: false,
+                        }));
+
+                        setAgents(prev => {
+                            const existingIds = new Set(prev.map(a => String(a.id)));
+                            const newAgents = serverAgents.filter(a => !existingIds.has(String(a.id)));
+
+                            if (newAgents.length > 0) {
+                                console.log("New agents detected:", newAgents.map(a => a.name));
+                                newAgents.forEach(a => (a.isNew = true));
+                            }
+
+                            return [MAIN_PUBLIC_AGENT, ...serverAgents];
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Agents polling error:", err);
+            }
+        };
+
+        fetchAgents();
+
+        const interval = setInterval(fetchAgents, 15000);
+
+        setAgentsPollingInterval(interval);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (agentsPollingInterval) clearInterval(agentsPollingInterval);
+        };
+    }, [agentsPollingInterval]);
 
     const validateToken = async (token: string): Promise<any> => {
         try {
@@ -343,18 +417,22 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
 
         try {
             const existingToken = cookies["authToken"];
+            const existingRefreshToken = cookies["refreshToken"];
+
             const headers: any = {};
 
             if (existingToken) {
                 headers["Authorization"] = `Bearer ${existingToken}`;
             }
+
             const storedUserId = cookies["userId"];
 
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/signin-anonymous`,
-                { user_id: storedUserId },
+                { user_id: storedUserId, refreshToken: existingRefreshToken },
                 { headers }
             );
+
 
             const data = response.data;
 
@@ -364,6 +442,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             }
 
             const access_token = data.access_token;
+
+            const refresh_token = data.refresh_token;
+
             const user = data.auth?.user || {
                 id: data.user_id,
                 is_anonymous: true,
@@ -381,6 +462,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             setCookie("authToken", access_token, { path: "/" });
             setCookie("userId", user.id, { path: "/" });
             setCookie("isAnonymous", "true", { path: "/" });
+            setCookie("refreshToken", refresh_token, { path: "/" });
 
             setUser(user);
 
@@ -393,10 +475,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 aliasId: a.alias_id,
                 key: a.key,
             }));
-
-            // обновляем список агентов
             setAgents([MAIN_PUBLIC_AGENT, ...serverAgents]);
-
             console.log("Anonymous login successful:", user.id);
         } catch (err: any) {
             console.error("Anonymous login error:", err);
@@ -486,6 +565,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             }
             return prev;
         });
+        // Если выбран главный публичный агент — очищаем прикреплённый файл
+        if (String(a.id) === String(MAIN_PUBLIC_AGENT.id)) {
+            removeAttachedFile();
+        }
+
         if (isMobile) {
             setMobileChatOpen(true);
             setMobileAgentListOpen(false);
@@ -494,6 +578,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
 
     const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files && e.target.files[0];
+        if (!canAttach) {
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            return;
+        }
+
         if (f) {
             setAttachedFileName(f.name);
         } else setAttachedFileName(null);
@@ -586,37 +675,94 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             setSessions((s) => ({ ...s, [String(current.id)]: finalSessionId }));
 
             // запускаем polling
-            const pollInterval = setInterval(async () => {
-                const pollUrl = `${import.meta.env.VITE_API_GATEWAY_URL}/polling-message`;
-                const pollRes = await fetch(pollUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ sessionId: finalSessionId }),
-                });
+            const startPolling = (finalSessionId: string) => {
+                const poll = async () => {
+                    try {
+                        const pollUrl = `${import.meta.env.VITE_API_GATEWAY_URL}/polling-message`;
+                        const pollRes = await fetch(pollUrl, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ sessionId: finalSessionId }),
+                        });
 
-                const data = await pollRes.json();
-                if (data?.response) {
-                    clearInterval(pollInterval);
-                    const incoming: Msg = {
-                        id: `in-${Date.now()}`,
-                        direction: "incoming",
-                        message: data.response,
-                        sentTime: new Date().toISOString(),
-                        sender: "bot",
-                    };
-                    setMessagesByAgent((prev) => ({
-                        ...prev,
-                        [String(current.id)]: [...(prev[String(current.id)] ?? []), incoming],
-                    }));
+                        const data = await pollRes.json();
+                        if (!data) return;
 
-                    // если есть файлы — обновим sessionFiles
-                    if (data.files) {
-                        setSessionFiles(finalSessionId, data.files);
+                        // 1) текстовый ответ
+                        if (data?.response) {
+                            const incoming: Msg = {
+                                id: `in-${Date.now()}`,
+                                direction: "incoming",
+                                message: data.response,
+                                sentTime: new Date().toISOString(),
+                                sender: "bot",
+                            };
+
+                            setMessagesByAgent((prev) => ({
+                                ...prev,
+                                [String(current.id)]: [...(prev[String(current.id)] ?? []), incoming],
+                            }));
+
+                            if (String(current.id) === String(MAIN_PUBLIC_AGENT.id)) {
+                                const user_id = cookies["userId"];
+                                if (user_id) {
+                                    console.log("Master agent responded — restarting agents polling for immediate update");
+                                    startAgentsPolling(user_id);
+                                }
+                            }
+                        }
+
+                        // 2) файлы
+                        if (data?.files) {
+                            setSessionFiles(finalSessionId, data.files);
+                        }
+
+                        // 3) новый агент
+                        const looksLikeNewAgent =
+                            Boolean(data.agentId || data.aliasId || data.instructions) ||
+                            (typeof data.response === "string" &&
+                                /created your agent|created an agent|successfully created your agent/i.test(data.response));
+
+                        if (looksLikeNewAgent) {
+                            const newAgent = addAgentFromCreateResponse(data, { select: true });
+                            if (newAgent && data.response) {
+                                setMessagesByAgent((prev) => {
+                                    const copy = { ...prev };
+                                    const newId = String(newAgent.id);
+                                    if (!copy[newId]) copy[newId] = [];
+                                    copy[newId] = [
+                                        ...copy[newId],
+                                        {
+                                            id: `in-${Date.now()}-agent`,
+                                            direction: "incoming",
+                                            message: data.response,
+                                            sentTime: new Date().toISOString(),
+                                            sender: "bot",
+                                        },
+                                    ];
+                                    return copy;
+                                });
+                                setSelectedAgent(newAgent);
+                            }
+                        }
+
+                        if (data?.response) {
+                            clearInterval(pollInterval);
+                        }
+                    } catch (pollErr) {
+                        console.error("Polling error:", pollErr);
+                        clearInterval(pollInterval);
                     }
-                }
-            }, 2000); // опрашиваем каждые 2 секунды
+                };
+
+                // первый вызов сразу
+                poll();
+
+                // потом каждые 3 секунды
+                const pollInterval = setInterval(poll, 20000);
+            };
+
+            startPolling(finalSessionId);
 
         } catch (err: any) {
             const incoming: Msg = {
@@ -633,6 +779,102 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         }
     };
 
+// ---------- helper: парсинг имени/описания агента из текстового ответа ----------
+    function parseAgentNameAndDescFromResponseText(text?: string) {
+        if (!text) return { name: null, desc: null };
+
+        // Попытки извлечь имя:
+        // 1) looking for named "xxx" or named 'xxx'
+        const namedMatch = text.match(/named\s+["']([^"']+)["']/i);
+        if (namedMatch) {
+            const name = namedMatch[1].trim();
+            // остальное после имени используем как описание (если есть)
+            const desc = text.replace(namedMatch[0], "").trim();
+            return { name, desc: desc || null };
+        }
+
+        // 2) try to find something like: created your agent named xxx! (no quotes)
+        const namedNoQuotes = text.match(/named\s+([A-Za-z0-9_\-]+)/i);
+        if (namedNoQuotes) {
+            return { name: namedNoQuotes[1].trim(), desc: text };
+        }
+
+        // 3) as fallback — взять первую короткую фразу до точки как имя
+        const firstPhrase = text.split(/[.!\n]/).find(s => s.trim().length > 0);
+        if (firstPhrase && firstPhrase.length <= 40) {
+            return { name: firstPhrase.trim(), desc: text };
+        }
+
+        return { name: null, desc: text };
+    }
+
+    const addAgentFromCreateResponse = (data: any, options?: { select?: boolean } ) => {
+        try {
+            // data может содержать: sessionId, agentId, aliasId, response, instructions, name, key и т.д.
+            const parsed = parseAgentNameAndDescFromResponseText(data.response as string | undefined);
+
+            // id: если сервер возвращает явный id — используем его, иначе sessionId, иначе agentId, иначе генерируем
+            const candidateId = data.id ?? data.agentId ?? data.sessionId ?? generateSessionId();
+            const id = String(candidateId);
+
+            // имя: предпочитаем явно пришедшее поле name, потом распарсенное, потом aliasId/agentId fallback
+            const name = (data.name && String(data.name).trim()) ||
+                parsed.name ||
+                (data.aliasId ? `agent-${String(data.aliasId).slice(0, 6)}` : `agent-${String(id).slice(0, 6)}`);
+
+            // описание: инструкции, либо распарсенное описание, либо ответ сервера
+            const desc = (data.instructions && String(data.instructions).trim()) ||
+                parsed.desc ||
+                (data.response ? String(data.response).trim() : "No description");
+
+            const newAgent: Agent = {
+                id,
+                name,
+                desc,
+                agentId: data.agentId ?? undefined,
+                aliasId: data.aliasId ?? undefined,
+                key: data.key ?? undefined,
+            };
+
+            // Добавляем агента в список (сохраняя MAIN_PUBLIC_AGENT на месте, если он есть)
+            setAgents((prev) => {
+                // если агент уже есть (по agentId или id) — обновим его
+                const existsIdx = prev.findIndex(
+                    (a) => String(a.id) === String(newAgent.id) || (newAgent.agentId && a.agentId === newAgent.agentId)
+                );
+                if (existsIdx >= 0) {
+                    const copy = [...prev];
+                    copy[existsIdx] = { ...copy[existsIdx], ...newAgent };
+                    return copy;
+                }
+                // вставляем в конец списка (после публичного агента)
+                return [...prev, newAgent];
+            });
+
+            // гарантируем, что есть запись messagesByAgent[id] и сессия
+            setMessagesByAgent((prev) => {
+                const copy = { ...prev };
+                if (!copy[id]) copy[id] = [];
+                return copy;
+            });
+
+            setSessions((prev) => {
+                const copy = { ...prev };
+                if (!copy[id]) copy[id] = data.sessionId ?? generateSessionId();
+                return copy;
+            });
+
+            // по опции — сделать нового агента выбранным
+            if (options?.select) {
+                setSelectedAgent(newAgent);
+            }
+
+            return newAgent;
+        } catch (err) {
+            console.error("addAgentFromCreateResponse error:", err);
+            return null;
+        }
+    };
 
 
     // -----------------------
@@ -692,38 +934,51 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             setSessions((s) => ({ ...s, [String(main.id)]: finalSessionId }));
 
             // запускаем polling
-            const pollInterval = setInterval(async () => {
-                const pollUrl = `${import.meta.env.VITE_API_GATEWAY_URL}/polling-message`;
-                const pollRes = await fetch(pollUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ sessionId: finalSessionId }),
-                });
-
-                const data = await pollRes.json();
-                if (data?.response) {
-                    clearInterval(pollInterval);
-                    const incoming: Msg = {
-                        id: `in-hi-${Date.now()}`,
-                        direction: "incoming",
-                        message: data.response,
-                        sentTime: new Date().toISOString(),
-                        sender: "bot",
-                    };
-                    setMessagesByAgent((prev) => {
-                        const id = String(main.id);
-                        const prevMsgs = prev[id] ?? [];
-                        return { ...prev, [id]: [...prevMsgs, incoming] };
+            // запускаем polling сразу и потом через интервал
+            const startPolling = (finalSessionId: string) => {
+                const poll = async () => {
+                    const pollUrl = `${import.meta.env.VITE_API_GATEWAY_URL}/polling-message`;
+                    const pollRes = await fetch(pollUrl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ sessionId: finalSessionId }),
                     });
 
-                    // если есть файлы — обновим sessionFiles
-                    if (data.files) {
-                        setSessionFiles(finalSessionId, data.files);
+                    const data = await pollRes.json();
+                    if (data?.response) {
+                        clearInterval(pollInterval);
+                        const incoming: Msg = {
+                            id: `in-hi-${Date.now()}`,
+                            direction: "incoming",
+                            message: data.response,
+                            sentTime: new Date().toISOString(),
+                            sender: "bot",
+                        };
+                        setMessagesByAgent((prev) => {
+                            const id = String(main.id);
+                            const prevMsgs = prev[id] ?? [];
+                            return { ...prev, [id]: [...prevMsgs, incoming] };
+                        });
+
+                        // если есть файлы — обновим sessionFiles
+                        if (data.files) {
+                            setSessionFiles(finalSessionId, data.files);
+                        }
                     }
-                }
-            }, 2000); // опрос каждые 2 секунды
+                };
+
+                // первый вызов сразу
+                poll();
+
+                // потом каждые 3 секунды
+                const pollInterval = setInterval(poll, 20000);
+            };
+
+// где-то в коде после получения finalSessionId
+            startPolling(finalSessionId);
+
 
             setPublicHiSent(true);
         } catch (err: any) {
@@ -808,6 +1063,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                                     border: "1px solid",
                                                     borderColor: active ? "primary.main" : "divider",
                                                     bgcolor: active ? "rgba(25,118,210,0.03)" : "transparent",
+                                                    animation: a.isNew ? "highlight 3s ease-out forwards" : "none",
+                                                    "@keyframes highlight": {
+                                                        "0%": { backgroundColor: "rgba(255, 235, 59, 0.4)" },
+                                                        "100%": { backgroundColor: "transparent" },
+                                                    },
                                                 }}
                                             >
                                                 <ListItemText
@@ -853,8 +1113,17 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                     )}
                                     <Paper component="form" onSubmit={async (e) => { e.preventDefault(); const input = (e.target as HTMLFormElement).elements.namedItem("msg") as HTMLInputElement; await sendChatMessage(input?.value); if (input) input.value = ""; }} sx={{ display: "flex", alignItems: "center", gap: 1, p: "6px 10px", borderRadius: "22px" }}>
                                         <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx" onChange={handleFileSelected} style={{ display: "none" }} />
-                                        <IconButton size="small" onClick={() => fileInputRef.current?.click()}><AttachFileIcon fontSize="small" /></IconButton>
-                                        <InputBase name="msg" sx={{ ml: 1, flex: 1 }} placeholder="Write a message or attach a file..." />
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                if (canAttach) fileInputRef.current?.click();
+                                                else setError("File attachments are disabled for this agent.");
+                                            }}
+                                            disabled={!canAttach}
+                                            title={canAttach ? "Attach file" : "Attachments disabled for this agent"}
+                                        >
+                                            <AttachFileIcon fontSize="small" />
+                                        </IconButton>                                        <InputBase name="msg" sx={{ ml: 1, flex: 1 }} placeholder="Write a message or attach a file..." />
                                         <Divider sx={{ height: 28, mr: 1 }} orientation="vertical" />
                                         <IconButton type="submit" sx={{ p: "10px" }}><SendIcon /></IconButton>
                                     </Paper>
