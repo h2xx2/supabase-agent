@@ -676,7 +676,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
 
             // запускаем polling
             const startPolling = (finalSessionId: string) => {
+                let attempts = 0;
+                let pollInterval: ReturnType<typeof setInterval> | null = null;
+
                 const poll = async () => {
+                    attempts++;
                     try {
                         const pollUrl = `${import.meta.env.VITE_API_GATEWAY_URL}/polling-message`;
                         const pollRes = await fetch(pollUrl, {
@@ -710,57 +714,32 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                     startAgentsPolling(user_id);
                                 }
                             }
+
+                            // если получили ответ — сразу останавливаем polling
+                            if (pollInterval) clearInterval(pollInterval);
+                            return;
                         }
 
                         // 2) файлы
                         if (data?.files) {
                             setSessionFiles(finalSessionId, data.files);
                         }
-
-                        // 3) новый агент
-                        const looksLikeNewAgent =
-                            Boolean(data.agentId || data.aliasId || data.instructions) ||
-                            (typeof data.response === "string" &&
-                                /created your agent|created an agent|successfully created your agent/i.test(data.response));
-
-                        if (looksLikeNewAgent) {
-                            const newAgent = addAgentFromCreateResponse(data, { select: true });
-                            if (newAgent && data.response) {
-                                setMessagesByAgent((prev) => {
-                                    const copy = { ...prev };
-                                    const newId = String(newAgent.id);
-                                    if (!copy[newId]) copy[newId] = [];
-                                    copy[newId] = [
-                                        ...copy[newId],
-                                        {
-                                            id: `in-${Date.now()}-agent`,
-                                            direction: "incoming",
-                                            message: data.response,
-                                            sentTime: new Date().toISOString(),
-                                            sender: "bot",
-                                        },
-                                    ];
-                                    return copy;
-                                });
-                                setSelectedAgent(newAgent);
-                            }
-                        }
-
-                        if (data?.response) {
-                            clearInterval(pollInterval);
-                        }
                     } catch (pollErr) {
                         console.error("Polling error:", pollErr);
+                        if (pollInterval) clearInterval(pollInterval);
+                    }
+
+                    if (attempts >= 10 && pollInterval) {
                         clearInterval(pollInterval);
+                        console.log("Polling stopped after 10 attempts");
                     }
                 };
 
-                // первый вызов сразу
                 poll();
 
-                // потом каждые 3 секунды
-                const pollInterval = setInterval(poll, 20000);
+                pollInterval = setInterval(poll, 20000);
             };
+
 
             startPolling(finalSessionId);
 
@@ -778,104 +757,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             }));
         }
     };
-
-// ---------- helper: парсинг имени/описания агента из текстового ответа ----------
-    function parseAgentNameAndDescFromResponseText(text?: string) {
-        if (!text) return { name: null, desc: null };
-
-        // Попытки извлечь имя:
-        // 1) looking for named "xxx" or named 'xxx'
-        const namedMatch = text.match(/named\s+["']([^"']+)["']/i);
-        if (namedMatch) {
-            const name = namedMatch[1].trim();
-            // остальное после имени используем как описание (если есть)
-            const desc = text.replace(namedMatch[0], "").trim();
-            return { name, desc: desc || null };
-        }
-
-        // 2) try to find something like: created your agent named xxx! (no quotes)
-        const namedNoQuotes = text.match(/named\s+([A-Za-z0-9_\-]+)/i);
-        if (namedNoQuotes) {
-            return { name: namedNoQuotes[1].trim(), desc: text };
-        }
-
-        // 3) as fallback — взять первую короткую фразу до точки как имя
-        const firstPhrase = text.split(/[.!\n]/).find(s => s.trim().length > 0);
-        if (firstPhrase && firstPhrase.length <= 40) {
-            return { name: firstPhrase.trim(), desc: text };
-        }
-
-        return { name: null, desc: text };
-    }
-
-    const addAgentFromCreateResponse = (data: any, options?: { select?: boolean } ) => {
-        try {
-            // data может содержать: sessionId, agentId, aliasId, response, instructions, name, key и т.д.
-            const parsed = parseAgentNameAndDescFromResponseText(data.response as string | undefined);
-
-            // id: если сервер возвращает явный id — используем его, иначе sessionId, иначе agentId, иначе генерируем
-            const candidateId = data.id ?? data.agentId ?? data.sessionId ?? generateSessionId();
-            const id = String(candidateId);
-
-            // имя: предпочитаем явно пришедшее поле name, потом распарсенное, потом aliasId/agentId fallback
-            const name = (data.name && String(data.name).trim()) ||
-                parsed.name ||
-                (data.aliasId ? `agent-${String(data.aliasId).slice(0, 6)}` : `agent-${String(id).slice(0, 6)}`);
-
-            // описание: инструкции, либо распарсенное описание, либо ответ сервера
-            const desc = (data.instructions && String(data.instructions).trim()) ||
-                parsed.desc ||
-                (data.response ? String(data.response).trim() : "No description");
-
-            const newAgent: Agent = {
-                id,
-                name,
-                desc,
-                agentId: data.agentId ?? undefined,
-                aliasId: data.aliasId ?? undefined,
-                key: data.key ?? undefined,
-            };
-
-            // Добавляем агента в список (сохраняя MAIN_PUBLIC_AGENT на месте, если он есть)
-            setAgents((prev) => {
-                // если агент уже есть (по agentId или id) — обновим его
-                const existsIdx = prev.findIndex(
-                    (a) => String(a.id) === String(newAgent.id) || (newAgent.agentId && a.agentId === newAgent.agentId)
-                );
-                if (existsIdx >= 0) {
-                    const copy = [...prev];
-                    copy[existsIdx] = { ...copy[existsIdx], ...newAgent };
-                    return copy;
-                }
-                // вставляем в конец списка (после публичного агента)
-                return [...prev, newAgent];
-            });
-
-            // гарантируем, что есть запись messagesByAgent[id] и сессия
-            setMessagesByAgent((prev) => {
-                const copy = { ...prev };
-                if (!copy[id]) copy[id] = [];
-                return copy;
-            });
-
-            setSessions((prev) => {
-                const copy = { ...prev };
-                if (!copy[id]) copy[id] = data.sessionId ?? generateSessionId();
-                return copy;
-            });
-
-            // по опции — сделать нового агента выбранным
-            if (options?.select) {
-                setSelectedAgent(newAgent);
-            }
-
-            return newAgent;
-        } catch (err) {
-            console.error("addAgentFromCreateResponse error:", err);
-            return null;
-        }
-    };
-
 
     // -----------------------
     // PUBLIC SEND (авто Hi при загрузке если нет токена)
