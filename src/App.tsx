@@ -139,6 +139,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
     const [messageListHeight, setMessageListHeight] = useState<number>(0);
     const tour = useTour() as any;
+    const props = {deviceType: deviceType, isPublic: false};
+
 
     useEffect(() => {
         if (!chatOpen) {
@@ -1422,7 +1424,7 @@ API_ENDPOINT = "https://api.youagent.me"`;
             }} />
             case Page.PRIVACY_POLICY:
                 return (
-                    <PrivacyPolicy {...{deviceType}}/>
+                    <PrivacyPolicy {...props}/>
                 );
             case Page.TERMS_AND_CONDITIONS:
                 return <TermsAndConditions />;
