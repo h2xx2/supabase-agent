@@ -28,6 +28,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import DescriptionIcon from "@mui/icons-material/Description";
 import axios from "axios";
 import { useCookies } from "react-cookie";
+import {ChatMessage} from "./ChatMessage.tsx";
+import TypingIndicator from "./TypingIndicator.tsx";
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
@@ -78,10 +80,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
     const cooldownRef = useRef<number | null>(null);
     const [, setLastErrorRaw] = useState<any>(null);
+    const [isSendingByAgent, setIsSendingByAgent] = useState<Record<string, boolean>>({});
+    const [isTypingByAgent, setIsTypingByAgent] = useState<Record<string, boolean>>({});
+
     const MAIN_PUBLIC_AGENT = {
         id: "youagent-master",
-        name: "YouAgent-Master-Engine",
-        desc: "Main public agent (anonymous)",
+        name: "YouAgentMe Wizard",
+        desc: "Provides support and helps to create new agents (anonymous).",
         agentId: "3QQS2QJUKY",
         aliasId: "GGALIIRVVC",
         key: "TfnWzfQl-6jDKq7gSvFP",
@@ -93,6 +98,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(MAIN_PUBLIC_AGENT);
     const canAttach = Boolean(selectedAgent && String(selectedAgent.id) !== String(MAIN_PUBLIC_AGENT.id));
     const [agentsPollingInterval, setAgentsPollingInterval] = useState<NodeJS.Timeout | null>(null);
+    const hiSentRef = useRef(false);
+
     useEffect(() => {
         setMessagesByAgent((prev) => {
             const copy = { ...prev };
@@ -477,11 +484,18 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             }));
             setAgents([MAIN_PUBLIC_AGENT, ...serverAgents]);
             console.log("Anonymous login successful:", user.id);
+            if (!hiSentRef.current) {
+                hiSentRef.current = true;
+                sendChatMessage("Hi", access_token);
+            }
         } catch (err: any) {
             console.error("Anonymous login error:", err);
             const { message, raw } = extractErrorMessage(err);
             setError(message);
             setLastErrorRaw(raw);
+        }
+        finally {
+
         }
     };
 
@@ -615,32 +629,48 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     };
 
     // core send function — добавляет сообщение в текущий чат и (если у агента есть публичный endpoint) делает public-send
-    const sendChatMessage = async (msgText?: string) => {
+    const sendChatMessage = async (msgText?: string, accessToken?: string) => {
         const text = (msgText ?? "").trim();
         const current = selectedAgent;
         if (!current) return;
+
+        const agentKey = String(current.id);
+
+        // Проверяем, не идёт ли уже отправка для этого агента
+        if (isSendingByAgent[agentKey]) return;
+
         if (!text && !attachedFileName) return;
+
+        // Блокируем отправку сразу
+        setIsSendingByAgent(prev => ({ ...prev, [agentKey]: true }));
 
         const agentIdForApi = current.agentId;
         const agentAliasID = current.aliasId;
-        const sessionId = sessions[String(current.id)] ?? generateSessionId();
-        const token = cookies["authToken"];
+        const sessionId = sessions[agentKey] ?? generateSessionId();
+        const token = accessToken ?? cookies["authToken"];
 
-        // добавляем исходящее сообщение
+        // Добавляем исходящее сообщение пользователя
         const outgoing: Msg = {
             id: `out-${Date.now()}`,
             direction: "outgoing",
-            message: text,
+            message: text || undefined,
             attachedFileName: attachedFileName || undefined,
             sentTime: new Date().toISOString(),
             sender: "user",
         };
+
         setMessagesByAgent((prev) => ({
             ...prev,
-            [String(current.id)]: [...(prev[String(current.id)] ?? []), outgoing],
+            [agentKey]: [...(prev[agentKey] ?? []), outgoing],
         }));
 
-        // подготовка файла
+        // Показываем индикатор "печатает..."
+        setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: true }));
+
+        // Очищаем прикреплённый файл и поле ввода (поле очищается через форму)
+        removeAttachedFile();
+
+        // Читаем файл (если был)
         let fileBase64: string | null = null;
         let fileName: string | null = null;
         if (attachedFileName) {
@@ -648,7 +678,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             fileBase64 = read.base64;
             fileName = read.fileName;
         }
-        removeAttachedFile();
 
         try {
             const url = `${import.meta.env.VITE_API_GATEWAY_URL}/send-anonymous`;
@@ -672,9 +701,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
 
             const { sessionId: returnedSessionId } = await res.json();
             const finalSessionId = returnedSessionId || sessionId;
-            setSessions((s) => ({ ...s, [String(current.id)]: finalSessionId }));
+            setSessions((s) => ({ ...s, [agentKey]: finalSessionId }));
 
-            // запускаем polling
+            // Запуск polling (как было)
             const startPolling = (finalSessionId: string) => {
                 let attempts = 0;
                 let pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -688,11 +717,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ sessionId: finalSessionId }),
                         });
-
                         const data = await pollRes.json();
-                        if (!data) return;
 
-                        // 1) текстовый ответ
                         if (data?.response) {
                             const incoming: Msg = {
                                 id: `in-${Date.now()}`,
@@ -701,190 +727,66 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                 sentTime: new Date().toISOString(),
                                 sender: "bot",
                             };
-
                             setMessagesByAgent((prev) => ({
                                 ...prev,
-                                [String(current.id)]: [...(prev[String(current.id)] ?? []), incoming],
+                                [agentKey]: [...(prev[agentKey] ?? []), incoming],
                             }));
 
                             if (String(current.id) === String(MAIN_PUBLIC_AGENT.id)) {
                                 const user_id = cookies["userId"];
-                                if (user_id) {
-                                    console.log("Master agent responded — restarting agents polling for immediate update");
-                                    startAgentsPolling(user_id);
-                                }
+                                if (user_id) startAgentsPolling(user_id);
                             }
 
-                            // если получили ответ — сразу останавливаем polling
+                            // Ответ получен — снимаем все блокировки
+                            setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: false }));
+                            setIsSendingByAgent((prev) => ({ ...prev, [agentKey]: false }));
                             if (pollInterval) clearInterval(pollInterval);
                             return;
                         }
 
-                        // 2) файлы
                         if (data?.files) {
                             setSessionFiles(finalSessionId, data.files);
                         }
                     } catch (pollErr) {
                         console.error("Polling error:", pollErr);
-                        if (pollInterval) clearInterval(pollInterval);
                     }
 
-                    if (attempts >= 10 && pollInterval) {
-                        clearInterval(pollInterval);
-                        console.log("Polling stopped after 10 attempts");
+                    if (attempts >= 150) {
+                        clearInterval(pollInterval!);
+                        setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: false }));
+                        setIsSendingByAgent((prev) => ({ ...prev, [agentKey]: false }));
                     }
                 };
 
                 poll();
-
-                pollInterval = setInterval(poll, 20000);
+                pollInterval = setInterval(poll, 2000);
             };
-
 
             startPolling(finalSessionId);
 
         } catch (err: any) {
+            // Ошибка отправки
             const incoming: Msg = {
                 id: `in-err-${Date.now()}`,
                 direction: "incoming",
-                message: `Public send error: ${err.message}`,
+                message: `Send error: ${err.message || "Network error"}`,
                 sentTime: new Date().toISOString(),
                 sender: "system",
             };
             setMessagesByAgent((prev) => ({
                 ...prev,
-                [String(current.id)]: [...(prev[String(current.id)] ?? []), incoming],
+                [agentKey]: [...(prev[agentKey] ?? []), incoming],
             }));
-        }
-    };
 
-    // -----------------------
-    // PUBLIC SEND (авто Hi при загрузке если нет токена)
-    // -----------------------
-    const sendPublicHi = async () => {
-        if (publicHiSent) return;
-        const main = MAIN_PUBLIC_AGENT;
-        const token = cookies["authToken"];
-        if (!main || !main.agentId || !main.key) {
-            console.warn("Main public agent credentials missing — skipping public-send Hi.");
-            return;
-        }
-
-        // добавим исходящее Hi в чат мастера
-        setMessagesByAgent((prev) => {
-            const id = String(main.id);
-            const prevMsgs = prev[id] ?? [];
-            return {
-                ...prev,
-                [id]: [
-                    ...prevMsgs,
-                    {
-                        id: `out-hi-${Date.now()}`,
-                        direction: "outgoing",
-                        message: "Hi",
-                        sentTime: new Date().toISOString(),
-                        sender: "user",
-                    },
-                ],
-            };
-        });
-
-        try {
-            const url = `${import.meta.env.VITE_API_GATEWAY_URL}/send-anonymous`;
-            const payload = {
-                message: "Hi",
-                agentId: main.agentId,
-                aliasId: main.aliasId,
-                key: main.key,
-                sessionId: sessions[String(main.id)] ?? generateSessionId(),
-                fileBase64: null,
-                fileName: null,
-            };
-
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const { sessionId: returnedSessionId } = await res.json();
-            const finalSessionId = returnedSessionId || payload.sessionId;
-            setSessions((s) => ({ ...s, [String(main.id)]: finalSessionId }));
-
-            // запускаем polling
-            // запускаем polling сразу и потом через интервал
-            const startPolling = (finalSessionId: string) => {
-                const poll = async () => {
-                    const pollUrl = `${import.meta.env.VITE_API_GATEWAY_URL}/polling-message`;
-                    const pollRes = await fetch(pollUrl, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({ sessionId: finalSessionId }),
-                    });
-
-                    const data = await pollRes.json();
-                    if (data?.response) {
-                        clearInterval(pollInterval);
-                        const incoming: Msg = {
-                            id: `in-hi-${Date.now()}`,
-                            direction: "incoming",
-                            message: data.response,
-                            sentTime: new Date().toISOString(),
-                            sender: "bot",
-                        };
-                        setMessagesByAgent((prev) => {
-                            const id = String(main.id);
-                            const prevMsgs = prev[id] ?? [];
-                            return { ...prev, [id]: [...prevMsgs, incoming] };
-                        });
-
-                        // если есть файлы — обновим sessionFiles
-                        if (data.files) {
-                            setSessionFiles(finalSessionId, data.files);
-                        }
-                    }
-                };
-
-                // первый вызов сразу
-                poll();
-
-                // потом каждые 3 секунды
-                const pollInterval = setInterval(poll, 20000);
-            };
-
-// где-то в коде после получения finalSessionId
-            startPolling(finalSessionId);
-
-
-            setPublicHiSent(true);
-        } catch (err: any) {
-            const incoming: Msg = {
-                id: `in-hi-err-${Date.now()}`,
-                direction: "incoming",
-                message: `Public send error: ${err.message}`,
-                sentTime: new Date().toISOString(),
-                sender: "system",
-            };
-            setMessagesByAgent((prev) => {
-                const id = String(main.id);
-                const prevMsgs = prev[id] ?? [];
-                return { ...prev, [id]: [...prevMsgs, incoming] };
-            });
-            setPublicHiSent(true);
+            // Снимаем блокировку даже при ошибке
+            setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: false }));
+            setIsSendingByAgent((prev) => ({ ...prev, [agentKey]: false }));
         }
     };
 
 
     useEffect(() => {
-        const isAnonymous = cookies["isAnonymous"] === "true";
-        if (!isLoading && !isAnonymous && !publicHiSent) {
-            sendPublicHi();
-        }
+
     }, [isLoading, cookies, publicHiSent]);
 
 
@@ -927,7 +829,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                         >
                             <Box sx={{ width: 320, borderRight: "1px solid", borderColor: "divider", p: 3, overflowY: "auto" }}>
                                 <Typography variant="h6" sx={{ mb: 2 }}>
-                                    Temporary agents
+                                    Agents
                                 </Typography>
                                 <List sx={{ gap: 1 }}>
                                     {agents.map((a) => {
@@ -968,7 +870,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                     {currentMessages.map((m) => (
                                         <Box key={m.id} sx={{ display: "flex", justifyContent: m.direction === "outgoing" ? "flex-end" : "flex-start", mb: 1 }}>
                                             <Paper sx={{ p: 1, px: 2, borderRadius: 2, maxWidth: "70%", bgcolor: m.direction === "outgoing" ? "#eaf3ff" : "#f5f7fa" }}>
-                                                {m.message && <Typography variant="body2">{m.message}</Typography>}
+                                                {m.message && <ChatMessage text={m.message} />}
                                                 {m.attachedFileName && (
                                                     <Box sx={{ mt: 1, display: "inline-flex", alignItems: "center", gap: 1 }}>
                                                         <DescriptionIcon sx={{ color: "#1976d2" }} />
@@ -978,6 +880,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                             </Paper>
                                         </Box>
                                     ))}
+                                    {isTypingByAgent[String(selectedAgent?.id ?? "")] && (
+                                        <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
+                                            <TypingIndicator />
+                                        </Box>
+                                    )}
                                 </Box>
                                 <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "#fff" }}>
                                     {attachedFileName && (
@@ -992,7 +899,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                             <IconButton size="small" onClick={removeAttachedFile}><CloseIcon fontSize="small" /></IconButton>
                                         </Box>
                                     )}
-                                    <Paper component="form" onSubmit={async (e) => { e.preventDefault(); const input = (e.target as HTMLFormElement).elements.namedItem("msg") as HTMLInputElement; await sendChatMessage(input?.value); if (input) input.value = ""; }} sx={{ display: "flex", alignItems: "center", gap: 1, p: "6px 10px", borderRadius: "22px" }}>
+                                    <Paper component="form" onSubmit={async (e) => { e.preventDefault(); const input = (e.target as HTMLFormElement).elements.namedItem("msg") as HTMLInputElement; sendChatMessage(input?.value); if (input) input.value = ""; }} sx={{ display: "flex", alignItems: "center", gap: 1, p: "6px 10px", borderRadius: "22px" }}>
                                         <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx" onChange={handleFileSelected} style={{ display: "none" }} />
                                         <IconButton
                                             size="small"
@@ -1004,9 +911,21 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                             title={canAttach ? "Attach file" : "Attachments disabled for this agent"}
                                         >
                                             <AttachFileIcon fontSize="small" />
-                                        </IconButton>                                        <InputBase name="msg" sx={{ ml: 1, flex: 1 }} placeholder="Write a message or attach a file..." />
+                                        </IconButton>
+                                        <InputBase
+                                            name="msg"
+                                            sx={{ ml: 1, flex: 1 }}
+                                            placeholder="Write a message or attach a file..."
+                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}
+                                        />
                                         <Divider sx={{ height: 28, mr: 1 }} orientation="vertical" />
-                                        <IconButton type="submit" sx={{ p: "10px" }}><SendIcon /></IconButton>
+                                        <IconButton
+                                            type="submit"
+                                            sx={{ p: "10px" }}
+                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}
+                                        >
+                                            <SendIcon />
+                                        </IconButton>
                                     </Paper>
                                 </Box>
                             </Box>
@@ -1185,7 +1104,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                     {currentMessages.map((m) => (
                                         <Box key={m.id} sx={{ display: "flex", justifyContent: m.direction === "outgoing" ? "flex-end" : "flex-start", mb: 1 }}>
                                             <Paper sx={{ p: 1, px: 2, borderRadius: 2, maxWidth: "80%", bgcolor: m.direction === "outgoing" ? "#eaf3ff" : "#f5f7fa" }}>
-                                                {m.message && <Typography variant="body2">{m.message}</Typography>}
+                                                {m.message && <ChatMessage text={m.message} />}
                                                 {m.attachedFileName && (
                                                     <Box sx={{ mt: 1, display: "inline-flex", alignItems: "center", gap: 1 }}>
                                                         <DescriptionIcon sx={{ color: "#1976d2" }} />
@@ -1195,6 +1114,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                             </Paper>
                                         </Box>
                                     ))}
+                                    {isTypingByAgent[String(selectedAgent?.id ?? "")] && (
+                                        <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
+                                            <TypingIndicator />
+                                        </Box>
+                                    )}
                                 </Box>
                                 <Box sx={{ p: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
                                     {attachedFileName && (
@@ -1210,11 +1134,22 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                         </Box>
                                     )}
                                     <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx" onChange={handleFileSelected} style={{ display: "none" }} />
-                                    <Paper component="form" onSubmit={async (e) => { e.preventDefault(); const el = (e.target as HTMLFormElement).elements.namedItem("msgMobile") as HTMLInputElement; await sendChatMessage(el?.value); if (el) el.value = ""; }} sx={{ display: "flex", alignItems: "center", gap: 1, p: "6px 10px", borderRadius: "20px" }}>
+                                    <Paper component="form" onSubmit={async (e) => { e.preventDefault(); const el = (e.target as HTMLFormElement).elements.namedItem("msgMobile") as HTMLInputElement; sendChatMessage(el?.value); if (el) el.value = ""; }} sx={{ display: "flex", alignItems: "center", gap: 1, p: "6px 10px", borderRadius: "20px" }}>
                                         <IconButton size="small" onClick={() => fileInputRef.current?.click()}><AttachFileIcon fontSize="small" /></IconButton>
-                                        <InputBase name="msgMobile" sx={{ ml: 1, flex: 1 }} placeholder="Write a message or attach a file..." />
+                                        <InputBase
+                                            name="msgMobile"
+                                            sx={{ ml: 1, flex: 1 }}
+                                            placeholder="Write a message or attach a file..."
+                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}
+                                        />
                                         <Divider sx={{ height: 28, mr: 1 }} orientation="vertical" />
-                                        <IconButton type="submit" sx={{ p: "10px" }}><SendIcon /></IconButton>
+                                        <IconButton
+                                            type="submit"
+                                            sx={{ p: "10px" }}
+                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}
+                                        >
+                                            <SendIcon />
+                                        </IconButton>
                                     </Paper>
                                 </Box>
                             </Paper>
