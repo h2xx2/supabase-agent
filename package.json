@@ -24,6 +24,7 @@
     "react-joyride": "^2.9.3",
     "react-router-dom": "^7.10.1",
     "reactour": "^1.19.4",
+    "remark-gfm": "^4.0.1",
     "styled-components": "^5.3.11",
     "uuid": "^13.0.0"
   },
