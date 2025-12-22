@@ -87,7 +87,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         name: "YouAgentMe Wizard",
         desc: "Provides support and helps to create new agents (anonymous).",
         agentId: "FSQXUA9SKO",
-        aliasId: "FVWPOASV0P",
+        aliasId: "K89KWUZPWE",
         key: "rhjebivhrbei87vbie234bru234vberbreu2324vbi4",
     } as Agent;
     const [agents, setAgents] = useState<Agent[]>([MAIN_PUBLIC_AGENT]);
@@ -98,7 +98,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [agentsPollingInterval, setAgentsPollingInterval] = useState<NodeJS.Timeout | null>(null);
     const hiSentRef = useRef(false);
 
-    // ---- Google SVG Icon ----
     const GoogleIcon = () => (
         <svg
             width="18"
@@ -218,7 +217,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         return () => {
             if (cooldownRef.current) clearInterval(cooldownRef.current);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -482,7 +480,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
 
             console.log("Anonymous login successful:", user.id);
 
-            // === СЮДА ДОБАВЛЯЕМ ХАРДКОДНОЕ ПРИВЕТСТВИЕ ===
             const welcomeMessage: Msg = {
                 id: `in-welcome-${Date.now()}`,
                 direction: "incoming",
@@ -505,7 +502,6 @@ Just tell me **what you want your agent to do**, or ask any question about how y
             };
 
 
-            // Добавляем сообщение в чат главного агента
             setMessagesByAgent((prev) => ({
                 ...prev,
                 [String(MAIN_PUBLIC_AGENT.id)]: [welcomeMessage],
@@ -556,9 +552,6 @@ Just tell me **what you want your agent to do**, or ask any question about how y
         authMode === "signin" ? handleSignIn() : handleSignUp();
     };
 
-    // -----------------------
-    // CHAT & AGENTS UI + per-agent messages
-    // -----------------------
     const [mobileChatOpen, setMobileChatOpen] = useState(false);
     const [mobileAgentListOpen, setMobileAgentListOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -766,7 +759,6 @@ Just tell me **what you want your agent to do**, or ask any question about how y
     if (isLoading) return <></>;
     const currentMessages = getCurrentMessages();
 
-    // --- Google button styles ---
     const googleButtonSx = {
         mt: 2,
         mb: 2,
