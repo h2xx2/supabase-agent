@@ -31,6 +31,7 @@ import axios from "axios";
 import { useCookies } from "react-cookie";
 import {ChatMessage} from "./ChatMessage.tsx";
 import TypingIndicator from "./TypingIndicator.tsx";
+import Copyright from "./Copyright.tsx";
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
@@ -97,7 +98,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [agentsPollingInterval, setAgentsPollingInterval] = useState<NodeJS.Timeout | null>(null);
     const hiSentRef = useRef(false);
 
-    // ---- Google SVG Icon (ваш) ----
+    // ---- Google SVG Icon ----
     const GoogleIcon = () => (
         <svg
             width="18"
@@ -468,6 +469,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             setCookie("isAnonymous", "true", { path: "/" });
             setCookie("refreshToken", refresh_token, { path: "/" });
             setUser(user);
+
             const serverAgents: Agent[] = (data.agents || []).map((a: any) => ({
                 id: a.id,
                 name: a.name,
@@ -477,18 +479,49 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 key: a.key,
             }));
             setAgents([MAIN_PUBLIC_AGENT, ...serverAgents]);
+
             console.log("Anonymous login successful:", user.id);
-            if (!hiSentRef.current) {
-                hiSentRef.current = true;
-                sendChatMessage("Hi", access_token);
+
+            // === СЮДА ДОБАВЛЯЕМ ХАРДКОДНОЕ ПРИВЕТСТВИЕ ===
+            const welcomeMessage: Msg = {
+                id: `in-welcome-${Date.now()}`,
+                direction: "incoming",
+                message: `👋 **Welcome! I’m YouAgentMe Wizard**
+
+I’m your personal guide to **youagent.me** — the agentic AI service that helps you instantly create powerful AI agents with exactly the functionality you need.
+
+✨ **What I can help you with:**
+- Build a custom **agentic AI** in minutes (no guesswork)  
+- Configure agent behavior, tools, and workflows  
+- Explain **youagent.me features** and best practices  
+- Guide you through using everything from the **Web UI**  
+- Handle support questions and troubleshooting  
+
+Just tell me **what you want your agent to do**, or ask any question about how youagent.me works — and I’ll take care of the rest.
+
+🚀 Let’s create your agent. What’s your goal today?`,
+                sentTime: new Date().toISOString(),
+                sender: "bot",
+            };
+
+
+            // Добавляем сообщение в чат главного агента
+            setMessagesByAgent((prev) => ({
+                ...prev,
+                [String(MAIN_PUBLIC_AGENT.id)]: [welcomeMessage],
+            }));
+
+            setSelectedAgent(MAIN_PUBLIC_AGENT);
+
+            if (isMobile) {
+                setMobileChatOpen(true);
             }
+
         } catch (err: any) {
             console.error("Anonymous login error:", err);
             const { message, raw } = extractErrorMessage(err);
             setError(message);
             setLastErrorRaw(raw);
-        }
-        finally {
         }
     };
     useEffect(() => {
@@ -531,12 +564,12 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
     const [viewportHeight, setViewportHeight] = useState<number>(window.innerHeight);
-    const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 900);
+    const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 1000);
     const [publicHiSent, setPublicHiSent] = useState(false);
     useEffect(() => {
         const onResize = () => {
             setViewportHeight(window.innerHeight);
-            setIsMobile(window.innerWidth < 900);
+            setIsMobile(window.innerWidth < 1000);
         };
         window.addEventListener("resize", onResize);
         return () => window.removeEventListener("resize", onResize);
@@ -733,7 +766,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     if (isLoading) return <></>;
     const currentMessages = getCurrentMessages();
 
-    // --- helper: Google button styles (повторяемая конфигурация) ---
+    // --- Google button styles ---
     const googleButtonSx = {
         mt: 2,
         mb: 2,
@@ -759,18 +792,151 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         },
     };
 
+    const AuthForm = ({ isMobileForm }: { isMobileForm: boolean }) => (
+        <Box sx={{ width: "100%" }}>
+            <img src="/youagent_me_logo.jpg" alt="youagent.me" loading="lazy" style={{ width: "100%", borderRadius: 10, marginBottom: 12 }} />
+            <Container
+                component="main"
+                sx={
+                    isMobileForm
+                        ? { p: 0 }
+                        : { boxShadow: "0px 6px 22px rgba(0,0,0,0.08)", p: 2, borderRadius: 2, background: "#fff" }
+                }
+            >
+                <Typography component="h1" variant="h5" sx={{ textAlign: "center", mb: 2 }}>
+                    {authMode === "signin" ? "Sign In" : "Sign Up"}
+                </Typography>
+                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                {resendSuccess && <Alert severity="success" sx={{ mb: 2 }}>{resendSuccess}</Alert>}
+                {emailConfirmationRequired && (
+                    <Box sx={{ mb: 2, textAlign: "center" }}>
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                            Didn't receive the email?{" "}
+                            {cooldownSeconds > 0 ? (
+                                <Typography component="span" sx={{ color: "text.disabled", fontWeight: 500 }}>
+                                    Resend verification email ({cooldownSeconds}s)
+                                </Typography>
+                            ) : (
+                                <Link
+                                    href="#"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handleResendVerificationEmail();
+                                    }}
+                                    sx={{ textDecoration: "underline", color: "primary.main" }}
+                                >
+                                    Resend verification email
+                                </Link>
+                            )}
+                        </Typography>
+                    </Box>
+                )}
+                <Box component="form" onSubmit={handleSubmit} noValidate>
+                    {authMode === "signup" && (
+                        <>
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                label="First Name"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                            />
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                label="Last Name"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                            />
+                        </>
+                    )}
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        label="Email Address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        autoFocus={authMode === "signin"}
+                    />
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    {authMode === "signin" && (
+                        <FormControlLabel
+                            control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} color="primary" />}
+                            label="Remember me"
+                        />
+                    )}
+                    <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>
+                        {authMode === "signin" ? "Sign In" : "Sign Up"}
+                    </Button>
+
+                    {/* Google sign-in button */}
+                    <Button
+                        fullWidth
+                        variant="outlined"
+                        sx={googleButtonSx}
+                        startIcon={
+                            <Box sx={{ width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <GoogleIcon />
+                            </Box>
+                        }
+                        onClick={async () => {
+                            try {
+                                const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
+                                const { url } = res.data;
+                                if (url) window.location.href = url;
+                                else setError("Failed to start Google sign-in");
+                            } catch (err: any) {
+                                setError("Google sign-in failed");
+                            }
+                        }}
+                    >
+                        Sign in with Google
+                    </Button>
+
+                    <Box sx={{ mt: 2, textAlign: "center" }}>
+                        <Link
+                            href="#"
+                            variant="body2"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setAuthMode(authMode === "signin" ? "signup" : "signin");
+                                setError(null);
+                                setEmailConfirmationRequired(false);
+                                setResendSuccess(null);
+                                setLastErrorRaw(null);
+                            }}
+                        >
+                            {authMode === "signin" ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                        </Link>
+                    </Box>
+                </Box>
+            </Container>
+        </Box>
+    );
+
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <Box sx={{ height: "83vh", overflow: "hidden" }}>
+            <Box sx={{ height: "84vh", overflow: "hidden" }}>
                 {!isMobile && (
                     <>
                         <Box
                             sx={{
                                 position: "fixed",
                                 left: 24,
-                                top: 24,
-                                bottom: 24,
+                                top: 40,
+                                bottom: 40,
                                 right: `${AUTH_PANEL_WIDTH + 48}px`,
                                 borderRadius: 2,
                                 boxShadow: 3,
@@ -886,70 +1052,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                             </Box>
                         </Box>
 
-                        {/* RIGHT: fixed auth panel (всегда поверх) */}
+                        {/* RIGHT: fixed auth panel */}
                         <Box sx={{ position: "fixed", right: 24, top: "50%", transform: "translateY(-50%)", width: `${AUTH_PANEL_WIDTH}px`, zIndex: AUTH_Z }}>
-                            <Box sx={{ width: "100%" }}>
-                                <img src="/youagent_me_logo.jpg" alt="youagent.me" loading="lazy" style={{ width: "100%", borderRadius: 10, marginBottom: 12 }} />
-                                <Container component="main" sx={{ boxShadow: "0px 6px 22px rgba(0,0,0,0.08)", p: 2, borderRadius: 2, background: "#fff" }}>
-                                    <Typography component="h1" variant="h5" sx={{ textAlign: "center", mb: 2 }}>{authMode === "signin" ? "Sign In" : "Sign Up"}</Typography>
-                                    {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                                    {resendSuccess && <Alert severity="success" sx={{ mb: 2 }}>{resendSuccess}</Alert>}
-                                    {emailConfirmationRequired && (
-                                        <Box sx={{ mb: 2, textAlign: "center" }}>
-                                            <Typography variant="body2" sx={{ mb: 1 }}>
-                                                Didn't receive the email?{" "}
-                                                {cooldownSeconds > 0 ? <Typography component="span" sx={{ color: "text.disabled", fontWeight: 500 }}>Resend verification email ({cooldownSeconds}s)</Typography> :
-                                                    <Link href="#" onClick={(e) => { e.preventDefault(); handleResendVerificationEmail(); }} sx={{ textDecoration: "underline", color: "primary.main" }}>Resend verification email</Link>}
-                                            </Typography>
-                                        </Box>
-                                    )}
-                                    <Box component="form" onSubmit={handleSubmit} noValidate>
-                                        {authMode === "signup" && <>
-                                            <TextField margin="normal" required fullWidth label="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                                            <TextField margin="normal" required fullWidth label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                                        </>}
-                                        <TextField margin="normal" required fullWidth label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus={authMode === "signin"} />
-                                        <TextField margin="normal" required fullWidth label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                                        {authMode === "signin" && <FormControlLabel control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} color="primary" />} label="Remember me" />}
-                                        <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>{authMode === "signin" ? "Sign In" : "Sign Up"}</Button>
-
-                                        {/* Google sign-in — стилизованная кнопка */}
-                                        <Button
-                                            fullWidth
-                                            variant="outlined"
-                                            sx={googleButtonSx}
-                                            startIcon={
-                                                <Box sx={{ width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <GoogleIcon />
-                                                </Box>
-                                            }
-                                            onClick={async () => {
-                                                try {
-                                                    const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
-                                                    const { url } = res.data;
-                                                    if (url) window.location.href = url;
-                                                    else setError("Failed to start Google sign-in");
-                                                } catch (err: any) {
-                                                    setError("Google sign-in failed");
-                                                }
-                                            }}
-                                        >
-                                            Sign in with Google
-                                        </Button>
-
-                                        <Box sx={{ mt: 2, textAlign: "center" }}>
-                                            <Link href="#" variant="body2" onClick={(e) => { e.preventDefault(); setAuthMode(authMode === "signin" ? "signup" : "signin"); setError(null); setEmailConfirmationRequired(false); setResendSuccess(null); setLastErrorRaw(null); }}>
-                                                {authMode === "signin" ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
-                                            </Link>
-                                        </Box>
-                                    </Box>
-                                </Container>
-                            </Box>
+                            <AuthForm isMobileForm={false} />
                         </Box>
                     </>
                 )}
 
-                {/* MOBILE UI (логика идентична) */}
+                {/* MOBILE UI */}
                 {isMobile && (
                     <>
                         <Paper
@@ -967,63 +1077,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                 background: "#fff",
                             }}
                         >
-                            <Box sx={{ width: "100%" }}>
-                                <img src="/youagent_me_logo.jpg" alt="youagent.me" loading="lazy" style={{ width: "100%", borderRadius: 10, marginBottom: 12 }} />
-                                <Container component="main" sx={{ p: 0 }}>
-                                    <Typography component="h1" variant="h5" sx={{ textAlign: "center", mb: 2 }}>{authMode === "signin" ? "Sign In" : "Sign Up"}</Typography>
-                                    {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                                    {resendSuccess && <Alert severity="success" sx={{ mb: 2 }}>{resendSuccess}</Alert>}
-                                    {emailConfirmationRequired && (
-                                        <Box sx={{ mb: 2, textAlign: "center" }}>
-                                            <Typography variant="body2" sx={{ mb: 1 }}>
-                                                Didn't receive the email?{" "}
-                                                {cooldownSeconds > 0 ? <Typography component="span" sx={{ color: "text.disabled", fontWeight: 500 }}>Resend verification email ({cooldownSeconds}s)</Typography> :
-                                                    <Link href="#" onClick={(e) => { e.preventDefault(); handleResendVerificationEmail(); }} sx={{ textDecoration: "underline", color: "primary.main" }}>Resend verification email</Link>}
-                                            </Typography>
-                                        </Box>
-                                    )}
-                                    <Box component="form" onSubmit={handleSubmit} noValidate>
-                                        {authMode === "signup" && <>
-                                            <TextField margin="normal" required fullWidth label="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                                            <TextField margin="normal" required fullWidth label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                                        </>}
-                                        <TextField margin="normal" required fullWidth label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus={authMode === "signin"} />
-                                        <TextField margin="normal" required fullWidth label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                                        {authMode === "signin" && <FormControlLabel control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} color="primary" />} label="Remember me" />}
-                                        <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>{authMode === "signin" ? "Sign In" : "Sign Up"}</Button>
-
-                                        {/* Мобильная Google-кнопка */}
-                                        <Button
-                                            fullWidth
-                                            variant="outlined"
-                                            sx={googleButtonSx}
-                                            startIcon={
-                                                <Box sx={{ width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <GoogleIcon />
-                                                </Box>
-                                            }
-                                            onClick={async () => {
-                                                try {
-                                                    const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
-                                                    const { url } = res.data;
-                                                    if (url) window.location.href = url;
-                                                    else setError("Failed to start Google sign-in");
-                                                } catch (err: any) {
-                                                    setError("Google sign-in failed");
-                                                }
-                                            }}
-                                        >
-                                            Sign in with Google
-                                        </Button>
-
-                                        <Box sx={{ mt: 2, textAlign: "center" }}>
-                                            <Link href="#" variant="body2" onClick={(e) => { e.preventDefault(); setAuthMode(authMode === "signin" ? "signup" : "signin"); setError(null); setEmailConfirmationRequired(false); setResendSuccess(null); setLastErrorRaw(null); }}>
-                                                {authMode === "signin" ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
-                                            </Link>
-                                        </Box>
-                                    </Box>
-                                </Container>
-                            </Box>
+                            <AuthForm isMobileForm={true} />
                         </Paper>
                         {!mobileChatOpen && (
                             <Paper
@@ -1049,7 +1103,17 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                     <Box sx={{ flex: 1 }}>
                                         <Typography variant="subtitle2">{selectedAgent?.name}</Typography>
                                         <Typography variant="body2" color="text.secondary" noWrap>
-                                            {currentMessages.length ? (currentMessages[currentMessages.length - 1].message ?? currentMessages[currentMessages.length - 1].attachedFileName ?? "") : ""}
+                                            {currentMessages.length
+                                                ? ((currentMessages[currentMessages.length - 1].message ??
+                                                    currentMessages[currentMessages.length - 1].attachedFileName ??
+                                                    "")
+                                                    .length > 35
+                                                    ? (currentMessages[currentMessages.length - 1].message ??
+                                                    currentMessages[currentMessages.length - 1].attachedFileName ??
+                                                    "").slice(0, 35) + "…"
+                                                    : (currentMessages[currentMessages.length - 1].message ??
+                                                        currentMessages[currentMessages.length - 1].attachedFileName))
+                                                : ""}
                                         </Typography>
                                     </Box>
                                 </Box>
