@@ -484,10 +484,32 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             }));
             setAgents([MAIN_PUBLIC_AGENT, ...serverAgents]);
             console.log("Anonymous login successful:", user.id);
-            if (!hiSentRef.current) {
-                hiSentRef.current = true;
-                sendChatMessage("Hi", access_token);
-            }
+            const welcomeMessage: Msg = {
+                id: `in-welcome-${Date.now()}`,
+                direction: "incoming",
+                message: `👋 **Welcome! I’m YouAgentMe Wizard**
+
+I’m your personal guide to **youagent.me** — the agentic AI service that helps you instantly create powerful AI agents with exactly the functionality you need.
+
+✨ **What I can help you with:**
+- Build a custom **agentic AI** in minutes (no guesswork)  
+- Configure agent behavior, tools, and workflows  
+- Explain **youagent.me features** and best practices  
+- Guide you through using everything from the **Web UI**  
+- Handle support questions and troubleshooting  
+
+Just tell me **what you want your agent to do**, or ask any question about how youagent.me works — and I’ll take care of the rest.
+
+🚀 Let’s create your agent. What’s your goal today?`,
+                sentTime: new Date().toISOString(),
+                sender: "bot",
+            };
+
+
+            setMessagesByAgent((prev) => ({
+                ...prev,
+                [String(MAIN_PUBLIC_AGENT.id)]: [welcomeMessage],
+            }));
         } catch (err: any) {
             console.error("Anonymous login error:", err);
             const { message, raw } = extractErrorMessage(err);
