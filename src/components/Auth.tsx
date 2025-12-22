@@ -88,7 +88,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         name: "YouAgentMe Wizard",
         desc: "Provides support and helps to create new agents (anonymous).",
         agentId: "3QQS2QJUKY",
-        aliasId: "GGALIIRVVC",
+        aliasId: "IRWADY4L5O",
         key: "TfnWzfQl-6jDKq7gSvFP",
     } as Agent;
 
