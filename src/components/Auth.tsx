@@ -31,7 +31,7 @@ import axios from "axios";
 import { useCookies } from "react-cookie";
 import {ChatMessage} from "./ChatMessage.tsx";
 import TypingIndicator from "./TypingIndicator.tsx";
-import Copyright from "./Copyright.tsx";
+import { AuthForm } from "./UserAuthorization.tsx";
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
@@ -96,7 +96,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(MAIN_PUBLIC_AGENT);
     const canAttach = Boolean(selectedAgent && String(selectedAgent.id) !== String(MAIN_PUBLIC_AGENT.id));
     const [agentsPollingInterval, setAgentsPollingInterval] = useState<NodeJS.Timeout | null>(null);
-    const hiSentRef = useRef(false);
+// Собираем все пропсы для формы в один объект
+
 
     const GoogleIcon = () => (
         <svg
@@ -524,6 +525,17 @@ Just tell me **what you want your agent to do**, or ask any question about how y
         handleSignInAnonymous();
     }, []);
 
+    const handleGoogleSignIn = async () => {
+        try {
+            const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
+            const { url } = res.data;
+            if (url) window.location.href = url;
+            else setError("Failed to start Google sign-in");
+        } catch (err: any) {
+            setError("Google sign-in failed");
+        }
+    };
+
     const handleResendVerificationEmail = async () => {
         setError(null);
         setResendSuccess(null);
@@ -783,140 +795,29 @@ Just tell me **what you want your agent to do**, or ask any question about how y
             boxShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
         },
     };
-
-    const AuthForm = ({ isMobileForm }: { isMobileForm: boolean }) => (
-        <Box sx={{ width: "100%" }}>
-            <img src="/youagent_me_logo.jpg" alt="youagent.me" loading="lazy" style={{ width: "100%", borderRadius: 10, marginBottom: 12 }} />
-            <Container
-                component="main"
-                sx={
-                    isMobileForm
-                        ? { p: 0 }
-                        : { boxShadow: "0px 6px 22px rgba(0,0,0,0.08)", p: 2, borderRadius: 2, background: "#fff" }
-                }
-            >
-                <Typography component="h1" variant="h5" sx={{ textAlign: "center", mb: 2 }}>
-                    {authMode === "signin" ? "Sign In" : "Sign Up"}
-                </Typography>
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                {resendSuccess && <Alert severity="success" sx={{ mb: 2 }}>{resendSuccess}</Alert>}
-                {emailConfirmationRequired && (
-                    <Box sx={{ mb: 2, textAlign: "center" }}>
-                        <Typography variant="body2" sx={{ mb: 1 }}>
-                            Didn't receive the email?{" "}
-                            {cooldownSeconds > 0 ? (
-                                <Typography component="span" sx={{ color: "text.disabled", fontWeight: 500 }}>
-                                    Resend verification email ({cooldownSeconds}s)
-                                </Typography>
-                            ) : (
-                                <Link
-                                    href="#"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        handleResendVerificationEmail();
-                                    }}
-                                    sx={{ textDecoration: "underline", color: "primary.main" }}
-                                >
-                                    Resend verification email
-                                </Link>
-                            )}
-                        </Typography>
-                    </Box>
-                )}
-                <Box component="form" onSubmit={handleSubmit} noValidate>
-                    {authMode === "signup" && (
-                        <>
-                            <TextField
-                                margin="normal"
-                                required
-                                fullWidth
-                                label="First Name"
-                                value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                            />
-                            <TextField
-                                margin="normal"
-                                required
-                                fullWidth
-                                label="Last Name"
-                                value={lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                            />
-                        </>
-                    )}
-                    <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        label="Email Address"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        autoFocus={authMode === "signin"}
-                    />
-                    <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        label="Password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                    {authMode === "signin" && (
-                        <FormControlLabel
-                            control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} color="primary" />}
-                            label="Remember me"
-                        />
-                    )}
-                    <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>
-                        {authMode === "signin" ? "Sign In" : "Sign Up"}
-                    </Button>
-
-                    {/* Google sign-in button */}
-                    <Button
-                        fullWidth
-                        variant="outlined"
-                        sx={googleButtonSx}
-                        startIcon={
-                            <Box sx={{ width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <GoogleIcon />
-                            </Box>
-                        }
-                        onClick={async () => {
-                            try {
-                                const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
-                                const { url } = res.data;
-                                if (url) window.location.href = url;
-                                else setError("Failed to start Google sign-in");
-                            } catch (err: any) {
-                                setError("Google sign-in failed");
-                            }
-                        }}
-                    >
-                        Sign in with Google
-                    </Button>
-
-                    <Box sx={{ mt: 2, textAlign: "center" }}>
-                        <Link
-                            href="#"
-                            variant="body2"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                setAuthMode(authMode === "signin" ? "signup" : "signin");
-                                setError(null);
-                                setEmailConfirmationRequired(false);
-                                setResendSuccess(null);
-                                setLastErrorRaw(null);
-                            }}
-                        >
-                            {authMode === "signin" ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
-                        </Link>
-                    </Box>
-                </Box>
-            </Container>
-        </Box>
-    );
-
+    const authFormProps = {
+        authMode,
+        setAuthMode,
+        email,
+        setEmail,
+        password,
+        setPassword,
+        firstName,
+        setFirstName,
+        lastName,
+        setLastName,
+        rememberMe,
+        setRememberMe,
+        error,
+        resendSuccess,
+        emailConfirmationRequired,
+        cooldownSeconds,
+        handleSubmit,
+        googleButtonSx,
+        GoogleIcon,
+        handleResendEmail: handleResendVerificationEmail,
+        handleGoogleSignIn: handleGoogleSignIn,
+    };
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
@@ -1046,7 +947,10 @@ Just tell me **what you want your agent to do**, or ask any question about how y
 
                         {/* RIGHT: fixed auth panel */}
                         <Box sx={{ position: "fixed", right: 24, top: "50%", transform: "translateY(-50%)", width: `${AUTH_PANEL_WIDTH}px`, zIndex: AUTH_Z }}>
-                            <AuthForm isMobileForm={false} />
+                            <AuthForm
+                                isMobileForm={false}
+                                {...authFormProps}
+                            />
                         </Box>
                     </>
                 )}
@@ -1069,7 +973,10 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                 background: "#fff",
                             }}
                         >
-                            <AuthForm isMobileForm={true} />
+                            <AuthForm
+                                isMobileForm={true}
+                                {...authFormProps}
+                            />
                         </Paper>
                         {!mobileChatOpen && (
                             <Paper
