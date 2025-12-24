@@ -852,7 +852,7 @@ Just tell me **what you want your agent to do**, or ask any question about how y
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <Box sx={{ height: "84vh", overflow: "hidden" }}>
+            <Box sx={{ height: "calc(95vh - 64px)", overflow: "hidden" }}>
                 {!isMobile && (
                     <>
                         <Box
@@ -977,7 +977,16 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                         </Box>
 
                         {/* RIGHT: fixed auth panel */}
-                        <Box sx={{ position: "fixed", right: 24, top: "50%", transform: "translateY(-50%)", width: `${AUTH_PANEL_WIDTH}px`, zIndex: AUTH_Z }}>
+                        <Box sx={{ position: "fixed", width: {
+                                xs: '100%',
+                                md: 320,
+                                lg: `${AUTH_PANEL_WIDTH}px`,
+                            },
+                            right: {
+                                xs: 24,
+                                md: 54,
+                                lg: 24,
+                            }, top: "50%", transform: "translateY(-50%)", zIndex: AUTH_Z }}>
                             <AuthForm
                                 isMobileForm={false}
                                 {...authFormProps}
