@@ -21,18 +21,16 @@ interface AppNavbarProps {
 }
 
 const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDrawer, page, onNewAgent }) => {
-    // ✅ Теперь хук внутри компонента
     const { currentStep, setCurrentStep } = useTour();
 
     const handleNewAgentClick = () => {
-        onNewAgent();                    // открываем диалог
-        setCurrentStep(currentStep + 1); // двигаем тур на следующий шаг
+        onNewAgent();
+        setCurrentStep(currentStep + 1);
     };
 
     return (
         <AppBar position="fixed" sx={{ width: '100%' }}>
             <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-                {/* Левая часть: меню + New Agent */}
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <IconButton color="inherit" onClick={onToggleDrawer} edge="start">
                         <MenuIcon />
@@ -78,7 +76,6 @@ const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDr
                     {page}
                 </Typography>
 
-                {/* Правая часть: Logout */}
                 <Button
                     color="inherit"
                     onClick={onSignOut}

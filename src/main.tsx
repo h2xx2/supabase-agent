@@ -4,6 +4,8 @@ import App from './App';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CookiesProvider } from 'react-cookie';
 import { type StepType, TourProvider } from '@reactour/tour';
+import { Routes, BrowserRouter, Route } from 'react-router-dom';
+import PrivacyPolicy from './components/PrivacyPolicy';
 
 const theme = createTheme({
     palette: {
@@ -285,10 +287,19 @@ function Root() {
                         setChatOpened={(value: boolean) => setChatOpened(value)}
                         setAgentDeployed={(value: boolean) => setAgentDeployed(value)}
                     >
-                        <App
-                            setChatOpened={setChatOpened}
-                            setAgentDeployed={setAgentDeployed}
-                        />
+                        <BrowserRouter>
+                            <Routes>
+                                <Route
+                                    path="/privacy"
+                                    element={<PrivacyPolicy deviceType="desktop" />}
+                                />
+                                <Route
+                                    path="/"
+                                    element={<App setChatOpened={setChatOpened} setAgentDeployed={setAgentDeployed} />}
+                                />
+
+                            </Routes>
+                        </BrowserRouter>
                     </TourProvider>
                 </CookiesProvider>
             </ThemeProvider>

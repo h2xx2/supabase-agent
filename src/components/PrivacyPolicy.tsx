@@ -1,7 +1,8 @@
 import { Box, Typography } from '@mui/material';
+import PublicAppNavbar from "./PublicAppNavbar.tsx";
 
 // @ts-ignore
-const PrivacyPolicy = ({ deviceType }   ) => {
+const PrivacyPolicy = ({ deviceType, isPublic = true }   ) => {
     return (
         <Box
             sx={{
@@ -11,6 +12,7 @@ const PrivacyPolicy = ({ deviceType }   ) => {
             textAlign: 'left',
     }}
 >
+            {isPublic && <PublicAppNavbar deviceType={deviceType}/>}
     <Typography
         variant={deviceType === 'mobile' ? 'h6' : deviceType === 'tablet' ? 'h5' : 'h5'}
     sx={{ mb: 2 }}

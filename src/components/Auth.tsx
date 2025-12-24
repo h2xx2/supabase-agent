@@ -1,3 +1,4 @@
+// Auth.tsx
 import React, { useEffect, useRef, useState } from "react";
 import {
     Button,
@@ -30,6 +31,7 @@ import axios from "axios";
 import { useCookies } from "react-cookie";
 import {ChatMessage} from "./ChatMessage.tsx";
 import TypingIndicator from "./TypingIndicator.tsx";
+import Copyright from "./Copyright.tsx";
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
@@ -51,7 +53,6 @@ const CHAT_Z = 1700;
 const AGENTS_Z = 1800;
 const AGENTS_BG_Z = 1750;
 const PEEK_Z = 1650;
-
 type Msg = {
     id: string | number;
     direction: "incoming" | "outgoing";
@@ -60,7 +61,6 @@ type Msg = {
     sentTime?: string;
     sender?: string;
 };
-
 const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     // -----------------------
     // AUTH STATE / LOGIC
@@ -82,16 +82,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [, setLastErrorRaw] = useState<any>(null);
     const [isSendingByAgent, setIsSendingByAgent] = useState<Record<string, boolean>>({});
     const [isTypingByAgent, setIsTypingByAgent] = useState<Record<string, boolean>>({});
-
     const MAIN_PUBLIC_AGENT = {
         id: "youagent-master",
         name: "YouAgentMe Wizard",
         desc: "Provides support and helps to create new agents (anonymous).",
-        agentId: "3QQS2QJUKY",
-        aliasId: "IRWADY4L5O",
-        key: "TfnWzfQl-6jDKq7gSvFP",
+        agentId: "FSQXUA9SKO",
+        aliasId: "K89KWUZPWE",
+        key: "rhjebivhrbei87vbie234bru234vberbreu2324vbi4",
     } as Agent;
-
     const [agents, setAgents] = useState<Agent[]>([MAIN_PUBLIC_AGENT]);
     const [messagesByAgent, setMessagesByAgent] = useState<Record<string, Msg[]>>({});
     const [sessions, setSessions] = useState<Record<string, string>>({});
@@ -100,18 +98,44 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [agentsPollingInterval, setAgentsPollingInterval] = useState<NodeJS.Timeout | null>(null);
     const hiSentRef = useRef(false);
 
+    const GoogleIcon = () => (
+        <svg
+            width="18"
+            height="18"
+            viewBox="0 0 18 18"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            <path
+                d="M17.64 9.20455C17.64 8.56636 17.5827 7.95273 17.4764 7.36364H9V10.845H13.8436C13.635 11.97 13.0009 12.9232 12.0477 13.5614V15.8195H14.9564C16.6582 14.2527 17.64 11.9455 17.64 9.20455Z"
+                fill="#4285F4"
+            />
+            <path
+                d="M9 18C11.43 18 13.4673 17.1941 14.9564 15.8195L12.0477 13.5614C11.2418 14.1014 10.2109 14.4205 9 14.4205C6.65591 14.4205 4.67182 12.8373 3.96409 10.71H1.03636V13.0236C2.51545 15.7105 5.39455 18 9 18Z"
+                fill="#34A853"
+            />
+            <path
+                d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40682 3.78409 7.83 3.96409 7.29V4.97636H1.03636C0.402273 6.14318 0 7.51773 0 9C0 10.4823 0.402273 11.8568 1.03636 13.0236L3.96409 10.71Z"
+                fill="#FBBC05"
+            />
+            <path
+                d="M9 3.57955C10.3214 3.57955 11.5077 4.03364 12.4405 4.92545L15.0218 2.34409C13.4632 0.891818 11.4259 0 9 0C5.39455 0 2.51545 2.28955 1.03636 4.97636L3.96409 7.29C4.67182 5.16273 6.65591 3.57955 9 3.57955Z"
+                fill="#EA4335"
+            />
+        </svg>
+    );
+
     useEffect(() => {
         setMessagesByAgent((prev) => {
             const copy = { ...prev };
             agents.forEach((a) => {
                 const id = String(a.id);
                 if (!copy[id]) {
-                    copy[id] = []; // только если ещё нет
+                    copy[id] = [];
                 }
             });
             return copy;
         });
-
         setSessions((prev) => {
             const copy = { ...prev };
             agents.forEach((a) => {
@@ -123,7 +147,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             return copy;
         });
     }, [agents]);
-
 
     useEffect(() => {
         const timers: NodeJS.Timeout[] = [];
@@ -159,7 +182,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                         setUser(user);
                         setCookie("authToken", token, { path: "/" });
                         setCookie("isAnonymous", "false", { path: "/" });
-                        onAuthChange(user); // Только для НЕ анонимных пользователей
+                        onAuthChange(user);
                         window.history.replaceState({}, document.title, window.location.pathname);
                     } else setError("Не удалось обработать ответ сервера");
                 } catch (err: any) {
@@ -168,16 +191,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 }
             }
         };
-
         const storedToken = cookies["authToken"];
         const isAnonymous = cookies["isAnonymous"] === "true";
-
         if (storedToken && isAnonymous) {
             validateToken(storedToken)
                 .then((validUser) => {
                     if (validUser) {
                         setUser(validUser);
-                        // Если это НЕ анонимный пользователь, вызываем onAuthChange
                         if (!isAnonymous) {
                             onAuthChange(validUser);
                         }
@@ -194,11 +214,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         } else {
             handleOAuthCallback().finally(() => setIsLoading(false));
         }
-
         return () => {
             if (cooldownRef.current) clearInterval(cooldownRef.current);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -224,19 +242,16 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
 
     const startAgentsPolling = (userId: string) => {
         if (agentsPollingInterval) clearInterval(agentsPollingInterval);
-
-        // Функция для одного запроса
         const fetchAgents = async () => {
             try {
                 const res = await fetch(`${import.meta.env.VITE_API_GATEWAY_URL}/agents-anonymous`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${cookies["authToken"]}`, // добавь токен, если нужно
+                        Authorization: `Bearer ${cookies["authToken"]}`,
                     },
                     body: JSON.stringify({ user_id: userId }),
                 });
-
                 if (res.ok) {
                     const data = await res.json();
                     if (Array.isArray(data.agents)) {
@@ -249,16 +264,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                             key: a.key,
                             isNew: false,
                         }));
-
                         setAgents(prev => {
                             const existingIds = new Set(prev.map(a => String(a.id)));
                             const newAgents = serverAgents.filter(a => !existingIds.has(String(a.id)));
-
                             if (newAgents.length > 0) {
                                 console.log("New agents detected:", newAgents.map(a => a.name));
                                 newAgents.forEach(a => (a.isNew = true));
                             }
-
                             return [MAIN_PUBLIC_AGENT, ...serverAgents];
                         });
                     }
@@ -267,11 +279,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 console.error("Agents polling error:", err);
             }
         };
-
         fetchAgents();
-
         const interval = setInterval(fetchAgents, 15000);
-
         setAgentsPollingInterval(interval);
     };
 
@@ -291,6 +300,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             return null;
         }
     };
+
     const extractErrorMessage = (err: any): { message: string; raw: any } => {
         try {
             const rawResponse = err?.response ?? err;
@@ -313,6 +323,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             return { message: err?.message ?? "Unknown error", raw: err };
         }
     };
+
     const rawIndicatesEmailNotConfirmed = (raw: any, message: string) => {
         try {
             if (typeof message === "string" && message.includes("Email not confirmed")) return true;
@@ -415,65 +426,48 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             } else setError(message);
         }
     };
-
     const handleSignInAnonymous = async () => {
         setError(null);
         setResendSuccess(null);
         setLastErrorRaw(null);
         setEmailConfirmationRequired(false);
-
         try {
             const existingToken = cookies["authToken"];
             const existingRefreshToken = cookies["refreshToken"];
-
             const headers: any = {};
-
             if (existingToken) {
                 headers["Authorization"] = `Bearer ${existingToken}`;
             }
-
             const storedUserId = cookies["userId"];
-
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/signin-anonymous`,
                 { user_id: storedUserId, refreshToken: existingRefreshToken },
                 { headers }
             );
-
-
             const data = response.data;
-
             if (!data) {
                 setError("Incorrect server response");
                 return;
             }
-
             const access_token = data.access_token;
-
             const refresh_token = data.refresh_token;
-
             const user = data.auth?.user || {
                 id: data.user_id,
                 is_anonymous: true,
                 email: "",
                 phone: ""
             };
-
             if (!access_token || !user) {
                 setLastErrorRaw(data);
                 setError("Incorrect server response: missing token or user");
                 return;
             }
-
-            // сохраняем токен
             setCookie("authToken", access_token, { path: "/" });
             setCookie("userId", user.id, { path: "/" });
             setCookie("isAnonymous", "true", { path: "/" });
             setCookie("refreshToken", refresh_token, { path: "/" });
-
             setUser(user);
 
-            // преобразуем агентов с сервера
             const serverAgents: Agent[] = (data.agents || []).map((a: any) => ({
                 id: a.id,
                 name: a.name,
@@ -483,7 +477,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 key: a.key,
             }));
             setAgents([MAIN_PUBLIC_AGENT, ...serverAgents]);
+
             console.log("Anonymous login successful:", user.id);
+
             const welcomeMessage: Msg = {
                 id: `in-welcome-${Date.now()}`,
                 direction: "incoming",
@@ -510,22 +506,23 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                 ...prev,
                 [String(MAIN_PUBLIC_AGENT.id)]: [welcomeMessage],
             }));
+
+            setSelectedAgent(MAIN_PUBLIC_AGENT);
+
+            if (isMobile) {
+                setMobileChatOpen(true);
+            }
+
         } catch (err: any) {
             console.error("Anonymous login error:", err);
             const { message, raw } = extractErrorMessage(err);
             setError(message);
             setLastErrorRaw(raw);
         }
-        finally {
-
-        }
     };
-
-
     useEffect(() => {
-            handleSignInAnonymous();
+        handleSignInAnonymous();
     }, []);
-
 
     const handleResendVerificationEmail = async () => {
         setError(null);
@@ -555,37 +552,25 @@ Just tell me **what you want your agent to do**, or ask any question about how y
         authMode === "signin" ? handleSignIn() : handleSignUp();
     };
 
-    // -----------------------
-    // CHAT & AGENTS UI + per-agent messages
-    // -----------------------
-
-    // messagesByAgent сохраняет переписку для каждого агента
-
-
     const [mobileChatOpen, setMobileChatOpen] = useState(false);
     const [mobileAgentListOpen, setMobileAgentListOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
     const [viewportHeight, setViewportHeight] = useState<number>(window.innerHeight);
-    const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 900);
-
+    const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 1000);
     const [publicHiSent, setPublicHiSent] = useState(false);
-
     useEffect(() => {
         const onResize = () => {
             setViewportHeight(window.innerHeight);
-            setIsMobile(window.innerWidth < 900);
+            setIsMobile(window.innerWidth < 1000);
         };
         window.addEventListener("resize", onResize);
         return () => window.removeEventListener("resize", onResize);
     }, []);
-
-    // helper: get messages for current agent
     const getCurrentMessages = (): Msg[] => {
         const id = String(selectedAgent?.id ?? "");
         return messagesByAgent[id] ?? [];
     };
-
     const messageListRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
         if (messageListRef.current) messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
@@ -593,7 +578,6 @@ Just tell me **what you want your agent to do**, or ask any question about how y
 
     const handleAgentClick = (a: Agent) => {
         setSelectedAgent(a);
-        // ensure sessionId exists
         setSessions((prev) => {
             const id = String(a.id);
             if (!prev[id]) {
@@ -601,24 +585,20 @@ Just tell me **what you want your agent to do**, or ask any question about how y
             }
             return prev;
         });
-        // Если выбран главный публичный агент — очищаем прикреплённый файл
         if (String(a.id) === String(MAIN_PUBLIC_AGENT.id)) {
             removeAttachedFile();
         }
-
         if (isMobile) {
             setMobileChatOpen(true);
             setMobileAgentListOpen(false);
         }
     };
-
     const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files && e.target.files[0];
         if (!canAttach) {
             if (fileInputRef.current) fileInputRef.current.value = "";
             return;
         }
-
         if (f) {
             setAttachedFileName(f.name);
         } else setAttachedFileName(null);
@@ -627,8 +607,6 @@ Just tell me **what you want your agent to do**, or ask any question about how y
         setAttachedFileName(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
-
-    // helper: read file input to base64 (or null)
     const readFileInputBase64 = async (): Promise<{ base64: string | null; fileName: string | null }> => {
         try {
             const input = fileInputRef.current;
@@ -649,29 +627,18 @@ Just tell me **what you want your agent to do**, or ask any question about how y
             return { base64: null, fileName: null };
         }
     };
-
-    // core send function — добавляет сообщение в текущий чат и (если у агента есть публичный endpoint) делает public-send
     const sendChatMessage = async (msgText?: string, accessToken?: string) => {
         const text = (msgText ?? "").trim();
         const current = selectedAgent;
         if (!current) return;
-
         const agentKey = String(current.id);
-
-        // Проверяем, не идёт ли уже отправка для этого агента
         if (isSendingByAgent[agentKey]) return;
-
         if (!text && !attachedFileName) return;
-
-        // Блокируем отправку сразу
         setIsSendingByAgent(prev => ({ ...prev, [agentKey]: true }));
-
         const agentIdForApi = current.agentId;
         const agentAliasID = current.aliasId;
         const sessionId = sessions[agentKey] ?? generateSessionId();
         const token = accessToken ?? cookies["authToken"];
-
-        // Добавляем исходящее сообщение пользователя
         const outgoing: Msg = {
             id: `out-${Date.now()}`,
             direction: "outgoing",
@@ -680,19 +647,12 @@ Just tell me **what you want your agent to do**, or ask any question about how y
             sentTime: new Date().toISOString(),
             sender: "user",
         };
-
         setMessagesByAgent((prev) => ({
             ...prev,
             [agentKey]: [...(prev[agentKey] ?? []), outgoing],
         }));
-
-        // Показываем индикатор "печатает..."
         setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: true }));
-
-        // Очищаем прикреплённый файл и поле ввода (поле очищается через форму)
         removeAttachedFile();
-
-        // Читаем файл (если был)
         let fileBase64: string | null = null;
         let fileName: string | null = null;
         if (attachedFileName) {
@@ -700,7 +660,6 @@ Just tell me **what you want your agent to do**, or ask any question about how y
             fileBase64 = read.base64;
             fileName = read.fileName;
         }
-
         try {
             const url = `${import.meta.env.VITE_API_GATEWAY_URL}/send-anonymous`;
             const payload = {
@@ -711,7 +670,6 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                 fileBase64,
                 fileName,
             };
-
             const res = await fetch(url, {
                 method: "POST",
                 headers: {
@@ -720,16 +678,12 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                 },
                 body: JSON.stringify(payload),
             });
-
             const { sessionId: returnedSessionId } = await res.json();
             const finalSessionId = returnedSessionId || sessionId;
             setSessions((s) => ({ ...s, [agentKey]: finalSessionId }));
-
-            // Запуск polling (как было)
             const startPolling = (finalSessionId: string) => {
                 let attempts = 0;
                 let pollInterval: ReturnType<typeof setInterval> | null = null;
-
                 const poll = async () => {
                     attempts++;
                     try {
@@ -740,7 +694,6 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                             body: JSON.stringify({ sessionId: finalSessionId }),
                         });
                         const data = await pollRes.json();
-
                         if (data?.response) {
                             const incoming: Msg = {
                                 id: `in-${Date.now()}`,
@@ -753,41 +706,32 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                 ...prev,
                                 [agentKey]: [...(prev[agentKey] ?? []), incoming],
                             }));
-
                             if (String(current.id) === String(MAIN_PUBLIC_AGENT.id)) {
                                 const user_id = cookies["userId"];
                                 if (user_id) startAgentsPolling(user_id);
                             }
-
-                            // Ответ получен — снимаем все блокировки
                             setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: false }));
                             setIsSendingByAgent((prev) => ({ ...prev, [agentKey]: false }));
                             if (pollInterval) clearInterval(pollInterval);
                             return;
                         }
-
                         if (data?.files) {
                             setSessionFiles(finalSessionId, data.files);
                         }
                     } catch (pollErr) {
                         console.error("Polling error:", pollErr);
                     }
-
                     if (attempts >= 150) {
                         clearInterval(pollInterval!);
                         setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: false }));
                         setIsSendingByAgent((prev) => ({ ...prev, [agentKey]: false }));
                     }
                 };
-
                 poll();
                 pollInterval = setInterval(poll, 2000);
             };
-
             startPolling(finalSessionId);
-
         } catch (err: any) {
-            // Ошибка отправки
             const incoming: Msg = {
                 id: `in-err-${Date.now()}`,
                 direction: "incoming",
@@ -799,45 +743,192 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                 ...prev,
                 [agentKey]: [...(prev[agentKey] ?? []), incoming],
             }));
-
-            // Снимаем блокировку даже при ошибке
             setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: false }));
             setIsSendingByAgent((prev) => ({ ...prev, [agentKey]: false }));
         }
     };
-
-
     useEffect(() => {
-
     }, [isLoading, cookies, publicHiSent]);
-
-
-
-
-
     function generateSessionId() {
         return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
     }
+    const setSessionFiles = (sessionId: string, files: any) => {
+        console.log("Session files for", sessionId, files);
+    };
 
     if (isLoading) return <></>;
-
-    // -----------------------
-    // RENDER (UI unchanged apart from using currentMessages)
-    // -----------------------
     const currentMessages = getCurrentMessages();
+
+    const googleButtonSx = {
+        mt: 2,
+        mb: 2,
+        backgroundColor: '#FFFFFF',
+        color: '#444444',
+        borderColor: '#888888',
+        borderWidth: '1px',
+        borderRadius: '5px',
+        boxShadow: '1px 1px 1px rgba(0, 0, 0, 0.2)',
+        textTransform: 'none',
+        fontFamily: 'Roboto, Arial, sans-serif',
+        fontWeight: 700,
+        fontSize: '14px',
+        height: '42px',
+        padding: '0 24px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        '&:hover': {
+            backgroundColor: '#F8F8F8',
+            borderColor: '#888888',
+            boxShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
+        },
+    };
+
+    const AuthForm = ({ isMobileForm }: { isMobileForm: boolean }) => (
+        <Box sx={{ width: "100%" }}>
+            <img src="/youagent_me_logo.jpg" alt="youagent.me" loading="lazy" style={{ width: "100%", borderRadius: 10, marginBottom: 12 }} />
+            <Container
+                component="main"
+                sx={
+                    isMobileForm
+                        ? { p: 0 }
+                        : { boxShadow: "0px 6px 22px rgba(0,0,0,0.08)", p: 2, borderRadius: 2, background: "#fff" }
+                }
+            >
+                <Typography component="h1" variant="h5" sx={{ textAlign: "center", mb: 2 }}>
+                    {authMode === "signin" ? "Sign In" : "Sign Up"}
+                </Typography>
+                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                {resendSuccess && <Alert severity="success" sx={{ mb: 2 }}>{resendSuccess}</Alert>}
+                {emailConfirmationRequired && (
+                    <Box sx={{ mb: 2, textAlign: "center" }}>
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                            Didn't receive the email?{" "}
+                            {cooldownSeconds > 0 ? (
+                                <Typography component="span" sx={{ color: "text.disabled", fontWeight: 500 }}>
+                                    Resend verification email ({cooldownSeconds}s)
+                                </Typography>
+                            ) : (
+                                <Link
+                                    href="#"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handleResendVerificationEmail();
+                                    }}
+                                    sx={{ textDecoration: "underline", color: "primary.main" }}
+                                >
+                                    Resend verification email
+                                </Link>
+                            )}
+                        </Typography>
+                    </Box>
+                )}
+                <Box component="form" onSubmit={handleSubmit} noValidate>
+                    {authMode === "signup" && (
+                        <>
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                label="First Name"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                            />
+                            <TextField
+                                margin="normal"
+                                required
+                                fullWidth
+                                label="Last Name"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                            />
+                        </>
+                    )}
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        label="Email Address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        autoFocus={authMode === "signin"}
+                    />
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    {authMode === "signin" && (
+                        <FormControlLabel
+                            control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} color="primary" />}
+                            label="Remember me"
+                        />
+                    )}
+                    <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>
+                        {authMode === "signin" ? "Sign In" : "Sign Up"}
+                    </Button>
+
+                    {/* Google sign-in button */}
+                    <Button
+                        fullWidth
+                        variant="outlined"
+                        sx={googleButtonSx}
+                        startIcon={
+                            <Box sx={{ width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <GoogleIcon />
+                            </Box>
+                        }
+                        onClick={async () => {
+                            try {
+                                const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
+                                const { url } = res.data;
+                                if (url) window.location.href = url;
+                                else setError("Failed to start Google sign-in");
+                            } catch (err: any) {
+                                setError("Google sign-in failed");
+                            }
+                        }}
+                    >
+                        Sign in with Google
+                    </Button>
+
+                    <Box sx={{ mt: 2, textAlign: "center" }}>
+                        <Link
+                            href="#"
+                            variant="body2"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setAuthMode(authMode === "signin" ? "signup" : "signin");
+                                setError(null);
+                                setEmailConfirmationRequired(false);
+                                setResendSuccess(null);
+                                setLastErrorRaw(null);
+                            }}
+                        >
+                            {authMode === "signin" ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                        </Link>
+                    </Box>
+                </Box>
+            </Container>
+        </Box>
+    );
 
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <Box sx={{ height: "83vh", overflow: "hidden" }}>
+            <Box sx={{ height: "84vh", overflow: "hidden" }}>
                 {!isMobile && (
                     <>
                         <Box
                             sx={{
                                 position: "fixed",
                                 left: 24,
-                                top: 24,
-                                bottom: 24,
+                                top: 40,
+                                bottom: 40,
                                 right: `${AUTH_PANEL_WIDTH + 48}px`,
                                 borderRadius: 2,
                                 boxShadow: 3,
@@ -953,55 +1044,14 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                             </Box>
                         </Box>
 
-                        {/* RIGHT: fixed auth panel (всегда поверх) */}
+                        {/* RIGHT: fixed auth panel */}
                         <Box sx={{ position: "fixed", right: 24, top: "50%", transform: "translateY(-50%)", width: `${AUTH_PANEL_WIDTH}px`, zIndex: AUTH_Z }}>
-                            <Box sx={{ width: "100%" }}>
-                                <img src="/youagent_me_logo.jpg" alt="youagent.me" loading="lazy" style={{ width: "100%", borderRadius: 10, marginBottom: 12 }} />
-                                <Container component="main" sx={{ boxShadow: "0px 6px 22px rgba(0,0,0,0.08)", p: 2, borderRadius: 2, background: "#fff" }}>
-                                    <Typography component="h1" variant="h5" sx={{ textAlign: "center", mb: 2 }}>{authMode === "signin" ? "Sign In" : "Sign Up"}</Typography>
-                                    {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                                    {resendSuccess && <Alert severity="success" sx={{ mb: 2 }}>{resendSuccess}</Alert>}
-                                    {emailConfirmationRequired && (
-                                        <Box sx={{ mb: 2, textAlign: "center" }}>
-                                            <Typography variant="body2" sx={{ mb: 1 }}>
-                                                Didn't receive the email?{" "}
-                                                {cooldownSeconds > 0 ? <Typography component="span" sx={{ color: "text.disabled", fontWeight: 500 }}>Resend verification email ({cooldownSeconds}s)</Typography> :
-                                                    <Link href="#" onClick={(e) => { e.preventDefault(); handleResendVerificationEmail(); }} sx={{ textDecoration: "underline", color: "primary.main" }}>Resend verification email</Link>}
-                                            </Typography>
-                                        </Box>
-                                    )}
-                                    <Box component="form" onSubmit={handleSubmit} noValidate>
-                                        {authMode === "signup" && <>
-                                            <TextField margin="normal" required fullWidth label="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                                            <TextField margin="normal" required fullWidth label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                                        </>}
-                                        <TextField margin="normal" required fullWidth label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus={authMode === "signin"} />
-                                        <TextField margin="normal" required fullWidth label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                                        {authMode === "signin" && <FormControlLabel control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} color="primary" />} label="Remember me" />}
-                                        <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>{authMode === "signin" ? "Sign In" : "Sign Up"}</Button>
-                                        <Button fullWidth variant="outlined" sx={{ mt: 2 }} onClick={async () => {
-                                            try {
-                                                const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
-                                                const { url } = res.data;
-                                                if (url) window.location.href = url;
-                                                else setError("Failed to start Google sign-in");
-                                            } catch (err: any) {
-                                                setError("Google sign-in failed");
-                                            }
-                                        }}>Sign in with Google</Button>
-                                        <Box sx={{ mt: 2, textAlign: "center" }}>
-                                            <Link href="#" variant="body2" onClick={(e) => { e.preventDefault(); setAuthMode(authMode === "signin" ? "signup" : "signin"); setError(null); setEmailConfirmationRequired(false); setResendSuccess(null); setLastErrorRaw(null); }}>
-                                                {authMode === "signin" ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
-                                            </Link>
-                                        </Box>
-                                    </Box>
-                                </Container>
-                            </Box>
+                            <AuthForm isMobileForm={false} />
                         </Box>
                     </>
                 )}
 
-                {/* MOBILE UI (логика идентична — используем getCurrentMessages & sendChatMessage) */}
+                {/* MOBILE UI */}
                 {isMobile && (
                     <>
                         <Paper
@@ -1019,50 +1069,8 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                 background: "#fff",
                             }}
                         >
-                            <Box sx={{ width: "100%" }}>
-                                <img src="/youagent_me_logo.jpg" alt="youagent.me" loading="lazy" style={{ width: "100%", borderRadius: 10, marginBottom: 12 }} />
-                                <Container component="main" sx={{ p: 0 }}>
-                                    <Typography component="h1" variant="h5" sx={{ textAlign: "center", mb: 2 }}>{authMode === "signin" ? "Sign In" : "Sign Up"}</Typography>
-                                    {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                                    {resendSuccess && <Alert severity="success" sx={{ mb: 2 }}>{resendSuccess}</Alert>}
-                                    {emailConfirmationRequired && (
-                                        <Box sx={{ mb: 2, textAlign: "center" }}>
-                                            <Typography variant="body2" sx={{ mb: 1 }}>
-                                                Didn't receive the email?{" "}
-                                                {cooldownSeconds > 0 ? <Typography component="span" sx={{ color: "text.disabled", fontWeight: 500 }}>Resend verification email ({cooldownSeconds}s)</Typography> :
-                                                    <Link href="#" onClick={(e) => { e.preventDefault(); handleResendVerificationEmail(); }} sx={{ textDecoration: "underline", color: "primary.main" }}>Resend verification email</Link>}
-                                            </Typography>
-                                        </Box>
-                                    )}
-                                    <Box component="form" onSubmit={handleSubmit} noValidate>
-                                        {authMode === "signup" && <>
-                                            <TextField margin="normal" required fullWidth label="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                                            <TextField margin="normal" required fullWidth label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                                        </>}
-                                        <TextField margin="normal" required fullWidth label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus={authMode === "signin"} />
-                                        <TextField margin="normal" required fullWidth label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                                        {authMode === "signin" && <FormControlLabel control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} color="primary" />} label="Remember me" />}
-                                        <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>{authMode === "signin" ? "Sign In" : "Sign Up"}</Button>
-                                        <Button fullWidth variant="outlined" sx={{ mt: 2 }} onClick={async () => {
-                                            try {
-                                                const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
-                                                const { url } = res.data;
-                                                if (url) window.location.href = url;
-                                                else setError("Failed to start Google sign-in");
-                                            } catch (err: any) {
-                                                setError("Google sign-in failed");
-                                            }
-                                        }}>Sign in with Google</Button>
-                                        <Box sx={{ mt: 2, textAlign: "center" }}>
-                                            <Link href="#" variant="body2" onClick={(e) => { e.preventDefault(); setAuthMode(authMode === "signin" ? "signup" : "signin"); setError(null); setEmailConfirmationRequired(false); setResendSuccess(null); setLastErrorRaw(null); }}>
-                                                {authMode === "signin" ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
-                                            </Link>
-                                        </Box>
-                                    </Box>
-                                </Container>
-                            </Box>
+                            <AuthForm isMobileForm={true} />
                         </Paper>
-
                         {!mobileChatOpen && (
                             <Paper
                                 elevation={6}
@@ -1087,7 +1095,17 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                     <Box sx={{ flex: 1 }}>
                                         <Typography variant="subtitle2">{selectedAgent?.name}</Typography>
                                         <Typography variant="body2" color="text.secondary" noWrap>
-                                            {currentMessages.length ? (currentMessages[currentMessages.length - 1].message ?? currentMessages[currentMessages.length - 1].attachedFileName ?? "") : ""}
+                                            {currentMessages.length
+                                                ? ((currentMessages[currentMessages.length - 1].message ??
+                                                    currentMessages[currentMessages.length - 1].attachedFileName ??
+                                                    "")
+                                                    .length > 35
+                                                    ? (currentMessages[currentMessages.length - 1].message ??
+                                                    currentMessages[currentMessages.length - 1].attachedFileName ??
+                                                    "").slice(0, 35) + "…"
+                                                    : (currentMessages[currentMessages.length - 1].message ??
+                                                        currentMessages[currentMessages.length - 1].attachedFileName))
+                                                : ""}
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -1100,7 +1118,6 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                 </IconButton>
                             </Paper>
                         )}
-
                         {mobileChatOpen && selectedAgent && (
                             <Paper
                                 role="dialog"
@@ -1176,7 +1193,6 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                 </Box>
                             </Paper>
                         )}
-
                         {mobileAgentListOpen && (
                             <>
                                 <Box sx={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.45)", zIndex: AGENTS_BG_Z }} onClick={() => setMobileAgentListOpen(false)} />

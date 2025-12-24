@@ -39,6 +39,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import PolicyIcon from '@mui/icons-material/Policy';
 import DescriptionIcon from '@mui/icons-material/Description';
+import CodeIcon from '@mui/icons-material/Code';
 import Auth from './components/Auth';
 import GlobalLoader from './components/GlobalLoader';
 import {
@@ -55,6 +56,7 @@ import Copyright from './components/Copyright';
 import PrivacyPolicy from "./components/PrivacyPolicy.tsx";
 import TermsAndConditions from "./components/TermsAndConditions";
 import TermsAndConditionAcceptanceDialog from "./components/TermsAndConditionAcceptanceDialog";
+import DevelopmentPage from './components/DevelopmentPage';
 import AddAgentDialog from "./components/CreateAgent.tsx";
 
 interface Agent {
@@ -77,6 +79,7 @@ interface Agent {
 
 const Page = {
     AGENTS: "My Agents",
+    DEVELOPMENT: "Development",
     SETTINGS: "Settings",
     PRIVACY_POLICY: "Privacy Policy",
     TERMS_AND_CONDITIONS: "Terms and Conditions",
@@ -122,18 +125,22 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [termsDialogOpen, setTermsDialogOpen] = useState(false);
     const messageListRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLDivElement | null>(null);
+    const [showNotification, setShowNotification] = useState(true);
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const SUPPORTED_EXTENSIONS = [
         '.pdf', '.txt', '.doc', '.docx', '.csv', '.xls', '.xlsx'
     ];
+
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
     const deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
     const [messageListHeight, setMessageListHeight] = useState<number>(0);
     const tour = useTour() as any;
+    const props = {deviceType: deviceType, isPublic: false};
+
 
     useEffect(() => {
         if (!chatOpen) {
@@ -1219,22 +1226,24 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                 : deviceType === 'tablet'
                                                                                     ? '0.85rem'
                                                                                     : '0.9rem',
-                                                                        whiteSpace: 'pre-wrap',   // перенос строк
-                                                                        wordBreak: 'break-word',  // ломаем длинные слова
-                                                                        overflowX: 'auto',        // горизонтальный скролл, если совсем не помещается
+                                                                        whiteSpace: 'pre-wrap',
+                                                                        wordBreak: 'break-word',
+                                                                        overflowX: 'auto',
                                                                         mb: 1,
-                                                                        maxWidth: '100%',         // ограничиваем ширину
+                                                                        maxWidth: '100%',
                                                                     }}
                                                                 >
                                                                     {`<script
-  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
+  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
-  data-bottom-desktop="25"
-  data-right-desktop="25"
-  data-bottom-mobile="10"
-  data-right-mobile="10"
+  data-vert-align="bottom"
+  data-hor-align="right"
+  data-hor-offset-desktop="25"
+  data-vert-offset-desktop="25"
+  data-hor-offset-mobile="10"
+  data-vert-offset-mobile="10"
 ></script>`}
                                                                 </Box>
                                                                 <Button
@@ -1243,14 +1252,16 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     onClick={() => {
                                                                         navigator.clipboard
                                                                             .writeText(`<script
-  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
+  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
-  data-bottom-desktop="25"
-  data-right-desktop="25"
-  data-bottom-mobile="10"
-  data-right-mobile="10"
+  data-vert-align="bottom"
+  data-hor-align="right"
+  data-hor-offset-desktop="25"
+  data-vert-offset-desktop="25"
+  data-hor-offset-mobile="10"
+  data-vert-offset-mobile="10"
 ></script>`)
                                                                             .then(() => {
                                                                                 alert('The script has been copied to the clipboard!');
@@ -1274,6 +1285,113 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                 </Button>
                                                             </AccordionDetails>
                                                         </Accordion>
+                                                        <Accordion sx={{ mt: 2, width: '100%' }}>
+                                                            <AccordionSummary
+                                                                expandIcon={<ExpandMoreIcon />}
+                                                                aria-controls="api-credentials-content"
+                                                                id="api-credentials-header"
+                                                                sx={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    backgroundColor: '#f0f0f0',
+                                                                }}
+                                                            >
+                                                                <Typography
+                                                                    sx={{
+                                                                        fontWeight: 'bold',
+                                                                        fontSize:
+                                                                            deviceType === 'mobile'
+                                                                                ? '0.9rem'
+                                                                                : deviceType === 'tablet'
+                                                                                    ? '0.95rem'
+                                                                                    : '1rem',
+                                                                    }}
+                                                                >
+                                                                    API Credentials
+                                                                </Typography>
+                                                            </AccordionSummary>
+                                                            <AccordionDetails
+                                                                sx={{
+                                                                    backgroundColor: '#e0e0e0',
+                                                                    p: 2,
+                                                                    borderRadius: '4px',
+                                                                }}
+                                                            >
+                                                                <Box
+                                                                    sx={{
+                                                                        fontFamily: 'monospace',
+                                                                        fontSize:
+                                                                            deviceType === 'mobile'
+                                                                                ? '0.85rem'
+                                                                                : deviceType === 'tablet'
+                                                                                    ? '0.9rem'
+                                                                                    : '0.95rem',
+                                                                        lineHeight: 1.6,
+                                                                        mb: 2,
+                                                                    }}
+                                                                >
+                                                                    <div><strong>AGENT_ID</strong> = "{agent.agent_id}"</div>
+                                                                    <div><strong>API_KEY</strong> = "{agent.key}"</div>
+                                                                    <div><strong>API_ENDPOINT</strong> = "https://api.youagent.me"</div>
+                                                                </Box>
+                                                                <Typography
+                                                                    variant="body2"
+                                                                    sx={{
+                                                                        fontSize:
+                                                                            deviceType === 'mobile'
+                                                                                ? '0.8rem'
+                                                                                : deviceType === 'tablet'
+                                                                                    ? '0.85rem'
+                                                                                    : '0.9rem',
+                                                                        color: 'text.secondary',
+                                                                        mb: 1,
+                                                                    }}
+                                                                >
+                                                                    <strong>Note:</strong> Check the{' '}
+                                                                    <Link
+                                                                        href="#"
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            setPage(Page.DEVELOPMENT);
+                                                                        }}
+                                                                        sx={{
+                                                                            color: '#1976d2',
+                                                                            textDecoration: 'underline',
+                                                                            cursor: 'pointer',
+                                                                            fontWeight: 500,
+                                                                        }}
+                                                                    >
+                                                                        Development page
+                                                                    </Link>{' '}
+                                                                     to learn how to programmatically access the agent.
+                                                                </Typography>
+                                                                <Button
+                                                                    variant="outlined"
+                                                                    size="small"
+                                                                    onClick={() => {
+                                                                        const credentials = `AGENT_ID = "${agent.agent_id}"
+API_KEY = "${agent.key}"
+API_ENDPOINT = "https://api.youagent.me"`;
+                                                                        navigator.clipboard.writeText(credentials).then(() => {
+                                                                            alert('API credentials copied to clipboard!');
+                                                                        }).catch(() => {
+                                                                            alert('Failed to copy credentials');
+                                                                        });
+                                                                    }}
+                                                                    sx={{
+                                                                        fontSize:
+                                                                            deviceType === 'mobile'
+                                                                                ? '0.8rem'
+                                                                                : deviceType === 'tablet'
+                                                                                    ? '0.85rem'
+                                                                                    : '0.9rem',
+                                                                        textTransform: 'none',
+                                                                    }}
+                                                                >
+                                                                    Copy Credentials
+                                                                </Button>
+                                                            </AccordionDetails>
+                                                        </Accordion>
                                                     </TableCell>
                                                 </TableRow>
                                             )}
@@ -1291,6 +1409,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     </Box>
                 </Box>
             );
+            case Page.DEVELOPMENT:
+                return <DevelopmentPage deviceType={deviceType} />;
             case Page.SETTINGS: return <Settings {...{
                 callCount: agents.reduce((callCount, agent) => {
                     callCount.month += agent.call_count || 0;
@@ -1299,11 +1419,12 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                 }, {month: 0, year: 0}),
                 deviceType,
                 user,
+                setUser,
                 setGlobalLoading
             }} />
             case Page.PRIVACY_POLICY:
                 return (
-                    <PrivacyPolicy {...{deviceType}}/>
+                    <PrivacyPolicy {...props}/>
                 );
             case Page.TERMS_AND_CONDITIONS:
                 return <TermsAndConditions />;
@@ -1329,12 +1450,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     },
                 }}
             />
-            {/*<ChatWidget*/}
-            {/*    agents={agents}*/}
-            {/*    user={user}*/}
-            {/*    deviceType={deviceType}*/}
-            {/*    getAuthToken={getAuthToken} // Передайте функцию для авторизованных чатов, если нужно*/}
-            {/*/>*/}
             <Box
                 sx={{
                     display: 'flex',
@@ -1372,7 +1487,106 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                 onNewAgent: () => setOpenAddDialog(true)
                             }}
                         />
-
+                        {/*{showNotification &&*/}
+                        {/*    user?.plan_type === 'free' &&*/}
+                        {/*    !user?.action_used && (*/}
+                        {/*        <Alert*/}
+                        {/*            severity="warning"*/}
+                        {/*            sx={{*/}
+                        {/*                backgroundColor: '#fff8e1',*/}
+                        {/*                color: '#5d4037',*/}
+                        {/*                border: '1px solid #ffe082',*/}
+                        {/*                borderRadius: 2,*/}
+                        {/*                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',*/}
+                        {/*                p: deviceType === 'mobile' ? 2 : 2.5,*/}
+                        {/*                display: 'flex',*/}
+                        {/*                flexDirection: deviceType === 'mobile' ? 'column' : 'row',*/}
+                        {/*                alignItems: 'center',*/}
+                        {/*                justifyContent: 'space-between',*/}
+                        {/*                gap: deviceType === 'mobile' ? 1.5 : 2,*/}
+                        {/*                position: 'relative',*/}
+                        {/*            }}*/}
+                        {/*            action={*/}
+                        {/*                deviceType === 'mobile' ? (*/}
+                        {/*                    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 1.5 }}>*/}
+                        {/*                        <Button*/}
+                        {/*                            fullWidth*/}
+                        {/*                            variant="contained"*/}
+                        {/*                            color="primary"*/}
+                        {/*                            onClick={() => {*/}
+                        {/*                                setPage(Page.SETTINGS);*/}
+                        {/*                                setDrawerOpen(false);*/}
+                        {/*                                setShowNotification(false);*/}
+                        {/*                            }}*/}
+                        {/*                            sx={{*/}
+                        {/*                                fontWeight: 600,*/}
+                        {/*                                textTransform: 'none',*/}
+                        {/*                                borderRadius: 2,*/}
+                        {/*                            }}*/}
+                        {/*                        >*/}
+                        {/*                            Upgrade Now*/}
+                        {/*                        </Button>*/}
+                        {/*                    </Box>*/}
+                        {/*                ) : (*/}
+                        {/*                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>*/}
+                        {/*                        <Button*/}
+                        {/*                            variant="contained"*/}
+                        {/*                            color="primary"*/}
+                        {/*                            size="small"*/}
+                        {/*                            onClick={() => {*/}
+                        {/*                                setPage(Page.SETTINGS);*/}
+                        {/*                                setDrawerOpen(false);*/}
+                        {/*                                setShowNotification(false);*/}
+                        {/*                            }}*/}
+                        {/*                            sx={{*/}
+                        {/*                                fontWeight: 600,*/}
+                        {/*                                textTransform: 'none',*/}
+                        {/*                                borderRadius: 2,*/}
+                        {/*                            }}*/}
+                        {/*                        >*/}
+                        {/*                            Upgrade Now*/}
+                        {/*                        </Button>*/}
+                        {/*                        <IconButton*/}
+                        {/*                            aria-label="close"*/}
+                        {/*                            color="inherit"*/}
+                        {/*                            size="small"*/}
+                        {/*                            onClick={() => setShowNotification(false)}*/}
+                        {/*                            sx={{*/}
+                        {/*                                color: '#5d4037',*/}
+                        {/*                                transition: '0.2s',*/}
+                        {/*                                '&:hover': { color: '#3e2723' },*/}
+                        {/*                            }}*/}
+                        {/*                        >*/}
+                        {/*                            <CloseIcon fontSize="small" />*/}
+                        {/*                        </IconButton>*/}
+                        {/*                    </Box>*/}
+                        {/*                )*/}
+                        {/*            }*/}
+                        {/*        >*/}
+                        {/*            {deviceType === 'mobile' && (*/}
+                        {/*                <IconButton*/}
+                        {/*                    aria-label="close"*/}
+                        {/*                    color="inherit"*/}
+                        {/*                    size="small"*/}
+                        {/*                    onClick={() => setShowNotification(false)}*/}
+                        {/*                    sx={{*/}
+                        {/*                        position: 'absolute',*/}
+                        {/*                        top: 8,*/}
+                        {/*                        right: 8,*/}
+                        {/*                        color: '#5d4037',*/}
+                        {/*                        transition: '0.2s',*/}
+                        {/*                        '&:hover': { color: '#3e2723' },*/}
+                        {/*                    }}*/}
+                        {/*                >*/}
+                        {/*                    <CloseIcon fontSize="small" />*/}
+                        {/*                </IconButton>*/}
+                        {/*            )}*/}
+                        {/*            <Box sx={{ fontSize: 15, lineHeight: 1.5 }}>*/}
+                        {/*                <strong>You’re on the Free plan.</strong> To unlock more features and higher limits,*/}
+                        {/*                upgrade to the <strong>Personal plan</strong>. Enjoy a 3-month free trial — no credit card required.*/}
+                        {/*            </Box>*/}
+                        {/*        </Alert>*/}
+                        {/*    )}*/}
 
                         <Drawer
                             open={drawerOpen}
@@ -1405,6 +1619,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                         <ViewListIcon />
                                     </ListItemIcon>
                                     <ListItemText primary="Agents" sx={{ textAlign: 'left' }} />
+                                </ListItemButton>
+
+                                <ListItemButton onClick={() => { toggleDrawer(); setPage(Page.DEVELOPMENT); }}>
+                                    <ListItemIcon><CodeIcon /></ListItemIcon>
+                                    <ListItemText primary="Development" />
                                 </ListItemButton>
 
                                 <ListItemButton onClick={() => {
@@ -1452,7 +1671,16 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
                     <AddAgentDialog
                         open={openAddDialog}
-                        onClose={() => setOpenAddDialog(false)}
+                        onClose={() => {
+                            setOpenAddDialog(false);
+                            setNewAgent({ name: '', instructions: '' });
+                            setEnableHttpAction(false);
+                            setEnableEmailAction(false);
+                            setNewFile(null);
+                            setSelectedBlueprint('');
+                            setInitialKnowledgeBaseFile(null);
+                            setErrorMessage(null);
+                        }}
                         onAddAgent={() => setOpenAddDialog(false)}
                         deviceType={deviceType}
                         getAuthToken={getAuthToken}
@@ -1462,10 +1690,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                         setAgents={setAgents}
                         fetchAgents={fetchAgents}
                         setAgentCreated={(value: boolean) => {
-                            // когда диалог сообщает, что агент создан — продвигаем тур
                             if (value) {
                                 try {
-                                    // 9 — тот индекс шага, на который вы раньше пытались переходить
                                     setCurrentStep(9);
                                 } catch (e) {
                                     console.warn('Не удалось установить шаг тура:', e);
@@ -1785,11 +2011,14 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                 <MessageList
                                     ref={messageListRef}
                                     style={{
-                                        height: messageListHeight > 0 ? `${messageListHeight}px` : '0px',
+                                        height: messageListHeight > 0 ? messageListHeight : 0,
                                         overflowY: 'auto',
                                         overflowX: 'hidden',
-                                        padding: deviceType === 'mobile' ? '8px' : '12px',
-                                        paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '12px',
+                                        padding: deviceType === 'mobile' ? '8px' : '10px',
+                                        paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '0px',
+                                        WebkitTextSizeAdjust: '100%',
+                                        touchAction: 'pan-y',
+                                        overscrollBehavior: 'none',
                                     }}
                                 >
                                     {chatMessages.map((msg, index) => {
@@ -1797,11 +2026,9 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                         const textMessage = msg.message?.trim();
                                         const isUserMessage = msg.direction === 'outgoing';
 
-                                        // 1. Текст + файл — два отдельных облачка
                                         if (isUserMessage && hasFile && textMessage) {
                                             return (
                                                 <React.Fragment key={index}>
-                                                    {/* Текстовое сообщение */}
                                                     <Message
                                                         model={{
                                                             message: textMessage,
@@ -1811,18 +2038,18 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                         }}
                                                     />
 
+                                                    <Message
+                                                        model={{
+                                                            message: '',
+                                                            direction: 'outgoing',
+                                                            position: 'single',
+                                                            sender: 'user',
+                                                        }}
+                                                    >
                                                         <Message.CustomContent>
                                                             <Box
                                                                 sx={{
-                                                                    display: 'flex',
-                                                                    justifyContent: 'flex-end',   // вот это главное — прижимает вправо
-                                                                    padding: '4px 0px 4px 0px', // отступы как у обычных сообщений справа
-                                                                    width: '100%',
-                                                                }}
-                                                            >
-                                                            <Box
-                                                                sx={{
-                                                                    background: '#ffffff',
+                                                                    background: '#f5fbff',
                                                                     border: '1px solid #90caf9',
                                                                     borderRadius: 2,
                                                                     py: 1,
@@ -1830,6 +2057,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     display: 'inline-flex',
                                                                     alignItems: 'center',
                                                                     gap: 1,
+                                                                    maxWidth: '220px',
                                                                     boxShadow: '0 1px 3px rgba(25,118,210,0.12)',
                                                                     fontSize: '0.85rem',
                                                                 }}
@@ -1849,13 +2077,12 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     {(msg as any).attachedFileName}
                                                                 </Typography>
                                                             </Box>
-                                                            </Box>
                                                         </Message.CustomContent>
+                                                    </Message>
                                                 </React.Fragment>
                                             );
                                         }
 
-                                        // 2. Только файл (без текста)
                                         if (isUserMessage && hasFile && !textMessage) {
                                             return (
                                                 <Message
@@ -1902,7 +2129,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                             );
                                         }
 
-                                        // 3. Обычное текстовое сообщение
                                         return (
                                             <Message
                                                 key={index}
@@ -1929,7 +2155,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     }}
                                     data-tour="chat-dialog"
                                 >
-                                    {/* Превью прикреплённого файла */}
                                     {attachedFileName && (
                                         <Box
                                             sx={{
@@ -1978,7 +2203,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     />
 
                                     <MessageInput
-                                        placeholder="Write a message or attach a file..."
+                                        placeholder="Enter a message...."
                                         onSend={sendChatMessage}
                                         attachButton={true}
                                         onAttachClick={() => fileInputRef.current?.click()}

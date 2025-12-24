@@ -467,6 +467,17 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     }, [open, setAgentCreated]);
 
     useEffect(() => {
+        if (!open) {
+            setNewAgent({ name: '', instructions: '' });
+            setEnableHttpAction(false);
+            setEnableEmailAction(false);
+            setNewFile(null);
+            setSelectedBlueprint('');
+            setBlueprintInteracted(false);
+        }
+    }, [open]);
+
+    useEffect(() => {
         skipBlueprintRef.current = skipBlueprint;
     }, [skipBlueprint]);
 
