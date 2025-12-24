@@ -572,12 +572,38 @@ Just tell me **what you want your agent to do**, or ask any question about how y
     const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 1000);
     const [publicHiSent, setPublicHiSent] = useState(false);
     useEffect(() => {
-        const onResize = () => {
-            setViewportHeight(window.innerHeight);
+        const handleVisualResize = () => {
+            // Если браузер поддерживает visualViewport (почти все современные мобильные)
+            if (window.visualViewport) {
+                setViewportHeight(window.visualViewport.height);
+                // Сдвигаем скролл, чтобы поле ввода не уезжало
+                window.scrollTo(0, 0);
+            } else {
+                // Фоллбэк для старых браузеров
+                setViewportHeight(window.innerHeight);
+            }
             setIsMobile(window.innerWidth < 1000);
         };
-        window.addEventListener("resize", onResize);
-        return () => window.removeEventListener("resize", onResize);
+
+        // Инициализация
+        handleVisualResize();
+
+        // Слушаем обычный resize
+        window.addEventListener("resize", handleVisualResize);
+
+        // Слушаем специфичные изменения визуального вьюпорта (клавиатура)
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener("resize", handleVisualResize);
+            window.visualViewport.addEventListener("scroll", handleVisualResize);
+        }
+
+        return () => {
+            window.removeEventListener("resize", handleVisualResize);
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener("resize", handleVisualResize);
+                window.visualViewport.removeEventListener("scroll", handleVisualResize);
+            }
+        };
     }, []);
     const getCurrentMessages = (): Msg[] => {
         const id = String(selectedAgent?.id ?? "");
@@ -585,8 +611,13 @@ Just tell me **what you want your agent to do**, or ask any question about how y
     };
     const messageListRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
-        if (messageListRef.current) messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
-    }, [messagesByAgent, mobileChatOpen, mobileAgentListOpen, selectedAgent]);
+        // Небольшой таймаут, чтобы дать UI время перерисоваться после открытия клавиатуры
+        setTimeout(() => {
+            if (messageListRef.current) {
+                messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+            }
+        }, 100);
+    }, [messagesByAgent, mobileChatOpen, mobileAgentListOpen, selectedAgent, viewportHeight]);
 
     const handleAgentClick = (a: Agent) => {
         setSelectedAgent(a);
@@ -1026,14 +1057,25 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                             </Paper>
                         )}
                         {mobileChatOpen && selectedAgent && (
-                            <Paper
+                            <><Box
+                                sx={{
+                                    position: "fixed",
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    backgroundColor: "#fff",
+                                    zIndex: CHAT_Z - 1,
+                                }}/>
+                                <Paper
                                 role="dialog"
                                 aria-label={`Chat with ${selectedAgent.name}`}
                                 sx={{
                                     position: "fixed",
                                     zIndex: CHAT_Z,
                                     right: 0,
-                                    bottom: 0,
+                                    left: 0,
+                                    top: 0,
                                     width: "100vw",
                                     height: `${viewportHeight}px`,
                                     display: "flex",
@@ -1041,64 +1083,115 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                     background: "#fff",
                                 }}
                             >
-                                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1, borderBottom: "1px solid", borderColor: "divider" }}>
-                                    <IconButton onClick={() => setMobileAgentListOpen(true)} aria-label="Open agents"><MenuIcon /></IconButton>
-                                    <Typography variant="h6" sx={{ flex: 1, textAlign: "center" }}>{selectedAgent.name}</Typography>
-                                    <IconButton onClick={() => setMobileChatOpen(false)} aria-label="Close chat"><KeyboardArrowDownIcon /></IconButton>
+                                <Box sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    p: 1,
+                                    borderBottom: "1px solid",
+                                    borderColor: "divider"
+                                }}>
+                                    <IconButton onClick={() => setMobileAgentListOpen(true)}
+                                                aria-label="Open agents"><MenuIcon/></IconButton>
+                                    <Typography variant="h6"
+                                                sx={{flex: 1, textAlign: "center"}}>{selectedAgent.name}</Typography>
+                                    <IconButton onClick={() => setMobileChatOpen(false)}
+                                                aria-label="Close chat"><KeyboardArrowDownIcon/></IconButton>
                                 </Box>
-                                <Box ref={messageListRef} sx={{ flex: 1, p: 2, overflowY: "auto" }}>
+                                <Box ref={messageListRef} sx={{flex: 1, p: 2, overflowY: "auto"}}>
                                     {currentMessages.map((m) => (
-                                        <Box key={m.id} sx={{ display: "flex", justifyContent: m.direction === "outgoing" ? "flex-end" : "flex-start", mb: 1 }}>
-                                            <Paper sx={{ p: 1, px: 2, borderRadius: 2, maxWidth: "80%", bgcolor: m.direction === "outgoing" ? "#eaf3ff" : "#f5f7fa" }}>
-                                                {m.message && <ChatMessage text={m.message} />}
+                                        <Box key={m.id} sx={{
+                                            display: "flex",
+                                            justifyContent: m.direction === "outgoing" ? "flex-end" : "flex-start",
+                                            mb: 1
+                                        }}>
+                                            <Paper sx={{
+                                                p: 1,
+                                                px: 2,
+                                                borderRadius: 2,
+                                                maxWidth: "80%",
+                                                bgcolor: m.direction === "outgoing" ? "#eaf3ff" : "#f5f7fa"
+                                            }}>
+                                                {m.message && <ChatMessage text={m.message}/>}
                                                 {m.attachedFileName && (
-                                                    <Box sx={{ mt: 1, display: "inline-flex", alignItems: "center", gap: 1 }}>
-                                                        <DescriptionIcon sx={{ color: "#1976d2" }} />
-                                                        <Typography sx={{ fontWeight: 600 }}>{m.attachedFileName}</Typography>
+                                                    <Box sx={{
+                                                        mt: 1,
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                        gap: 1
+                                                    }}>
+                                                        <DescriptionIcon sx={{color: "#1976d2"}}/>
+                                                        <Typography
+                                                            sx={{fontWeight: 600}}>{m.attachedFileName}</Typography>
                                                     </Box>
                                                 )}
                                             </Paper>
                                         </Box>
                                     ))}
                                     {isTypingByAgent[String(selectedAgent?.id ?? "")] && (
-                                        <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
-                                            <TypingIndicator />
+                                        <Box sx={{display: "flex", justifyContent: "flex-start", mb: 2}}>
+                                            <TypingIndicator/>
                                         </Box>
                                     )}
                                 </Box>
-                                <Box sx={{ p: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
+                                <Box sx={{p: 1.5, borderTop: "1px solid", borderColor: "divider"}}>
                                     {attachedFileName && (
-                                        <Box sx={{ mb: 1, p: 1, backgroundColor: "#f5f5f5", borderRadius: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
-                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                <DescriptionIcon color="primary" />
+                                        <Box sx={{
+                                            mb: 1,
+                                            p: 1,
+                                            backgroundColor: "#f5f5f5",
+                                            borderRadius: 1.5,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            gap: 1
+                                        }}>
+                                            <Box sx={{display: "flex", alignItems: "center", gap: 1}}>
+                                                <DescriptionIcon color="primary"/>
                                                 <Box>
-                                                    <Typography fontSize="0.9rem" fontWeight="medium" noWrap>{attachedFileName}</Typography>
-                                                    <Typography fontSize="0.75rem" color="text.secondary">Ready to send</Typography>
+                                                    <Typography fontSize="0.9rem" fontWeight="medium"
+                                                                noWrap>{attachedFileName}</Typography>
+                                                    <Typography fontSize="0.75rem" color="text.secondary">Ready to
+                                                        send</Typography>
                                                 </Box>
                                             </Box>
-                                            <IconButton size="small" onClick={removeAttachedFile}><CloseIcon fontSize="small" /></IconButton>
+                                            <IconButton size="small" onClick={removeAttachedFile}><CloseIcon
+                                                fontSize="small"/></IconButton>
                                         </Box>
                                     )}
-                                    <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx" onChange={handleFileSelected} style={{ display: "none" }} />
-                                    <Paper component="form" onSubmit={async (e) => { e.preventDefault(); const el = (e.target as HTMLFormElement).elements.namedItem("msgMobile") as HTMLInputElement; sendChatMessage(el?.value); if (el) el.value = ""; }} sx={{ display: "flex", alignItems: "center", gap: 1, p: "6px 10px", borderRadius: "20px" }}>
-                                        <IconButton size="small" onClick={() => fileInputRef.current?.click()}><AttachFileIcon fontSize="small" /></IconButton>
+                                    <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx"
+                                           onChange={handleFileSelected} style={{display: "none"}}/>
+                                    <Paper component="form" onSubmit={async (e) => {
+                                        e.preventDefault();
+                                        const el = (e.target as HTMLFormElement).elements.namedItem("msgMobile") as HTMLInputElement;
+                                        sendChatMessage(el?.value);
+                                        if (el) el.value = "";
+                                    }} sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 1,
+                                        p: "6px 10px",
+                                        borderRadius: "20px"
+                                    }}>
+                                        <IconButton size="small"
+                                                    onClick={() => fileInputRef.current?.click()}><AttachFileIcon
+                                            fontSize="small"/></IconButton>
                                         <InputBase
                                             name="msgMobile"
-                                            sx={{ ml: 1, flex: 1 }}
+                                            sx={{ml: 1, flex: 1}}
                                             placeholder="Write a message or attach a file..."
-                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}
-                                        />
-                                        <Divider sx={{ height: 28, mr: 1 }} orientation="vertical" />
+                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}/>
+                                        <Divider sx={{height: 28, mr: 1}} orientation="vertical"/>
                                         <IconButton
                                             type="submit"
-                                            sx={{ p: "10px" }}
+                                            sx={{p: "10px"}}
                                             disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}
                                         >
-                                            <SendIcon />
+                                            <SendIcon/>
                                         </IconButton>
                                     </Paper>
                                 </Box>
-                            </Paper>
+                            </Paper></>
                         )}
                         {mobileAgentListOpen && (
                             <>
