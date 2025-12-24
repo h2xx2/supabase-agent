@@ -91,7 +91,7 @@ interface AppProps {
 }
 
 const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgentDeployed }) => {
-    const [cookies, , removeCookie] = useCookies(['authToken']);
+    const [cookies, setCookie, removeCookie] = useCookies(['authToken', 'isAnonymous']);
     const [globalLoading, setGlobalLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -332,6 +332,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             setChatMessages([]);
             setSessionIds({});
             removeCookie('authToken', { path: '/' });
+            setCookie("isAnonymous", true, { path: "/" });
         }
     };
 

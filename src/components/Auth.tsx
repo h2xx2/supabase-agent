@@ -182,7 +182,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                     if (user && token) {
                         setUser(user);
                         setCookie("authToken", token, { path: "/" });
-                        setCookie("isAnonymous", "false", { path: "/" });
+                        setCookie("isAnonymous", false, { path: "/" });
                         onAuthChange(user);
                         window.history.replaceState({}, document.title, window.location.pathname);
                     } else setError("Не удалось обработать ответ сервера");
@@ -193,8 +193,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             }
         };
         const storedToken = cookies["authToken"];
-        const isAnonymous = cookies["isAnonymous"] === "true";
-        if (storedToken && isAnonymous) {
+        const isAnonymous = cookies["isAnonymous"] === true;
+        if (storedToken && !isAnonymous) {
             validateToken(storedToken)
                 .then((validUser) => {
                     if (validUser) {
@@ -414,6 +414,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             if (user && token) {
                 setUser(user);
                 setCookie("authToken", token, { path: "/" });
+                setCookie("isAnonymous", false, { path: "/" });
                 onAuthChange(user);
             } else {
                 setError("Incorrect server response");
@@ -465,7 +466,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             }
             setCookie("authToken", access_token, { path: "/" });
             setCookie("userId", user.id, { path: "/" });
-            setCookie("isAnonymous", "true", { path: "/" });
+            setCookie("isAnonymous", true, { path: "/" });
             setCookie("refreshToken", refresh_token, { path: "/" });
             setUser(user);
 
@@ -522,8 +523,13 @@ Just tell me **what you want your agent to do**, or ask any question about how y
         }
     };
     useEffect(() => {
-        handleSignInAnonymous();
+        const isAnonymous = cookies["isAnonymous"];
+
+        if (isAnonymous !== false) {
+            handleSignInAnonymous();
+        }
     }, []);
+
 
     const handleGoogleSignIn = async () => {
         try {
