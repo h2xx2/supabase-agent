@@ -89,8 +89,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
 
     const MAIN_PUBLIC_AGENT = {
         id: "youagent-master",
-        name: "YouAgentMe Wizard",
-        desc: "Provides support and helps to create new agents (anonymous).",
+        name: i18n.t("auth.namePublicAgent"),
+        desc: i18n.t("auth.descPublicAgent"),
         agentId: "3QQS2QJUKY",
         aliasId: "IRWADY4L5O",
         key: "TfnWzfQl-6jDKq7gSvFP",
@@ -491,20 +491,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             const welcomeMessage: Msg = {
                 id: `in-welcome-${Date.now()}`,
                 direction: "incoming",
-                message: `👋 **Welcome! I’m YouAgentMe Wizard**
-
-I’m your personal guide to **youagent.me** — the agentic AI service that helps you instantly create powerful AI agents with exactly the functionality you need.
-
-✨ **What I can help you with:**
-- Build a custom **agentic AI** in minutes (no guesswork)  
-- Configure agent behavior, tools, and workflows  
-- Explain **youagent.me features** and best practices  
-- Guide you through using everything from the **Web UI**  
-- Handle support questions and troubleshooting  
-
-Just tell me **what you want your agent to do**, or ask any question about how youagent.me works — and I’ll take care of the rest.
-
-🚀 Let’s create your agent. What’s your goal today?`,
+                message: t("auth.welcomeMsg"),
                 sentTime: new Date().toISOString(),
                 sender: "bot",
             };
@@ -855,7 +842,7 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                         >
                             <Box sx={{ width: 320, borderRight: "1px solid", borderColor: "divider", p: 3, overflowY: "auto" }}>
                                 <Typography variant="h6" sx={{ mb: 2 }}>
-                                    Agents
+                                    { t('auth.agentsTypography') }
                                 </Typography>
                                 <List sx={{ gap: 1 }}>
                                     {agents.map((a) => {
@@ -919,7 +906,7 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                                 <DescriptionIcon color="primary" />
                                                 <Box>
                                                     <Typography fontSize="0.9rem" fontWeight="medium" noWrap>{attachedFileName}</Typography>
-                                                    <Typography fontSize="0.75rem" color="text.secondary">Ready to send</Typography>
+                                                    <Typography fontSize="0.75rem" color="text.secondary">{ t('readySend') }</Typography>
                                                 </Box>
                                             </Box>
                                             <IconButton size="small" onClick={removeAttachedFile}><CloseIcon fontSize="small" /></IconButton>
@@ -941,7 +928,7 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                         <InputBase
                                             name="msg"
                                             sx={{ ml: 1, flex: 1 }}
-                                            placeholder="Write a message or attach a file..."
+                                            placeholder={ t('pHolderWriteMsg')}
                                             disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}
                                         />
                                         <Divider sx={{ height: 28, mr: 1 }} orientation="vertical" />
@@ -983,16 +970,20 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                         <TextField margin="normal" required fullWidth label={ t('password') } type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                                         {authMode === "signin" && <FormControlLabel control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} color="primary" />} label={ t('auth.labelRememberMe') } />}
                                         <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>{authMode === "signin" ? t('auth.signIn') : t('auth.signUp')}</Button>
-                                        <Button fullWidth variant="outlined" sx={{ mt: 2 }} onClick={async () => {
-                                            try {
-                                                const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
-                                                const { url } = res.data;
-                                                if (url) window.location.href = url;
-                                                else setError(t('auth.failedGoogleSignIn'));
-                                            } catch (err: any) {
-                                                setError(t('auth.googleSignInFailed'));
-                                            }
-                                        }}>{ t('auth.signInWithGoogle') }</Button>
+                                        {
+                                            i18n.language === 'en' && (
+                                                <Button fullWidth variant="outlined" sx={{ mt: 2 }} onClick={async () => {
+                                                    try {
+                                                        const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
+                                                        const { url } = res.data;
+                                                        if (url) window.location.href = url;
+                                                        else setError(t('auth.failedGoogleSignIn'));
+                                                    } catch (err: any) {
+                                                        setError(t('auth.googleSignInFailed'));
+                                                    }
+                                                }}>{ t('auth.signInWithGoogle') }</Button>
+                                            )
+                                        }
                                         <Box sx={{ mt: 2, textAlign: "center" }}>
                                             <Link href="#" variant="body2" onClick={(e) => { e.preventDefault(); setAuthMode(authMode === "signin" ? "signup" : "signin"); setError(null); setEmailConfirmationRequired(false); setResendSuccess(null); setLastErrorRaw(null); }}>
                                                 {authMode === "signin" ? t('auth.notHaveAccount') : t('auth.haveAccount')}
@@ -1048,16 +1039,20 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                         <TextField margin="normal" required fullWidth label={ t('password') } type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                                         {authMode === "signin" && <FormControlLabel control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} color="primary" />} label={ t('auth.labelRememberMe') } />}
                                         <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>{authMode === "signin" ? t('auth.signIn') : t('auth.signUp')}</Button>
-                                        <Button fullWidth variant="outlined" sx={{ mt: 2 }} onClick={async () => {
-                                            try {
-                                                const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
-                                                const { url } = res.data;
-                                                if (url) window.location.href = url;
-                                                else setError(t('auth.failedGoogleSignIn'));
-                                            } catch (err: any) {
-                                                setError(t('auth.googleSignInFailed'));
-                                            }
-                                        }}>{ t('auth.signInWithGoogle') }</Button>
+                                        {
+                                            i18n.language === 'en' && (
+                                                <Button fullWidth variant="outlined" sx={{ mt: 2 }} onClick={async () => {
+                                                    try {
+                                                        const res = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth-google`, {}, { headers: { "Content-Type": "application/json" } });
+                                                        const { url } = res.data;
+                                                        if (url) window.location.href = url;
+                                                        else setError(t('auth.failedGoogleSignIn'));
+                                                    } catch (err: any) {
+                                                        setError(t('auth.googleSignInFailed'));
+                                                    }
+                                                }}>{ t('auth.signInWithGoogle') }</Button>
+                                            )
+                                        }
                                         <Box sx={{ mt: 2, textAlign: "center" }}>
                                             <Link href="#" variant="body2" onClick={(e) => { e.preventDefault(); setAuthMode(authMode === "signin" ? "signup" : "signin"); setError(null); setEmailConfirmationRequired(false); setResendSuccess(null); setLastErrorRaw(null); }}>
                                                 {authMode === "signin" ? t('auth.notHaveAccount') : t('auth.haveAccount')}

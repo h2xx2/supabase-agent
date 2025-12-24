@@ -48,6 +48,10 @@ export default {
             msgErrIncorrectServerResponse: 'Incorrect server response',
             msgErrEnterEmailResendLink: 'Please enter an email to resend the verification link',
             msgVerificationEmailSent: 'Verification email sent to ',
+            agentsTypography: 'Agents',
+            namePublicAgent: 'YouAgentMe Wizard',
+            descPublicAgent: 'Provides support and helps to create new agents (anonymous).',
+            welcomeMsg: "👋 **Welcome! I’m YouAgentMe Wizard**\n\nI’m your personal guide to **youagent.me** — the agentic AI service that helps you instantly create powerful AI agents with exactly the functionality you need.\n\n✨ **What I can help you with:**\n- Build a custom **agentic AI** in minutes (no guesswork)  \n- Configure agent behavior, tools, and workflows  \n- Explain **youagent.me features** and best practices  \n- Guide you through using everything from the **Web UI**  \n- Handle support questions and troubleshooting  \n\nJust tell me **what you want your agent to do**, or ask any question about how youagent.me works — and I’ll take care of the rest.\n\n🚀 Let’s create your agent. What’s your goal today?",
             agents: {
                 germanTranslator: {
                 name: 'German Translator',
