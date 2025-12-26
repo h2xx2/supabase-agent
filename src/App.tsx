@@ -58,6 +58,7 @@ import TermsAndConditions from "./components/TermsAndConditions";
 import TermsAndConditionAcceptanceDialog from "./components/TermsAndConditionAcceptanceDialog";
 import DevelopmentPage from './components/DevelopmentPage';
 import AddAgentDialog from "./components/CreateAgent.tsx";
+import ActorsPage from "./components/ActorsPage.tsx";
 
 interface Agent {
     key: React.ReactNode;
@@ -79,6 +80,7 @@ interface Agent {
 
 const Page = {
     AGENTS: "My Agents",
+    ACTORS: "My Actors",
     DEVELOPMENT: "Development",
     SETTINGS: "Settings",
     PRIVACY_POLICY: "Privacy Policy",
@@ -1409,6 +1411,8 @@ API_ENDPOINT = "https://api.youagent.me"`;
                     </Box>
                 </Box>
             );
+            case Page.ACTORS:
+                return <ActorsPage/>
             case Page.DEVELOPMENT:
                 return <DevelopmentPage deviceType={deviceType} />;
             case Page.SETTINGS: return <Settings {...{
@@ -1609,6 +1613,15 @@ API_ENDPOINT = "https://api.youagent.me"`;
                                     <ListItemText primary="Add agent" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
+                                <ListItemButton onClick={() => {
+                                    toggleDrawer();
+                                    handleOpenAddDialog();
+                                }}>
+                                    <ListItemIcon>
+                                        <AddIcon />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Add actors" sx={{ textAlign: 'left' }} />
+                                </ListItemButton>
                                 <Divider />
 
                                 <ListItemButton onClick={() => {
@@ -1620,7 +1633,15 @@ API_ENDPOINT = "https://api.youagent.me"`;
                                     </ListItemIcon>
                                     <ListItemText primary="Agents" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
-
+                                <ListItemButton onClick={() => {
+                                    toggleDrawer();
+                                    setPage(Page.ACTORS);
+                                }}>
+                                    <ListItemIcon>
+                                        <ViewListIcon />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Actors" sx={{ textAlign: 'left' }} />
+                                </ListItemButton>
                                 <ListItemButton onClick={() => { toggleDrawer(); setPage(Page.DEVELOPMENT); }}>
                                     <ListItemIcon><CodeIcon /></ListItemIcon>
                                     <ListItemText primary="Development" />
