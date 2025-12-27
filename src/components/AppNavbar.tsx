@@ -17,14 +17,15 @@ interface AppNavbarProps {
     onSignOut: () => void;
     onToggleDrawer: () => void;
     page: string;
-    onNewAgent: () => void;
+    onCreate: () => void;          // универсальный callback
+    createLabel: string;
 }
 
-const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDrawer, page, onNewAgent }) => {
+const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDrawer, page, onCreate, createLabel}) => {
     const { currentStep, setCurrentStep } = useTour();
 
     const handleNewAgentClick = () => {
-        onNewAgent();
+        onCreate();
         setCurrentStep(currentStep + 1);
     };
 
@@ -57,7 +58,7 @@ const AppNavbar: React.FC<AppNavbarProps> = ({ deviceType, onSignOut, onToggleDr
                             }}
                             data-tour="new-agent-button"
                         >
-                            New Agent
+                            New {createLabel}
                         </Button>
                     )}
                 </Box>

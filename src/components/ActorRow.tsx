@@ -12,16 +12,17 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
-// Match the Interface exactly to your needs
 export interface Actor {
     id: number;
     created_at: string;
     user_id: string;
+    actor_id: string;
     name: string;
     instructions: string;
     public_url?: string | null;
-    actor_id?: string; // API ID
-    api_key?: string; // API Key
+    key: string;
+    call_count: number;
+    call_count_year: number;
 }
 
 interface ActorRowProps {
@@ -46,7 +47,6 @@ const ActorRow: React.FC<ActorRowProps> = ({
     const isMobile = deviceType === 'mobile';
     const isTablet = deviceType === 'tablet';
 
-    // Exact button styles and structure from App.tsx
     const ActionButtons = () => (
         <>
             <Button
@@ -64,7 +64,6 @@ const ActorRow: React.FC<ActorRowProps> = ({
             >
                 Chat
             </Button>
-
             {!actor.public_url ? (
                 <Button
                     variant="contained"
@@ -98,7 +97,6 @@ const ActorRow: React.FC<ActorRowProps> = ({
                     Revoke
                 </Button>
             )}
-
             <Button
                 variant="contained"
                 color="warning"
@@ -114,7 +112,6 @@ const ActorRow: React.FC<ActorRowProps> = ({
             >
                 Edit
             </Button>
-
             <Button
                 variant="contained"
                 color="error"
@@ -136,7 +133,7 @@ const ActorRow: React.FC<ActorRowProps> = ({
     return (
         <React.Fragment>
             <TableRow>
-                {/* Main Info Cell */}
+                {/* Колонка Actor — вся информация */}
                 <TableCell
                     sx={{
                         fontSize: isMobile ? '0.9rem' : isTablet ? '0.95rem' : '1rem',
@@ -174,6 +171,26 @@ const ActorRow: React.FC<ActorRowProps> = ({
                             >
                                 {actor.instructions}
                             </Typography>
+                            <Typography
+                                sx={{
+                                    fontSize: isMobile ? '0.9rem' : isTablet ? '0.95rem' : '1rem',
+                                    color: 'text.secondary',
+                                    mt: 0.5,
+                                    textAlign: 'left',
+                                }}
+                            >
+                                <strong>Month requests count:</strong> {actor.call_count || 0}
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    fontSize: isMobile ? '0.9rem' : isTablet ? '0.95rem' : '1rem',
+                                    color: 'text.secondary',
+                                    mt: 0.5,
+                                    textAlign: 'left',
+                                }}
+                            >
+                                <strong>Year requests count:</strong> {actor.call_count_year || 0}
+                            </Typography>
                             {actor.public_url && (
                                 <Typography
                                     sx={{
@@ -196,7 +213,7 @@ const ActorRow: React.FC<ActorRowProps> = ({
                             )}
                         </Box>
 
-                        {/* Mobile Actions: Stacked below content in same cell */}
+                        {/* На мобильных — кнопки под информацией */}
                         {isMobile && (
                             <Box
                                 sx={{
@@ -214,7 +231,7 @@ const ActorRow: React.FC<ActorRowProps> = ({
                     </Box>
                 </TableCell>
 
-                {/* Desktop Actions: Separate Cell */}
+                {/* Колонка Actions — только для tablet/desktop */}
                 {!isMobile && (
                     <TableCell
                         sx={{
@@ -238,14 +255,13 @@ const ActorRow: React.FC<ActorRowProps> = ({
                 )}
             </TableRow>
 
-            {/* Integration Script Accordion */}
+            {/* Аккордеоны с скриптом и API Credentials */}
             {actor.public_url && (
                 <TableRow>
                     <TableCell
                         colSpan={isMobile ? 1 : 2}
                         sx={{
                             backgroundColor: 'transparent',
-                            fontSize: isMobile ? '0.9rem' : isTablet ? '0.95rem' : '1rem',
                             py: 1,
                             textAlign: 'left',
                         }}
@@ -254,55 +270,88 @@ const ActorRow: React.FC<ActorRowProps> = ({
                             <AccordionSummary
                                 expandIcon={<ExpandMoreIcon />}
                                 sx={{
-                                    width: '100%',
-                                    height: '100%',
                                     backgroundColor: '#f0f0f0',
                                 }}
                             >
-                                <Typography
-                                    sx={{
-                                        fontWeight: 'bold',
-                                        fontSize: isMobile ? '0.9rem' : isTablet ? '0.95rem' : '1rem',
-                                    }}
-                                >
+                                <Typography sx={{ fontWeight: 'bold' }}>
                                     Integration Script
                                 </Typography>
                             </AccordionSummary>
-                            <AccordionDetails
-                                sx={{
-                                    backgroundColor: '#e0e0e0',
-                                    p: 1,
-                                    borderRadius: '4px',
-                                }}
-                            >
+                            <AccordionDetails sx={{ backgroundColor: '#e0e0e0', p: 1 }}>
                                 <Box
                                     component="pre"
                                     sx={{
-                                        fontSize: isMobile ? '0.8rem' : isTablet ? '0.85rem' : '0.9rem',
+                                        fontSize: isMobile ? '0.8rem' : '0.9rem',
                                         whiteSpace: 'pre-wrap',
                                         wordBreak: 'break-word',
                                         overflowX: 'auto',
                                         mb: 1,
-                                        maxWidth: '100%',
                                     }}
                                 >
                                     {`<script
   src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
   data-agent-name="${actor.name}"
-  data-agent-id="${actor.actor_id || 'ID_NOT_SET'}"
-  data-api-key="${actor.api_key || 'KEY_NOT_SET'}"
+  data-agent-id="${actor.actor_id}"
+  data-api-key="${actor.key}"
+  data-vert-align="bottom"
+  data-hor-align="right"
+  data-hor-offset-desktop="25"
+  data-vert-offset-desktop="25"
+  data-hor-offset-mobile="10"
+  data-vert-offset-mobile="10"
 ></script>`}
                                 </Box>
                                 <Button
                                     variant="outlined"
                                     size="small"
-                                    onClick={() => alert("Script copied (Mock)")}
-                                    sx={{
-                                        fontSize: isMobile ? '0.8rem' : isTablet ? '0.85rem' : '0.9rem',
-                                        textTransform: 'none',
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`<script
+  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
+  data-agent-name="${actor.name}"
+  data-agent-id="${actor.actor_id}"
+  data-api-key="${actor.key}"
+  data-vert-align="bottom"
+  data-hor-align="right"
+  data-hor-offset-desktop="25"
+  data-vert-offset-desktop="25"
+  data-hor-offset-mobile="10"
+  data-vert-offset-mobile="10"
+></script>`).then(() => alert('The script has been copied to the clipboard!'));
                                     }}
                                 >
                                     Copy script
+                                </Button>
+                            </AccordionDetails>
+                        </Accordion>
+
+                        <Accordion sx={{ mt: 2, width: '100%' }}>
+                            <AccordionSummary
+                                expandIcon={<ExpandMoreIcon />}
+                                sx={{
+                                    backgroundColor: '#f0f0f0',
+                                }}
+                            >
+                                <Typography sx={{ fontWeight: 'bold' }}>
+                                    API Credentials
+                                </Typography>
+                            </AccordionSummary>
+                            <AccordionDetails sx={{ backgroundColor: '#e0e0e0', p: 2 }}>
+                                <Box sx={{ fontFamily: 'monospace', lineHeight: 1.6, mb: 2 }}>
+                                    <div><strong>ACTOR_ID</strong> = "{actor.actor_id}"</div>
+                                    <div><strong>API_KEY</strong> = "{actor.key}"</div>
+                                    <div><strong>API_ENDPOINT</strong> = "https://api.youagent.me"</div>
+                                </Box>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => {
+                                        const creds = `ACTOR_ID = "${actor.actor_id}"
+API_KEY = "${actor.key}"
+API_ENDPOINT = "https://api.youagent.me"`;
+                                        navigator.clipboard.writeText(creds).then(() => alert('API credentials copied to clipboard!'));
+                                    }}
+                                >
+                                    Copy Credentials
                                 </Button>
                             </AccordionDetails>
                         </Accordion>

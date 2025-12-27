@@ -59,6 +59,7 @@ import TermsAndConditionAcceptanceDialog from "./components/TermsAndConditionAcc
 import DevelopmentPage from './components/DevelopmentPage';
 import AddAgentDialog from "./components/CreateAgent.tsx";
 import ActorsPage from "./components/ActorsPage.tsx";
+import AddActorsDialog from "./components/CreateActors.tsx";
 
 interface Agent {
     key: React.ReactNode;
@@ -89,7 +90,6 @@ const Page = {
 interface AppProps {
     setChatOpened?: (value: boolean) => void;
     setAgentDeployed?: (value: boolean) => void;
-    // если у вас есть другие пропсы от Root — добавьте их здесь
 }
 
 const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgentDeployed }) => {
@@ -123,6 +123,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [page, setPage] = useState<string>(Page.AGENTS);
     const [isTourOpen, setIsTourOpen] = useState(false);
     const { currentStep, setCurrentStep } = useTour()
+    const [openActorsDialogRequest, setOpenActorsDialogRequest] = useState(false);
     const { setIsOpen } = useTour();
     const [termsDialogOpen, setTermsDialogOpen] = useState(false);
     const messageListRef = useRef<HTMLDivElement | null>(null);
@@ -350,6 +351,18 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setNewAgent({ name: '', instructions: '' });
         setInitialKnowledgeBaseFile(null);
     };
+    const handleOpenAddDialogActors = () => {
+        setPage(Page.ACTORS);
+        setOpenActorsDialogRequest(true);
+        setErrorMessage(null);
+        setEnableHttpAction(false);
+        setEnableEmailAction(false);
+        setNewFile(null);
+        setSelectedBlueprint('');
+        setNewAgent({ name: '', instructions: '' });
+        setInitialKnowledgeBaseFile(null);
+    };
+
 
     const createAlias = async (agentId: string, agentName: string) => {
         setGlobalLoading(true);
@@ -638,7 +651,9 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setAttachedFileName(file.name);
         e.target.value = ''; // чтобы можно было выбрать тот же файл снова
     };
-
+    const handleClearAddActorRequest = () => {
+        setOpenActorsDialogRequest(false);
+    };
     const handleOpenChat = (agent: Agent) => {
         // ваш существующий код открытия чата
         setSelectedAgent(agent);
@@ -1413,7 +1428,8 @@ API_ENDPOINT = "https://api.youagent.me"`;
                 </Box>
             );
             case Page.ACTORS:
-                return <ActorsPage/>
+                return <ActorsPage {...{user, toggleDrawer, handleSignOut, setGlobalLoading}} openAddDialogRequest={openActorsDialogRequest}
+                                   onClearAddDialogRequest={handleClearAddActorRequest} />
             case Page.DEVELOPMENT:
                 return <DevelopmentPage deviceType={deviceType} />;
             case Page.SETTINGS: return <Settings {...{
@@ -1489,7 +1505,8 @@ API_ENDPOINT = "https://api.youagent.me"`;
                                 onToggleDrawer: toggleDrawer,
                                 onSignOut: handleSignOut,
                                 page,
-                                onNewAgent: () => setOpenAddDialog(true)
+                                onCreate: () => setOpenAddDialog(true),
+                                createLabel: 'Agent'
                             }}
                         />
                         {/*{showNotification &&*/}
@@ -1616,7 +1633,7 @@ API_ENDPOINT = "https://api.youagent.me"`;
 
                                 <ListItemButton onClick={() => {
                                     toggleDrawer();
-                                    handleOpenAddDialog();
+                                    handleOpenAddDialogActors();
                                 }}>
                                     <ListItemIcon>
                                         <AddIcon />
@@ -1721,7 +1738,6 @@ API_ENDPOINT = "https://api.youagent.me"`;
                             }
                         }}
                     />
-
 
                     <Dialog
                         open={openEditDialog}
