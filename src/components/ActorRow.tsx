@@ -274,7 +274,7 @@ const ActorRow: React.FC<ActorRowProps> = ({
                                 }}
                             >
                                 <Typography sx={{ fontWeight: 'bold' }}>
-                                    Integration Script
+                                    cURL API
                                 </Typography>
                             </AccordionSummary>
                             <AccordionDetails sx={{ backgroundColor: '#e0e0e0', p: 1 }}>
@@ -286,40 +286,40 @@ const ActorRow: React.FC<ActorRowProps> = ({
                                         wordBreak: 'break-word',
                                         overflowX: 'auto',
                                         mb: 1,
+                                        fontFamily: 'monospace',
+                                        backgroundColor: '#1e1e1e', // Темный фон для кода
+                                        color: '#d4d4d4',
+                                        p: 2,
+                                        borderRadius: 1
                                     }}
                                 >
-                                    {`<script
-  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
-  data-agent-name="${actor.name}"
-  data-agent-id="${actor.actor_id}"
-  data-api-key="${actor.key}"
-  data-vert-align="bottom"
-  data-hor-align="right"
-  data-hor-offset-desktop="25"
-  data-vert-offset-desktop="25"
-  data-hor-offset-mobile="10"
-  data-vert-offset-mobile="10"
-></script>`}
+                                    {`curl -X POST ${import.meta.env.VITE_API_GATEWAY_URL}/public-send-actor \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: ${actor.key}" \\
+  -d '{
+    "message": "Hello!",
+    "actor_id": "${actor.actor_id}",
+    "fileBase64": "SGVsbG8gd29ybGQh",
+    "fileName": "test.txt"
+  }'`}
                                 </Box>
                                 <Button
                                     variant="outlined"
                                     size="small"
                                     onClick={() => {
-                                        navigator.clipboard.writeText(`<script
-  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
-  data-agent-name="${actor.name}"
-  data-agent-id="${actor.actor_id}"
-  data-api-key="${actor.key}"
-  data-vert-align="bottom"
-  data-hor-align="right"
-  data-hor-offset-desktop="25"
-  data-vert-offset-desktop="25"
-  data-hor-offset-mobile="10"
-  data-vert-offset-mobile="10"
-></script>`).then(() => alert('The script has been copied to the clipboard!'));
+                                        const curlCommand = `curl -X POST ${import.meta.env.VITE_API_GATEWAY_URL}/public-send-actor \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: ${actor.key}" \\
+  -d '{
+    "message": "Hello!",
+    "actor_id": "${actor.actor_id}",
+    "fileBase64": "SGVsbG8gd29ybGQh",
+    "fileName": "test.txt"
+  }'`;
+                                        navigator.clipboard.writeText(curlCommand).then(() => alert('cURL command copied to clipboard!'));
                                     }}
                                 >
-                                    Copy script
+                                    Copy cURL
                                 </Button>
                             </AccordionDetails>
                         </Accordion>
@@ -339,7 +339,7 @@ const ActorRow: React.FC<ActorRowProps> = ({
                                 <Box sx={{ fontFamily: 'monospace', lineHeight: 1.6, mb: 2 }}>
                                     <div><strong>ACTOR_ID</strong> = "{actor.actor_id}"</div>
                                     <div><strong>API_KEY</strong> = "{actor.key}"</div>
-                                    <div><strong>API_ENDPOINT</strong> = "https://api.youagent.me"</div>
+                                    <div><strong>API_ENDPOINT</strong> = {import.meta.env.VITE_API_GATEWAY_URL}</div>
                                 </Box>
                                 <Button
                                     variant="outlined"
@@ -347,7 +347,7 @@ const ActorRow: React.FC<ActorRowProps> = ({
                                     onClick={() => {
                                         const creds = `ACTOR_ID = "${actor.actor_id}"
 API_KEY = "${actor.key}"
-API_ENDPOINT = "https://api.youagent.me"`;
+API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                         navigator.clipboard.writeText(creds).then(() => alert('API credentials copied to clipboard!'));
                                     }}
                                 >

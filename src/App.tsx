@@ -1252,7 +1252,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     }}
                                                                 >
                                                                     {`<script
-  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
@@ -1270,7 +1270,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     onClick={() => {
                                                                         navigator.clipboard
                                                                             .writeText(`<script
-  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
@@ -1350,7 +1350,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                 >
                                                                     <div><strong>AGENT_ID</strong> = "{agent.agent_id}"</div>
                                                                     <div><strong>API_KEY</strong> = "{agent.key}"</div>
-                                                                    <div><strong>API_ENDPOINT</strong> = "https://api.youagent.me"</div>
+                                                                    <div><strong>API_ENDPOINT</strong> = {import.meta.env.VITE_API_GATEWAY_URL}</div>
                                                                 </Box>
                                                                 <Typography
                                                                     variant="body2"
@@ -1389,7 +1389,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     onClick={() => {
                                                                         const credentials = `AGENT_ID = "${agent.agent_id}"
 API_KEY = "${agent.key}"
-API_ENDPOINT = "https://api.youagent.me"`;
+API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                                                         navigator.clipboard.writeText(credentials).then(() => {
                                                                             alert('API credentials copied to clipboard!');
                                                                         }).catch(() => {

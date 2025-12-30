@@ -204,12 +204,12 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                         }
                     } else {
                         removeCookie("authToken");
-                        removeCookie("isAnonymous");
+                        handleSignInAnonymous()
                     }
                 })
                 .catch(() => {
                     removeCookie("authToken");
-                    removeCookie("isAnonymous");
+                    handleSignInAnonymous();
                 })
                 .finally(() => setIsLoading(false));
         } else {

@@ -36,8 +36,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     const messageListRef = useRef<HTMLDivElement | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const SUPPORTED_EXTENSIONS = ['.pdf', '.txt', '.doc', '.docx', '.csv', '.xls', '.xlsx'];
-
+    const SUPPORTED_EXTENSIONS = ['.pdf', '.txt', '.doc', '.docx', '.csv', '.xls', '.xlsx', '.jpg','.jpeg','.png', '.webp'];
     // 1. Handle Visual Viewport (Virtual Keyboard on Mobile)
     useEffect(() => {
         const updateKeyboardOffset = () => {
@@ -329,7 +328,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     <input
                         ref={fileInputRef}
                         type="file"
-                        accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx"
+                        accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx,.jpg,.jpeg,.png, .webp"
                         onChange={handleFileSelected}
                         style={{ display: 'none' }}
                     />

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
     Box,
     Table,
@@ -58,6 +58,9 @@ const ActorsPage: React.FC<SettingsProps> = ({user, toggleDrawer, handleSignOut,
     // UI State
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [openAddDialog, setOpenAddDialog] = useState(false);
+    // Deletion State
+    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const [actorToDelete, setActorToDelete] = useState<Actor | null>(null);
     // Состояния для диалога успешного деплоя
     const [deploySuccessDialogOpen, setDeploySuccessDialogOpen] = useState(false);
     const [deployedPublicUrl, setDeployedPublicUrl] = useState('');
@@ -68,6 +71,8 @@ const ActorsPage: React.FC<SettingsProps> = ({user, toggleDrawer, handleSignOut,
     const [chatOpen, setChatOpen] = useState(false);
     const [selectedActor, setSelectedActor] = useState<Actor | null>(null);
     const [chatMessages, setChatMessages] = useState<MessageModel[]>([]);
+
+    const [sessionIds, setSessionIds] = useState<Record<string, string>>({});
     const getAuthToken = (): string => {
         const token = cookies.authToken;
         if (!token) {
@@ -132,7 +137,7 @@ const ActorsPage: React.FC<SettingsProps> = ({user, toggleDrawer, handleSignOut,
         try {
             const token = getAuthToken();
             const response = await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/deploy-chat`,
+                `${import.meta.env.VITE_API_GATEWAY_URL}/deploy-actors`,
                 { actorId: actor.actor_id, user_id: user?.id },
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
             );
@@ -144,6 +149,7 @@ const ActorsPage: React.FC<SettingsProps> = ({user, toggleDrawer, handleSignOut,
             setActors((prev) => prev.map((a) =>
                 (a.actor_id === actor.actor_id ? { ...a, public_url: publicUrl, key: apkKey } : a)
             ));
+            alert(`Public URL: ${publicUrl}\nAPK Key: ${apkKey}\nCopy it and use it for access!`);
         } catch (error: any) {
             console.error('Error deploying:', error);
             setErrorMessage(`Deployment error: ${error.message || 'Unknown error'}`);
@@ -151,48 +157,182 @@ const ActorsPage: React.FC<SettingsProps> = ({user, toggleDrawer, handleSignOut,
             setGlobalLoading(false);
         }
     };
+    const handleRevokeActor = async (actor: Actor) => {
+        setGlobalLoading(true);
+        try {
+            const token = getAuthToken();
+            await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/revoke-actors`,
+                { actorId: actor.actor_id, user_id: user?.id },
+                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+            );
+            setActors(actors.map((a) => (a.id === actor.id ? { ...a, public_url: undefined } : a)));
+            await fetchActors();
+        } catch (error: any) {
+            console.error('Error when revoking the chat:', error);
+            setErrorMessage(
+                error.message === 'The authorization token is missing from the cookie'
+                    ? 'Please log in'
+                    : `Error when revoke chat: ${error.message || 'Unknown error'}`
+            );
+        } finally {
+            setGlobalLoading(false);
+        }
+    };
     const handleCopyUrl = () => {
         navigator.clipboard.writeText(deployedPublicUrl);
-    };
-    const handleRevokeActor = (actor: Actor) => {
-        // При отзыве обнуляем публичный URL локально
-        setActors(actors.map(a => a.actor_id === actor.actor_id ? { ...a, public_url: null } : a));
     };
     const handleOpenChat = (actor: Actor) => {
         setSelectedActor(actor);
         setChatMessages([]);
         setChatOpen(true);
     };
-    const handleSendMessage = (text: string, file?: File | null) => {
-        if (!text.trim() && !file) return;
-        const userMsg: MessageModel = {
-            message: text,
+    const convertFileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+    const handleSendMessage = async (text: string, fileFromChat?: File | null) => {
+        // 1. Проверяем наличие контента (текста или файла)
+        if (!text.trim() && !fileFromChat) return;
+        if (!selectedActor?.actor_id) return;
+
+        const userText = text.trim();
+        const hasFile = !!fileFromChat;
+        const fileNameForDisplay = fileFromChat?.name || 'file';
+
+        // 2. Создаем сообщение для мгновенного отображения в UI
+        const userMessage: MessageModel = {
+            message: userText || fileNameForDisplay,
             sentTime: new Date().toISOString(),
             sender: 'user',
             direction: 'outgoing',
             position: 'single',
-        };
-        setChatMessages(prev => [...prev, userMsg]);
-        setTimeout(() => {
-            const botMsg: MessageModel = {
-                message: `I am ${selectedActor?.name}. How can I help you?`,
+            // Передаем имя файла в кастомное поле для отрисовки иконки в ChatWindow
+            attachedFileName: hasFile ? fileNameForDisplay : undefined,
+        } as any;
+
+        setChatMessages(prev => [...prev, userMessage]);
+
+        // 3. Управление сессией
+        let sessionId = sessionIds[selectedActor.actor_id] ||
+            `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        if (!sessionIds[selectedActor.actor_id]) {
+            setSessionIds(prev => ({ ...prev, [selectedActor!.actor_id]: sessionId }));
+        }
+
+        try {
+            const token = getAuthToken();
+            let fileBase64: string | null = null;
+            let fileName: string | null = null;
+
+            // 4. Конвертация файла, если он пришел из ChatWindow
+            if (fileFromChat) {
+                const dataUrl = await convertFileToBase64(fileFromChat);
+                // Извлекаем чистый Base64 из DataURL
+                const match = dataUrl.match(/^data:.+?;base64,(.*)$/);
+                if (!match) throw new Error('Failed to encode file');
+                fileBase64 = match[1];
+                fileName = fileFromChat.name;
+            }
+
+            // 5. Отправка на сервер
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/send-actor`,
+                {
+                    message: userText,
+                    actor_id: selectedActor.actor_id,
+                    sessionId,
+                    user_id: user?.id,
+                    fileBase64, // Теперь здесь не null, если файл был выбран
+                    fileName,
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            // 6. Добавляем ответ бота
+            const botMessage: MessageModel = {
+                message: response.data.response,
                 sentTime: new Date().toISOString(),
                 sender: 'bot',
                 direction: 'incoming',
                 position: 'single',
             };
-            setChatMessages(prev => [...prev, botMsg]);
-        }, 1000);
+            setChatMessages(prev => [...prev, botMessage]);
+
+            // 7. Сохранение истории (фоновые запросы)
+            await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-message-actor`, {
+                actor_id: selectedActor.actor_id,
+                session_id: sessionId,
+                message: userText || `[File: ${fileName}]`,
+                sender: 'user',
+                user_id: user?.id,
+            }, { headers: { Authorization: `Bearer ${token}` } });
+
+            await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call-actor`, {
+                actor_id: selectedActor.actor_id,
+                user_id: user?.id,
+                status: 'success',
+            }, { headers: { Authorization: `Bearer ${token}` } });
+
+        } catch (error: any) {
+            console.error('Error sending message:', error);
+
+            let errorText = 'Error: Failed to send message';
+            if (error.response?.data?.error) {
+                errorText = error.response.data.error;
+            } else if (error.message) {
+                errorText = `Error: ${error.message}`;
+            }
+
+            const errMsg: MessageModel = {
+                message: errorText,
+                sentTime: new Date().toISOString(),
+                sender: 'bot',
+                direction: 'incoming',
+                position: 'single',
+            };
+            setChatMessages(prev => [...prev, errMsg]);
+
+            // Логируем ошибку вызова
+            try {
+                const token = getAuthToken();
+                await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call`, {
+                    actor_id: selectedActor?.actor_id,
+                    user_id: user?.id,
+                    status: 'failure',
+                }, { headers: { Authorization: `Bearer ${token}` } });
+            } catch { /* ignore */ }
+        }
     };
-    const handleDeleteActor = async (actor: Actor) => {
+
+    const handleDeleteActor = (actor: Actor) => {
+        setActorToDelete(actor);
+        setOpenDeleteDialog(true);
+    };
+
+    const handleCloseDeleteDialog = () => {
+        setOpenDeleteDialog(false);
+        setActorToDelete(null);
+    };
+
+    // Фактическое удаление после подтверждения
+    const confirmDeleteActor = async () => {
+        if (!actorToDelete) return;
         setGlobalLoading(true);
         try {
             const token = getAuthToken();
             await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/delete-actors`,
-                { user_id: user?.id, actor_id: actor.actor_id },
+                { user_id: user?.id, actor_id: actorToDelete.actor_id },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
+            setOpenDeleteDialog(false);
+            setActorToDelete(null);
             setActors(await fetchActors());
         } catch (error: any) {
             setErrorMessage(`Error deleting actor: ${error.message}`);
@@ -245,49 +385,57 @@ const ActorsPage: React.FC<SettingsProps> = ({user, toggleDrawer, handleSignOut,
                     </TableBody>
                 </Table>
             </TableContainer>
-            {/* Success Deployment Dialog */}
             <Dialog
-                open={deploySuccessDialogOpen}
-                onClose={() => setDeploySuccessDialogOpen(false)}
+                open={openDeleteDialog}
+                onClose={handleCloseDeleteDialog}
                 fullWidth
-                maxWidth="sm"
+                maxWidth={deviceType === 'mobile' ? 'xs' : 'sm'}
             >
-                <DialogTitle sx={{ fontWeight: 'bold', pb: 1 }}>Deployment Successful!</DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
-                        Your chat actor is now live. Use the credentials below to integrate it.
-                    </Typography>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Public Chat URL</Typography>
-                    <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-                        <TextField
-                            fullWidth
-                            variant="filled"
-                            size="small"
-                            value={deployedPublicUrl}
-                            InputProps={{ readOnly: true, disableUnderline: true }}
-                            sx={{ '& .MuiInputBase-root': { bgcolor: 'action.hover' } }}
-                        />
-                        <IconButton onClick={handleCopyUrl} color="primary">
-                            <ContentCopyIcon />
-                        </IconButton>
-                    </Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>API Access Key (APK)</Typography>
-                    <TextField
-                        fullWidth
-                        variant="filled"
-                        size="small"
-                        value={deployedApkKey}
-                        InputProps={{ readOnly: true, disableUnderline: true }}
-                        sx={{ '& .MuiInputBase-root': { bgcolor: 'action.hover' } }}
-                    />
-                </DialogContent>
-                <DialogActions sx={{ p: 3 }}>
-                    <Button
-                        onClick={() => setDeploySuccessDialogOpen(false)}
-                        variant="contained"
-                        fullWidth
+                <DialogTitle
+                    sx={{
+                        fontSize: deviceType === 'mobile' ? '1.25rem' : deviceType === 'tablet' ? '1.375rem' : '1.25rem',
+                        textAlign: 'left',
+                    }}
+                >
+                    Confirm Deletion
+                </DialogTitle>
+                <DialogContent sx={{ textAlign: 'left', overflowX: 'hidden' }}>
+                    {errorMessage && (
+                        <Alert
+                            severity="error"
+                            sx={{
+                                mb: 2,
+                                width: '100%',
+                                fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
+                                textAlign: 'left',
+                            }}
+                        >
+                            {errorMessage}
+                        </Alert>
+                    )}
+                    <Typography
+                        sx={{
+                            fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.1rem' : '1rem',
+                            textAlign: 'left',
+                        }}
                     >
-                        Got it
+                        Are you sure you want to delete the agent "{actorToDelete?.name}"? This action cannot be undone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
+                    <Button
+                        onClick={handleCloseDeleteDialog}
+                        color="primary"
+                        sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={confirmDeleteActor}
+                        color="error"
+                        sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
+                    >
+                        Delete
                     </Button>
                 </DialogActions>
             </Dialog>
