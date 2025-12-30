@@ -37,6 +37,8 @@ import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ViewListIcon from '@mui/icons-material/ViewList';
+import PowerIcon from '@mui/icons-material/Power';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import PolicyIcon from '@mui/icons-material/Policy';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CodeIcon from '@mui/icons-material/Code';
@@ -59,7 +61,6 @@ import TermsAndConditionAcceptanceDialog from "./components/TermsAndConditionAcc
 import DevelopmentPage from './components/DevelopmentPage';
 import AddAgentDialog from "./components/CreateAgent.tsx";
 import ActorsPage from "./components/ActorsPage.tsx";
-import AddActorsDialog from "./components/CreateActors.tsx";
 
 interface Agent {
     key: React.ReactNode;
@@ -1647,7 +1648,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     setPage(Page.AGENTS);
                                 }}>
                                     <ListItemIcon>
-                                        <ViewListIcon />
+                                        <SupportAgentIcon />
                                     </ListItemIcon>
                                     <ListItemText primary="Agents" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
@@ -1656,7 +1657,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     setPage(Page.ACTORS);
                                 }}>
                                     <ListItemIcon>
-                                        <ViewListIcon />
+                                        <PowerIcon />
                                     </ListItemIcon>
                                     <ListItemText primary="Actors" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
