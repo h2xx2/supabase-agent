@@ -37,6 +37,8 @@ import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ViewListIcon from '@mui/icons-material/ViewList';
+import PowerIcon from '@mui/icons-material/Power';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import PolicyIcon from '@mui/icons-material/Policy';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CodeIcon from '@mui/icons-material/Code';
@@ -58,6 +60,7 @@ import TermsAndConditions from "./components/TermsAndConditions";
 import TermsAndConditionAcceptanceDialog from "./components/TermsAndConditionAcceptanceDialog";
 import DevelopmentPage from './components/DevelopmentPage';
 import AddAgentDialog from "./components/CreateAgent.tsx";
+import ActorsPage from "./components/ActorsPage.tsx";
 
 interface Agent {
     key: React.ReactNode;
@@ -79,6 +82,7 @@ interface Agent {
 
 const Page = {
     AGENTS: "My Agents",
+    ACTORS: "My Actors",
     DEVELOPMENT: "Development",
     SETTINGS: "Settings",
     PRIVACY_POLICY: "Privacy Policy",
@@ -87,7 +91,6 @@ const Page = {
 interface AppProps {
     setChatOpened?: (value: boolean) => void;
     setAgentDeployed?: (value: boolean) => void;
-    // если у вас есть другие пропсы от Root — добавьте их здесь
 }
 
 const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgentDeployed }) => {
@@ -121,6 +124,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [page, setPage] = useState<string>(Page.AGENTS);
     const [isTourOpen, setIsTourOpen] = useState(false);
     const { currentStep, setCurrentStep } = useTour()
+    const [openActorsDialogRequest, setOpenActorsDialogRequest] = useState(false);
     const { setIsOpen } = useTour();
     const [termsDialogOpen, setTermsDialogOpen] = useState(false);
     const messageListRef = useRef<HTMLDivElement | null>(null);
@@ -348,6 +352,18 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setNewAgent({ name: '', instructions: '' });
         setInitialKnowledgeBaseFile(null);
     };
+    const handleOpenAddDialogActors = () => {
+        setPage(Page.ACTORS);
+        setOpenActorsDialogRequest(true);
+        setErrorMessage(null);
+        setEnableHttpAction(false);
+        setEnableEmailAction(false);
+        setNewFile(null);
+        setSelectedBlueprint('');
+        setNewAgent({ name: '', instructions: '' });
+        setInitialKnowledgeBaseFile(null);
+    };
+
 
     const createAlias = async (agentId: string, agentName: string) => {
         setGlobalLoading(true);
@@ -636,7 +652,9 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setAttachedFileName(file.name);
         e.target.value = ''; // чтобы можно было выбрать тот же файл снова
     };
-
+    const handleClearAddActorRequest = () => {
+        setOpenActorsDialogRequest(false);
+    };
     const handleOpenChat = (agent: Agent) => {
         // ваш существующий код открытия чата
         setSelectedAgent(agent);
@@ -1235,7 +1253,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     }}
                                                                 >
                                                                     {`<script
-  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
@@ -1253,7 +1271,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     onClick={() => {
                                                                         navigator.clipboard
                                                                             .writeText(`<script
-  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
@@ -1333,7 +1351,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                 >
                                                                     <div><strong>AGENT_ID</strong> = "{agent.agent_id}"</div>
                                                                     <div><strong>API_KEY</strong> = "{agent.key}"</div>
-                                                                    <div><strong>API_ENDPOINT</strong> = "https://api.youagent.me"</div>
+                                                                    <div><strong>API_ENDPOINT</strong> = {import.meta.env.VITE_API_GATEWAY_URL}</div>
                                                                 </Box>
                                                                 <Typography
                                                                     variant="body2"
@@ -1372,7 +1390,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     onClick={() => {
                                                                         const credentials = `AGENT_ID = "${agent.agent_id}"
 API_KEY = "${agent.key}"
-API_ENDPOINT = "https://api.youagent.me"`;
+API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                                                         navigator.clipboard.writeText(credentials).then(() => {
                                                                             alert('API credentials copied to clipboard!');
                                                                         }).catch(() => {
@@ -1410,6 +1428,9 @@ API_ENDPOINT = "https://api.youagent.me"`;
                     </Box>
                 </Box>
             );
+            case Page.ACTORS:
+                return <ActorsPage {...{user, toggleDrawer, handleSignOut, setGlobalLoading}} openAddDialogRequest={openActorsDialogRequest}
+                                   onClearAddDialogRequest={handleClearAddActorRequest} />
             case Page.DEVELOPMENT:
                 return <DevelopmentPage deviceType={deviceType} />;
             case Page.SETTINGS: return <Settings {...{
@@ -1485,7 +1506,8 @@ API_ENDPOINT = "https://api.youagent.me"`;
                                 onToggleDrawer: toggleDrawer,
                                 onSignOut: handleSignOut,
                                 page,
-                                onNewAgent: () => setOpenAddDialog(true)
+                                onCreate: () => setOpenAddDialog(true),
+                                createLabel: 'Agent'
                             }}
                         />
                         {/*{showNotification &&*/}
@@ -1610,6 +1632,15 @@ API_ENDPOINT = "https://api.youagent.me"`;
                                     <ListItemText primary="Add agent" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
+                                <ListItemButton onClick={() => {
+                                    toggleDrawer();
+                                    handleOpenAddDialogActors();
+                                }}>
+                                    <ListItemIcon>
+                                        <AddIcon />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Add actor" sx={{ textAlign: 'left' }} />
+                                </ListItemButton>
                                 <Divider />
 
                                 <ListItemButton onClick={() => {
@@ -1617,11 +1648,19 @@ API_ENDPOINT = "https://api.youagent.me"`;
                                     setPage(Page.AGENTS);
                                 }}>
                                     <ListItemIcon>
-                                        <ViewListIcon />
+                                        <SupportAgentIcon />
                                     </ListItemIcon>
                                     <ListItemText primary="Agents" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
-
+                                <ListItemButton onClick={() => {
+                                    toggleDrawer();
+                                    setPage(Page.ACTORS);
+                                }}>
+                                    <ListItemIcon>
+                                        <PowerIcon />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Actors" sx={{ textAlign: 'left' }} />
+                                </ListItemButton>
                                 <ListItemButton onClick={() => { toggleDrawer(); setPage(Page.DEVELOPMENT); }}>
                                     <ListItemIcon><CodeIcon /></ListItemIcon>
                                     <ListItemText primary="Development" />
@@ -1700,7 +1739,6 @@ API_ENDPOINT = "https://api.youagent.me"`;
                             }
                         }}
                     />
-
 
                     <Dialog
                         open={openEditDialog}
