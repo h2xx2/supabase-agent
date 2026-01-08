@@ -53,6 +53,7 @@ const CHAT_Z = 1700;
 const AGENTS_Z = 1800;
 const AGENTS_BG_Z = 1750;
 const PEEK_Z = 1650;
+const MAX_MESSAGE_LENGTH = 2048;
 type Msg = {
     id: string | number;
     direction: "incoming" | "outgoing";
@@ -79,6 +80,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [resendSuccess, setResendSuccess] = useState<string | null>(null);
     const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
     const cooldownRef = useRef<number | null>(null);
+    const [inputValue, setInputValue] = useState<string>(""); // для десктопа
+    const [mobileInputValue, setMobileInputValue] = useState<string>(""); // для мобильной версии
+    const [showLimitWarning, setShowLimitWarning] = useState<boolean>(false);
     const [, setLastErrorRaw] = useState<any>(null);
     const [isSendingByAgent, setIsSendingByAgent] = useState<Record<string, boolean>>({});
     const [isTypingByAgent, setIsTypingByAgent] = useState<Record<string, boolean>>({});
@@ -950,7 +954,18 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                             <IconButton size="small" onClick={removeAttachedFile}><CloseIcon fontSize="small" /></IconButton>
                                         </Box>
                                     )}
-                                    <Paper component="form" onSubmit={async (e) => { e.preventDefault(); const input = (e.target as HTMLFormElement).elements.namedItem("msg") as HTMLInputElement; sendChatMessage(input?.value); if (input) input.value = ""; }} sx={{ display: "flex", alignItems: "center", gap: 1, p: "6px 10px", borderRadius: "22px" }}>
+                                    <Paper
+                                        component="form"
+                                        onSubmit={async (e) => {
+                                            e.preventDefault();
+                                            if (inputValue.trim() || attachedFileName) {
+                                                await sendChatMessage(inputValue);
+                                                setInputValue("");
+                                                setShowLimitWarning(false);
+                                            }
+                                        }}
+                                        sx={{ display: "flex", alignItems: "center", gap: 1, p: "6px 10px", borderRadius: "22px" }}
+                                    >
                                         <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx" onChange={handleFileSelected} style={{ display: "none" }} />
                                         <IconButton
                                             size="small"
@@ -963,17 +978,36 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                         >
                                             <AttachFileIcon fontSize="small" />
                                         </IconButton>
+
                                         <InputBase
-                                            name="msg"
+                                            value={inputValue}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val.length <= MAX_MESSAGE_LENGTH) {
+                                                    setInputValue(val);
+                                                    setShowLimitWarning(false);
+                                                } else {
+                                                    setShowLimitWarning(true);
+                                                }
+                                            }}
                                             sx={{ ml: 1, flex: 1 }}
                                             placeholder="Write a message or attach a file..."
                                             disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}
                                         />
+
+                                        <Box sx={{ position: "absolute", bottom: -24, left: 12, right: 12 }}>
+                                            {showLimitWarning && (
+                                                <Typography variant="caption" color="error">
+                                                    Достигнут лимит {MAX_MESSAGE_LENGTH} символов
+                                                </Typography>
+                                            )}
+                                        </Box>
+
                                         <Divider sx={{ height: 28, mr: 1 }} orientation="vertical" />
                                         <IconButton
                                             type="submit"
                                             sx={{ p: "10px" }}
-                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}
+                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")] || (!inputValue.trim() && !attachedFileName)}
                                         >
                                             <SendIcon />
                                         </IconButton>
@@ -1176,33 +1210,53 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                     )}
                                     <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx"
                                            onChange={handleFileSelected} style={{display: "none"}}/>
-                                    <Paper component="form" onSubmit={async (e) => {
-                                        e.preventDefault();
-                                        const el = (e.target as HTMLFormElement).elements.namedItem("msgMobile") as HTMLInputElement;
-                                        sendChatMessage(el?.value);
-                                        if (el) el.value = "";
-                                    }} sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 1,
-                                        p: "6px 10px",
-                                        borderRadius: "20px"
-                                    }}>
-                                        <IconButton size="small"
-                                                    onClick={() => fileInputRef.current?.click()}><AttachFileIcon
-                                            fontSize="small"/></IconButton>
+                                    <Paper
+                                        component="form"
+                                        onSubmit={async (e) => {
+                                            e.preventDefault();
+                                            if (mobileInputValue.trim() || attachedFileName) {
+                                                await sendChatMessage(mobileInputValue);
+                                                setMobileInputValue("");
+                                                setShowLimitWarning(false);
+                                            }
+                                        }}
+                                        sx={{ display: "flex", alignItems: "center", gap: 1, p: "6px 10px", borderRadius: "20px" }}
+                                    >
+                                        <IconButton size="small" onClick={() => fileInputRef.current?.click()}>
+                                            <AttachFileIcon fontSize="small" />
+                                        </IconButton>
+
                                         <InputBase
-                                            name="msgMobile"
-                                            sx={{ml: 1, flex: 1}}
+                                            value={mobileInputValue}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val.length <= MAX_MESSAGE_LENGTH) {
+                                                    setMobileInputValue(val);
+                                                    setShowLimitWarning(false);
+                                                } else {
+                                                    setShowLimitWarning(true);
+                                                }
+                                            }}
+                                            sx={{ ml: 1, flex: 1 }}
                                             placeholder="Write a message or attach a file..."
-                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}/>
-                                        <Divider sx={{height: 28, mr: 1}} orientation="vertical"/>
+                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}
+                                        />
+
+                                        <Box sx={{ position: "absolute", bottom: -24, left: 12, right: 12 }}>
+                                            {showLimitWarning && (
+                                                <Typography variant="caption" color="error">
+                                                    Достигнут лимит {MAX_MESSAGE_LENGTH} символов
+                                                </Typography>
+                                            )}
+                                        </Box>
+
+                                        <Divider sx={{ height: 28, mr: 1 }} orientation="vertical" />
                                         <IconButton
                                             type="submit"
-                                            sx={{p: "10px"}}
-                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")]}
+                                            sx={{ p: "10px" }}
+                                            disabled={isSendingByAgent[String(selectedAgent?.id ?? "")] || (!mobileInputValue.trim() && !attachedFileName)}
                                         >
-                                            <SendIcon/>
+                                            <SendIcon />
                                         </IconButton>
                                     </Paper>
                                 </Box>

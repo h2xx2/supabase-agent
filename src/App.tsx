@@ -586,6 +586,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                 agent_id: selectedAgent.agent_id,
                 session_id: sessionId,
                 message: userText || `[File: ${fileName}]`,
+                response: response.data.response,
                 sender: 'user',
                 user_id: user?.id,
             }, { headers: { Authorization: `Bearer ${token}` } });

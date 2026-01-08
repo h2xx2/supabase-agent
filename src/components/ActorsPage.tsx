@@ -269,6 +269,7 @@ const ActorsPage: React.FC<SettingsProps> = ({user, toggleDrawer, handleSignOut,
                 actor_id: selectedActor.actor_id,
                 session_id: sessionId,
                 message: userText || `[File: ${fileName}]`,
+                response: response.data.response,
                 sender: 'user',
                 user_id: user?.id,
             }, { headers: { Authorization: `Bearer ${token}` } });
