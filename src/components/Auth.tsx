@@ -86,9 +86,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         id: "youagent-master",
         name: "YouAgentMe Wizard",
         desc: "Provides support and helps to create new agents (anonymous).",
-        agentId: "FSQXUA9SKO",
-        aliasId: "K89KWUZPWE",
-        key: "rhjebivhrbei87vbie234bru234vberbreu2324vbi4",
+        agentId: "3QQS2QJUKY",
+        aliasId: "IRWADY4L5O",
+        key: "TfnWzfQl-6jDKq7gSvFP",
     } as Agent;
     const [agents, setAgents] = useState<Agent[]>([MAIN_PUBLIC_AGENT]);
     const [messagesByAgent, setMessagesByAgent] = useState<Record<string, Msg[]>>({});

@@ -1639,7 +1639,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     <ListItemIcon>
                                         <AddIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary="Add actors" sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary="Add actor" sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
                                 <Divider />
 
