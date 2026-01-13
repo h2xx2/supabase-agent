@@ -248,7 +248,7 @@ const ActorsPage: React.FC<SettingsProps> = ({user, toggleDrawer, handleSignOut,
                     actor_id: selectedActor.actor_id,
                     sessionId,
                     user_id: user?.id,
-                    fileBase64, // Теперь здесь не null, если файл был выбран
+                    fileBase64,
                     fileName,
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -269,8 +269,11 @@ const ActorsPage: React.FC<SettingsProps> = ({user, toggleDrawer, handleSignOut,
                 actor_id: selectedActor.actor_id,
                 session_id: sessionId,
                 message: userText || `[File: ${fileName}]`,
+                response: response.data.response,
                 sender: 'user',
                 user_id: user?.id,
+                file_base64: fileBase64,
+                file_name: fileName,
             }, { headers: { Authorization: `Bearer ${token}` } });
 
             await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call-actor`, {
