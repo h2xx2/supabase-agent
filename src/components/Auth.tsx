@@ -101,6 +101,16 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const canAttach = Boolean(selectedAgent && String(selectedAgent.id) !== String(MAIN_PUBLIC_AGENT.id));
     const [agentsPollingInterval, setAgentsPollingInterval] = useState<NodeJS.Timeout | null>(null);
 // Собираем все пропсы для формы в один объект
+    const reportSignupConversion = () => {
+        if (typeof window === "undefined") return;
+
+        const gtag = (window as any).gtag;
+        if (!gtag) return;
+
+        gtag("event", "conversion", {
+            send_to: "AW-17635043348/ZsXOCJ_twuEbEJTQhdlB"
+        });
+    };
 
 
     const GoogleIcon = () => (
@@ -183,8 +193,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                         { access_token: accessToken, anon_user_id : anonid },
                         { headers: { "Content-Type": "application/json" } }
                     );
-                    const { user, token } = response.data;
+                    const { user, token, newUser } = response.data;
                     if (user && token) {
+                        if(newUser){
+                            reportSignupConversion();
+                        }
                         setUser(user);
                         setCookie("authToken", token, { path: "/" });
                         setCookie("isAnonymous", false, { path: "/" });
@@ -359,17 +372,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             const response = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/signup`, { email, password, first_name: firstName, last_name: lastName, anon_user_id: anonUserId});
             const outerData = response.data;
             const parsedBody = typeof outerData?.body === "string" ? JSON.parse(outerData.body) : outerData.body ?? outerData;
-            if (parsedBody && (parsedBody.error || parsedBody.message)) {
-                setLastErrorRaw(parsedBody);
-                if (rawIndicatesEmailNotConfirmed(parsedBody, parsedBody.error || parsedBody.message)) {
-                    setEmailConfirmationRequired(true);
-                    setError("Email not confirmed. Please check your email.");
-                    return;
-                } else {
-                    setError(parsedBody.error || parsedBody.message || "Sign Up error");
-                    return;
-                }
-            }
             const { user, token, requires_email_confirmation } = parsedBody || {};
             if (user) {
                 if (requires_email_confirmation || !token) {
@@ -377,6 +379,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                     setError("Please confirm your account via email. Sign in after confirmation");
                     return;
                 }
+                reportSignupConversion();
                 setUser(user);
                 if (token) setCookie("authToken", token, { path: "/" });
                 onAuthChange(user);
@@ -402,7 +405,8 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             return;
         }
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/signin`, { email, password });
+            const anon_user_id = cookies["userId"];
+            const response = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/signin`, { email, password, anon_user_id });
             const outerData = response.data;
             const data = typeof outerData?.body === "string" ? JSON.parse(outerData.body) : outerData.body ?? outerData;
             if (data && (data.error || data.message)) {
