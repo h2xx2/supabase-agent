@@ -29,7 +29,7 @@ const tiers = [
     {
         title: 'Free',
         price: '0',
-        description: ['Up to 5 agents', 'Up to 100 requests/month'],
+        description: ['Up to 5 agents', 'Up to 500 requests/month'],
         planKey: 'free',
         buttonText: 'Contact us',
         buttonVariant: 'outlined',
@@ -38,7 +38,7 @@ const tiers = [
     {
         title: 'Personal',
         price: '15',
-        description: ['Unlimited agents', 'Up to 1,000 requests/month'],
+        description: ['Unlimited agents', 'Up to 10,000 requests/month'],
         planKey: 'personal',
         buttonText: '3 Months Free',
         buttonVariant: 'contained',
