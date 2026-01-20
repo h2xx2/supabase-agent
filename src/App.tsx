@@ -78,6 +78,8 @@ interface Agent {
     knowledge_base_id?: string;
     http_action_enabled: boolean;
     email_action_enabled: boolean;
+    generation_image_action_enabled: boolean;
+    process_image_action_enabled: boolean;
 }
 
 const Page = {
@@ -107,6 +109,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [enableEmailAction, setEnableEmailAction] = useState(false);
     const [editEnableHttpAction, setEditEnableHttpAction] = useState(false);
     const [editEnableEmailAction, setEditEnableEmailAction] = useState(false);
+    const [enableImageGenerationAction, setEnableImageGenerationAction] = useState(false);
+    const [enablePhotoProccessAction, setPhotoProccessAction] = useState(false);
     const [newFile, setNewFile] = useState<File | null>(null);
     const [editFile, setEditFile] = useState<File | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -134,8 +138,13 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const SUPPORTED_EXTENSIONS = [
-        '.pdf', '.txt', '.doc', '.docx', '.csv', '.xls', '.xlsx'
+        '.pdf', '.txt', '.doc', '.docx', '.csv', '.xls', '.xlsx',
+
+        '.png', '.jpg', '.jpeg', '.webp'
     ];
+    const [attachedFileUploading, setAttachedFileUploading] = useState<boolean>(false);
+    const [attachedFileProgress, setAttachedFileProgress] = useState<number | null>(null); // 0..100 or null
+    const [attachedFileIsImage, setAttachedFileIsImage] = useState<boolean>(false);
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -392,6 +401,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setEditAgent(agent);
         setEditEnableHttpAction(!!agent.http_action_enabled);
         setEditEnableEmailAction(!!agent.email_action_enabled);
+        setEnableImageGenerationAction(!!agent.process_image_action_enabled);
+        setPhotoProccessAction(!!agent.process_image_action_enabled);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
         setInitialKnowledgeBaseFile(agent.knowledge_base_id ? 'Knowledge base file exists' : null);
@@ -404,6 +415,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setErrorMessage(null);
         setEditEnableHttpAction(false);
         setEditEnableEmailAction(false);
+        setEnableImageGenerationAction(false);
+        setPhotoProccessAction(false);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
         setInitialKnowledgeBaseFile(null);
@@ -449,6 +462,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     user_id,
                     enableHttpAction: editEnableHttpAction,
                     enableEmailAction: editEnableEmailAction,
+                    enableImageGenerationAction,
+                    enablePhotoProccessAction,
                     file: fileData,
                     fileName,
                     deleteKnowledgeBase: deleteKnowledgeBase,
@@ -512,7 +527,41 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             setGlobalLoading(false);
         }
     };
+    const uploadFile = async (file: File) : Promise<{ file_name: string }> => {
+        const token = getAuthToken();
 
+        // УБИРАЕМ FormData
+        // const fd = new FormData();
+        // fd.append('file', file);
+
+        setAttachedFileUploading(true);
+        setAttachedFileProgress(0);
+
+        try {
+            // Отправляем file напрямую как тело запроса
+            const resp = await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/upload-image`,
+                file, // <--- ОТПРАВЛЯЕМ ЧИСТЫЙ ФАЙЛ
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': file.type || 'application/octet-stream', // Важно указать тип
+                    },
+                    onUploadProgress: (progressEvent: ProgressEvent) => {
+                        if (progressEvent.total) {
+                            const pct = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                            setAttachedFileProgress(pct);
+                        }
+                    }
+                }
+            );
+
+            return resp.data;
+        } finally {
+            setAttachedFileUploading(false);
+            setAttachedFileProgress(100);
+        }
+    };
     const sendChatMessage = async (text: string) => {
         if (!text.trim() && !attachedFile) return;
         if (!selectedAgent?.agent_id || !selectedAgent.alias_id) return;
@@ -521,22 +570,20 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         const hasFile = !!attachedFile;
         const fileNameForDisplay = attachedFileName || 'file';
 
-        // Формируем сообщение пользователя
         const userMessage: MessageModel = {
-            message: userText || fileNameForDisplay, // текст или имя файла
+            message: userText || fileNameForDisplay,
             sentTime: new Date().toISOString(),
             sender: 'user',
             direction: 'outgoing',
             position: 'single',
-            // Добавляем кастомное поле — chatscope его не трогает, но мы сможем использовать
             attachedFileName: hasFile ? fileNameForDisplay : undefined,
         };
 
-        // Сразу показываем сообщение в чате
         setChatMessages(prev => [...prev, userMessage]);
 
         let sessionId = sessionIds[selectedAgent.agent_id] ||
             `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
         setSessionIds(prev => ({ ...prev, [selectedAgent.agent_id]: sessionId }));
 
         try {
@@ -544,16 +591,39 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
             let fileBase64: string | null = null;
             let fileName: string | null = null;
+            let uploadedFileName: string | null = null;
 
             if (attachedFile) {
-                const dataUrl = await convertFileToBase64(attachedFile);
-                const match = dataUrl.match(/^data:.+?;base64,(.*)$/);
-                if (!match) throw new Error('Failed to encode file');
-                fileBase64 = match[1];
-                fileName = attachedFile.name;
+                if (attachedFileIsImage) {
+                    // === ВАЖНОЕ ИЗМЕНЕНИЕ: сначала грузим на S3 ===
+                    try {
+                        const uploadResult = await uploadFile(attachedFile);
+                        uploadedFileName = uploadResult.file_name; // например: "upload/uuid.jpg"
+                        fileName = attachedFile.name; // для отображения/истории
+                    } catch (uploadErr: any) {
+                        throw new Error(
+                            `Upload failed: ${uploadErr?.response?.data?.error || uploadErr.message || uploadErr}`
+                        );
+                    }
+                } else {
+                    // Для НЕ-изображений — старая логика (base64)
+                    const dataUrl = await convertFileToBase64(attachedFile);
+                    const match = dataUrl.match(/^data:.+?;base64,(.*)$/);
+                    if (!match) throw new Error('Failed to encode file');
+
+                    fileBase64 = match[1];
+                    fileName = attachedFile.name;
+                }
             }
+
+            // Очищаем UI после старта отправки
             setAttachedFile(null);
             setAttachedFileName(null);
+            setAttachedFileProgress(null);
+            setAttachedFileIsImage(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+
+            // === КЛЮЧЕВОЕ ИЗМЕНЕНИЕ В ЗАПРОСЕ /send ===
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/send`,
                 {
@@ -562,8 +632,13 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     aliasId: selectedAgent.alias_id,
                     sessionId,
                     user_id: user?.id,
+
+                    // Старый вариант (для не-изображений)
                     fileBase64,
                     fileName,
+
+                    // НОВОЕ ПОЛЕ ДЛЯ ИЗОБРАЖЕНИЙ:
+                    uploadedFileName, // <-- имя файла в S3
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -577,25 +652,30 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             };
             setChatMessages(prev => [...prev, botMessage]);
 
-            // Очищаем файл только после успешной отправки
+            // === СОХРАНЕНИЕ В ИСТОРИИ (важно) ===
+            await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/save-message`,
+                {
+                    agent_id: selectedAgent.agent_id,
+                    session_id: sessionId,
+                    message: userText || `[File: ${fileName}]`,
+                    response: response.data.response,
+                    sender: 'user',
+                    user_id: user?.id,
+                    uploaded_file: uploadedFileName || null,
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-            if (fileInputRef.current) fileInputRef.current.value = '';
-
-            // Сохраняем сообщение в истории (включая имя файла)
-            await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-message`, {
-                agent_id: selectedAgent.agent_id,
-                session_id: sessionId,
-                message: userText || `[File: ${fileName}]`,
-                response: response.data.response,
-                sender: 'user',
-                user_id: user?.id,
-            }, { headers: { Authorization: `Bearer ${token}` } });
-
-            await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call`, {
-                agent_id: selectedAgent.agent_id,
-                user_id: user?.id,
-                status: 'success',
-            }, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/save-call`,
+                {
+                    agent_id: selectedAgent.agent_id,
+                    user_id: user?.id,
+                    status: 'success',
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
         } catch (error: any) {
             console.error('Error sending message with file:', error);
@@ -618,20 +698,26 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
             try {
                 const token = getAuthToken();
-                await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call`, {
-                    agent_id: selectedAgent.agent_id,
-                    user_id: user?.id,
-                    status: 'failure',
-                }, { headers: { Authorization: `Bearer ${token}` } });
-            } catch { /* ignore */ }
+                await axios.post(
+                    `${import.meta.env.VITE_API_GATEWAY_URL}/save-call`,
+                    {
+                        agent_id: selectedAgent.agent_id,
+                        user_id: user?.id,
+                        status: 'failure',
+                    },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+            } catch { }
         }
     };
+
 
     const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
         if (!file) {
             setAttachedFile(null);
             setAttachedFileName(null);
+            setAttachedFileIsImage(false);
             return;
         }
 
@@ -643,16 +729,24 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             return;
         }
 
-        if (file.size > 3 * 1024 * 1024) { // ~9.5 MB
-            alert('File too large. Maximum ~9.5 MB');
+        if (file.size > 25 * 1024 * 1024) { // увеличил лимит (примерно 25 MB) — подстройте под нужды
+            alert('File too large. Maximum 25 MB');
             e.target.value = '';
             return;
         }
 
+        // Определяем, является ли файл изображением. Надёжнее — смотреть file.type
+        const isImage = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|webp|gif)$/i.test(file.name);
+        setAttachedFileIsImage(isImage);
+
         setAttachedFile(file);
         setAttachedFileName(file.name);
+        setAttachedFileProgress(null);
+        setAttachedFileUploading(false);
+
         e.target.value = ''; // чтобы можно было выбрать тот же файл снова
     };
+
     const handleClearAddActorRequest = () => {
         setOpenActorsDialogRequest(false);
     };
@@ -1835,6 +1929,16 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                             label="Enable Email-action"
                                             sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
                                         />
+                                        <FormControlLabel
+                                            control={<Checkbox checked={enableImageGenerationAction} onChange={(e) => setEnableImageGenerationAction(e.target.checked)} />}
+                                            label="Enable Generation Photo"
+                                            sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
+                                        />
+                                        <FormControlLabel
+                                            control={<Checkbox checked={enablePhotoProccessAction} onChange={(e) => setPhotoProccessAction(e.target.checked)} />}
+                                            label="Enable Photo Processing"
+                                            sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
+                                        />
                                     </Box>
                                     <Divider sx={{ my: 2 }} />
                                     <Typography
@@ -2237,7 +2341,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     <input
                                         ref={fileInputRef}
                                         type="file"
-                                        accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx"
+                                        accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx, .png, .jpg, .jpeg, .webp"
                                         onChange={handleFileSelected}
                                         style={{ display: 'none' }}
                                     />

@@ -59,6 +59,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     const [newAgent, setNewAgent] = useState({ name: '', instructions: '' });
     const [enableHttpAction, setEnableHttpAction] = useState(false);
     const [enableEmailAction, setEnableEmailAction] = useState(false);
+    const [enableImageGenerationAction, setEnableImageGenerationAction] = useState(false);
+    const [enablePhotoProccessAction, setPhotoProccessAction] = useState(false);
     const [newFile, setNewFile] = useState<File | null>(null);
     const [selectedBlueprint, setSelectedBlueprint] = useState<string>('');
     const [blueprintInteracted, setBlueprintInteracted] = useState(false);
@@ -342,6 +344,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                     user_id: userId,
                     enableHttpAction,
                     enableEmailAction,
+                    enableImageGenerationAction,
+                    enablePhotoProccessAction,
                     enableUserInputAction: true,
                 }),
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
@@ -471,6 +475,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             setNewAgent({ name: '', instructions: '' });
             setEnableHttpAction(false);
             setEnableEmailAction(false);
+            setEnableImageGenerationAction(false);
+            setPhotoProccessAction(false);
             setNewFile(null);
             setSelectedBlueprint('');
             setBlueprintInteracted(false);
@@ -605,6 +611,14 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                     <FormControlLabel
                         control={<Checkbox checked={enableEmailAction} onChange={(e) => setEnableEmailAction(e.target.checked)} />}
                         label="Enable Email Action"
+                    />
+                    <FormControlLabel
+                        control={<Checkbox checked={enableImageGenerationAction} onChange={(e) => setEnableImageGenerationAction(e.target.checked)} />}
+                        label="Enable Generation Photo"
+                    />
+                    <FormControlLabel
+                        control={<Checkbox checked={enablePhotoProccessAction} onChange={(e) => setPhotoProccessAction(e.target.checked)} />}
+                        label="Enable Photo Processing"
                     />
                 </Box>
 
