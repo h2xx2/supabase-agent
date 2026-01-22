@@ -145,6 +145,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [attachedFileUploading, setAttachedFileUploading] = useState<boolean>(false);
     const [attachedFileProgress, setAttachedFileProgress] = useState<number | null>(null); // 0..100 or null
     const [attachedFileIsImage, setAttachedFileIsImage] = useState<boolean>(false);
+    const fileUrlMap = useRef<Record<string, string>>({});
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -527,39 +528,44 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             setGlobalLoading(false);
         }
     };
-    const uploadFile = async (file: File) : Promise<{ file_name: string }> => {
+    // Функция-помощник для конвертации файла в Base64
+    const fileToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(',')[1]); // Убираем префикс "data:image/..."
+            reader.onerror = (error) => reject(error);
+        });
+    };
+
+    const uploadFile = async (file) => {
         const token = getAuthToken();
-
-        // УБИРАЕМ FormData
-        // const fd = new FormData();
-        // fd.append('file', file);
-
         setAttachedFileUploading(true);
-        setAttachedFileProgress(0);
 
         try {
-            // Отправляем file напрямую как тело запроса
+            // 1. Конвертируем в Base64
+            const base64String = await fileToBase64(file);
+
+            // 2. Отправляем JSON
             const resp = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/upload-image`,
-                file, // <--- ОТПРАВЛЯЕМ ЧИСТЫЙ ФАЙЛ
+                {
+                    image: base64String,
+                    mime: file.type // передаем тип явно
+                },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
-                        'Content-Type': file.type || 'application/octet-stream', // Важно указать тип
-                    },
-                    onUploadProgress: (progressEvent: ProgressEvent) => {
-                        if (progressEvent.total) {
-                            const pct = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                            setAttachedFileProgress(pct);
-                        }
+                        'Content-Type': 'application/json' // Важно: теперь мы шлем JSON
                     }
                 }
             );
 
             return resp.data;
+        } catch (e) {
+            console.error(e);
         } finally {
             setAttachedFileUploading(false);
-            setAttachedFileProgress(100);
         }
     };
     const sendChatMessage = async (text: string) => {
@@ -649,7 +655,13 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                 sender: 'bot',
                 direction: 'incoming',
                 position: 'single',
+                attachedFileName: 'Generated image.png',
             };
+
+            if (response.data.image?.url) {
+                fileUrlMap.current[botMessage.sentTime] = response.data.image.url;
+            }
+
             setChatMessages(prev => [...prev, botMessage]);
 
             // === СОХРАНЕНИЕ В ИСТОРИИ (важно) ===
@@ -2270,6 +2282,64 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                                         </Box>
                                                     </Message.CustomContent>
                                                 </Message>
+                                            );
+                                        }
+// === BOT MESSAGE WITH FILE ===
+                                        // ✅ ПРАВИЛЬНО
+                                        if (!isUserMessage && hasFile) {
+                                            const fileUrl = fileUrlMap.current[msg.sentTime];
+
+                                            return (
+                                                <React.Fragment key={index}>
+                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                        {/* Текст ответа бота */}
+                                                        {msg.message && (
+                                                            <Message
+                                                                model={{
+                                                                    message: msg.message,
+                                                                    direction: 'incoming',
+                                                                    position: 'single',
+                                                                    sender: 'bot',
+                                                                }}
+                                                            />
+                                                        )}
+
+                                                        {/* Изображение от бота */}
+                                                        {fileUrl && (
+                                                            <Message
+                                                                model={{
+                                                                    message: '',
+                                                                    direction: 'incoming',
+                                                                    position: 'single',
+                                                                    sender: 'bot',
+                                                                }}
+                                                            >
+                                                                <Message.CustomContent>
+                                                                    <Box
+                                                                        component="img"
+                                                                        src={fileUrl}
+                                                                        alt="Generated image"
+                                                                        onClick={() => window.open(fileUrl, '_blank')}
+                                                                        sx={{
+                                                                            width: '100%',
+                                                                            maxWidth: 400,
+                                                                            height: 'auto',
+                                                                            maxHeight: 300,
+                                                                            borderRadius: 2,
+                                                                            cursor: 'pointer',
+                                                                            boxShadow: 2,
+                                                                            objectFit: 'contain',
+                                                                        }}
+                                                                        onError={(e) => {
+                                                                            const target = e.target as HTMLImageElement;
+                                                                            target.src = '/placeholder-image.png'; // или data URL
+                                                                        }}
+                                                                    />
+                                                                </Message.CustomContent>
+                                                            </Message>
+                                                        )}
+                                                    </Box>
+                                                </React.Fragment>
                                             );
                                         }
 
