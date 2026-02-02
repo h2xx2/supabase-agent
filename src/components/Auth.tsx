@@ -342,7 +342,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             return;
         }
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/signup`, { email, password, first_name: firstName, last_name: lastName });
+            const response = await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/auth/signup`, { email, password, firstName, lastName });
             const outerData = response.data;
             const parsedBody = typeof outerData?.body === "string" ? JSON.parse(outerData.body) : outerData.body ?? outerData;
             if (parsedBody && (parsedBody.error || parsedBody.message)) {
