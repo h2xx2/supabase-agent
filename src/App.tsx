@@ -313,7 +313,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             const token = cookies.authToken;
             if (token) {
                 await axios.post(
-                    `${import.meta.env.VITE_API_GATEWAY_URL}/signout`,
+                    `${import.meta.env.VITE_API_GATEWAY_URL}/auth/signout`,
                     {},
                     {
                         headers: { Authorization: `Bearer ${token}` },
