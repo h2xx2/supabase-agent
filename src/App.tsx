@@ -402,7 +402,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setEditAgent(agent);
         setEditEnableHttpAction(!!agent.http_action_enabled);
         setEditEnableEmailAction(!!agent.email_action_enabled);
-        setEnableImageGenerationAction(!!agent.process_image_action_enabled);
+        setEnableImageGenerationAction(!!agent.generation_image_action_enabled);
         setPhotoProccessAction(!!agent.process_image_action_enabled);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
@@ -1360,7 +1360,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     }}
                                                                 >
                                                                     {`<script
-  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
@@ -1378,7 +1378,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     onClick={() => {
                                                                         navigator.clipboard
                                                                             .writeText(`<script
-  src="https://d1w17tu7s7ktlv.cloudfront.net/embed.umd.js"
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
