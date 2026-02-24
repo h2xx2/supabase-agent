@@ -1360,7 +1360,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     }}
                                                                 >
                                                                     {`<script
-  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
+  src="https://${import.meta.env.VITE_WIDGET_SCRIPT}/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
@@ -1378,7 +1378,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     onClick={() => {
                                                                         navigator.clipboard
                                                                             .writeText(`<script
-  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
+  src="https://${import.meta.env.VITE_WIDGET_SCRIPT}/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
