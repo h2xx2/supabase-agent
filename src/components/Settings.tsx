@@ -4,53 +4,58 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from 'axios';
 import StatCard from "./StatCard";
+// @ts-ignore
+import StatCardProps from "./StatCard";
 import ChangePassword from "./ChangePassword";
 import Pricing from "./Pricing";
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
+import { useTranslation } from "react-i18next";
 
 interface SettingsProps {
     callCount: any,
     deviceType: string,
     user: any,
-    setUser: (user: any) => void,
     setGlobalLoading: (state: any) => void
 }
 
-const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setUser, setGlobalLoading }) => {
+const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlobalLoading }) => {
     const [error, setError] = React.useState<string | null>(null);
     const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
+    const { t } = useTranslation();
 
     const settings = [
         {
             name: 'first_name',
-            label: "First Name",
+            label: t("settings.labelFirstName"),
             defaultValue: user?.first_name || user?.profile?.first_name || user?.profileData?.first_name || '',
         },
         {
             name: 'last_name',
-            label: "Last Name",
+            label: t("settings.labelLastName"),
             defaultValue: user?.last_name || user?.profile?.last_name || user?.profileData?.last_name || '',
         },
         {
             name: 'date_of_birth',
-            label: "Date of Birth (optional)",
+            label: t("settings.labelDateOfBirth"),
             defaultValue: dateOfBirth || '',
         },
         {
             name: 'username',
-            label: "Username",
+            label: t("settings.labelUsername"),
             defaultValue: user?.email || '',
             readOnly: true
         }
     ];
 
-    const statisticData = [
+
+    // @ts-ignore
+    const statisticData: StatCardProps[] = [
         {
-            title: 'Messages per month',
-            value: user?.message_limit || callCount.month,
+            title: t("settings.titlePerMonth"),
+            value: callCount.month,
         },
         {
-            title: 'Messages per year',
+            title: t("settings.titlePerYear"),
             value: callCount.year,
         },
     ];
@@ -62,23 +67,24 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setUse
     const save = async (event: React.FormEvent) => {
         event.preventDefault();
         setError(null);
+        // @ts-ignore
         const formData = new FormData(event.currentTarget);
         const { first_name, last_name } = Object.fromEntries((formData as any).entries());
         if (!first_name?.trim() || !last_name?.trim()) {
-            setError("Please fill first name and last name");
+            setError(t('settings.fillFirstLastName'));
             return;
         }
         setGlobalLoading(true);
         const data = {
-            email: user.email,
-            first_name,
-            last_name,
-            date_of_birth: dateOfBirth
+            userID: user.id,          
+            firstName: first_name,    
+            lastName: last_name,     
+            dateOfBirth: dateOfBirth
         };
 
         try {
-            await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/save-setting`,
+            await axios.patch(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/account/settings`,
                 data,
                 {
                     headers: {
@@ -88,24 +94,26 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setUse
                 }
             );
         } catch (error) {
-            setError("Failed to save settings. Please try again.");
+            setError(t('settings.saveFailed'));
             console.error("Save error:", error);
         } finally {
             setGlobalLoading(false);
         }
-    };
-
+    }
     useEffect(() => {
         if (!user) return;
+        // ищем дату в нескольких местах, чтобы покрыть оба варианта ответа сервера
         const dob =
             user.date_of_birth ??
-            user.dateOfBirth ??
+            user.dateOfBirth ?? // если вы когда-то юзали camelCase
             user.profile?.date_of_birth ??
             user.profileData?.date_of_birth ??
             null;
         setDateOfBirth(dob || null);
     }, [user]);
-
+    // @ts-ignore
+    // @ts-ignore
+    // @ts-ignore
     return (
         <Box
             sx={{
@@ -132,7 +140,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setUse
                         color='secondary'
                         type="submit"
                         form='save-settings-form'
-                    >Save</Button>
+                    >{ t("buttonSave") }</Button>
                 </Box>
                 {settings.map(({ name, label, defaultValue, readOnly }, index) => (
                     <Box key={index} sx={{
@@ -167,7 +175,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setUse
                                     selected={dateOfBirth ? new Date(dateOfBirth) : null}
                                     onChange={onChangeDate}
                                     dateFormat="yyyy-MM-dd"
-                                    placeholderText="YYYY-MM-DD"
+                                    placeholderText={ t("settings.placeHolderText") }
                                     showMonthDropdown
                                     showYearDropdown
                                     dropdownMode="select"
@@ -225,7 +233,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setUse
                             fontSize: deviceType === 'mobile' ? '1rem' : deviceType === 'tablet' ? '1.125rem' : '1.25rem',
                         }}
                     >
-                        Password
+                        { t("password")}
                     </Typography>
                 </Box>
                 <Box sx={{
@@ -252,18 +260,7 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setUse
                 ))}
             </Grid>
 
-            <Box sx={{ mt: 2, mb: 2 }}>
-                {user.is_trial_active && (
-                    <Alert severity="success">
-                        You are on a 3-month free trial for the Personal plan. {user.trial_days_remaining} days remaining.
-                    </Alert>
-                )}
-            </Box>
-            <Pricing
-                user={user}
-                setUser={setUser}
-                setGlobalLoading={setGlobalLoading}
-            />
+            <Pricing />
         </Box>
     );
 }

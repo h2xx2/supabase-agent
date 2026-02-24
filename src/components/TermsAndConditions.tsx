@@ -1,22 +1,25 @@
 import * as React from 'react';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
+import { useTranslation } from "react-i18next";
 
 const TermsAndConditions: React.FC = () => {
+    const { t } = useTranslation();
+
     return (
         <>
             <Typography variant="h4" sx={{fontWeight: 'bold'}} gutterBottom>
-                Terms And Conditions of Use
+                { t("termsAndConditions.title") }
             </Typography>
 
             <Typography variant="body1">
-                <strong>Service:</strong> youagent.me
+                <strong>{ t("termsAndConditions.serviceTitle") }</strong> { t("termsAndConditions.serviceName") }
             </Typography>
             <Typography variant="body1">
-                <strong>Provider:</strong> Telemetry Balkan doo, Belgrade
+                <strong>{ t("termsAndConditions.providerTitle") }</strong> { t("termsAndConditions.providerName") }
             </Typography>
             <Typography variant="body1">
-                <strong>Address:</strong> 11118, Cara Nikolaja II, 11, Belgrade, Serbia
+                <strong>{ t("termsAndConditions.addressTitle") }</strong> { t("termsAndConditions.addressDetails") }
             </Typography>
 
             <Typography
@@ -25,170 +28,173 @@ const TermsAndConditions: React.FC = () => {
                     fontStyle: 'italic',
                     mt: 2
                 }}>
-                Last updated: September 4, 2025
+                { t("termsAndConditions.lastUpdated") }
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                1. Introduction
+                { t("termsAndConditions.introductionTitle") }
             </Typography>
             <Typography variant="body1" >
-                Welcome to <strong>youagent.me</strong> ("the Service"), an online platform provided by <strong>Telemetry Balkan doo, Belgrade</strong> ("we", "us", "our"). By accessing or using the Service, you agree to these Terms and Conditions ("Terms"). If you do not agree, you must discontinue using the Service.
+                { t("termsAndConditions.introductionTextWelcome") } <strong>{ t("termsAndConditions.introductionTextName") }</strong> { t ("termsAndConditions.introductionText")} <strong>{ t("termsAndConditions.introductionTextAdress") }</strong> { t("termsAndConditions.introductionText2") }
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                2. Description of the Service
+                { t("termsAndConditions.descriptionTitle") }
             </Typography>
             <Typography variant="body1" >
-                The Service allows users ("you", "your") to create and configure AI agents powered by large language models (LLMs). These agents may interact with end users based on your provided instructions and may optionally:
+                { t("termsAndConditions.descriptionIntro") }
                 <ul>
-                    <li>Send emails</li>
-                    <li>Make HTTP requests</li>
-                    <li>Search over a knowledge base</li>
+                    <li>{ t("termsAndConditions.descriptionList1") }</li>
+                    <li>{ t("termsAndConditions.descriptionList2") }</li>
+                    <li>{ t("termsAndConditions.descriptionList3") }</li>
                 </ul>
-                We provide tools and infrastructure for these functionalities but do not guarantee any specific outcomes or performance of the AI agents.
+                { t("termsAndConditions.descriptionAfterList") }
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                3. Eligibility
+                { t("termsAndConditions.eligibilityTitle") }
             </Typography>
             <Typography variant="body1" >
-                By using the Service, you represent and warrant that you:
+                { t("termsAndConditions.eligibilityIntro") }
                 <ul>
-                    <li>Are at least 18 years old (or the age of majority in your jurisdiction);</li>
-                    <li>Have the authority to enter into these Terms;</li>
-                    <li>Will use the Service in compliance with applicable laws and regulations.</li>
+                    <li>{ t("termsAndConditions.eligibilityList1") }</li>
+                    <li>{ t("termsAndConditions.eligibilityList2") }</li>
+                    <li>{ t("termsAndConditions.eligibilityList3") }</li>
                 </ul>
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                4. User Responsibilities
+                { t("termsAndConditions.userResponsibilitiesTitle") }
             </Typography>
             <Typography variant="body1" >
-                You are solely responsible for:
+                { t("termsAndConditions.userResponsibilitiesIntro") }
                 <ul>
-                    <li>The instructions, data, and content you provide to the Service;</li>
-                    <li>Ensuring your use of the Service complies with all applicable laws, including privacy, data protection, and intellectual property laws;</li>
-                    <li>Any interactions or communications between your AI agents and third parties;</li>
-                    <li>Keeping your account credentials secure and confidential.</li>
+                    <li>{ t("termsAndConditions.userResponsibilitiesList1") }</li>
+                    <li>{ t("termsAndConditions.userResponsibilitiesList2") }</li>
+                    <li>{ t("termsAndConditions.userResponsibilitiesList3") }</li>
+                    <li>{ t("termsAndConditions.userResponsibilitiesList4") }</li>
                 </ul>
-                You agree not to use the Service for any unlawful or harmful purpose, including but not limited to fraud, harassment, dissemination of harmful content, or violation of third-party rights.
+                { t("termsAndConditions.userResponsibilitiesAfterList") }
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                5. Intellectual Property
+                { t("termsAndConditions.intellectualPropertyTitle") }
             </Typography>
             <Typography variant="body1" >
-                All rights, title, and interest in the Service and its components (software, interface, content, trademarks, etc.) remain the property of Telemetry Balkan doo or its licensors. You retain ownership of any data and content you provide, but you grant us a worldwide, non-exclusive, royalty-free license to use, host, and process your content solely for the purpose of operating and improving the Service.
+                { t("termsAndConditions.intellectualPropertyText") }
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                6. Service Availability
+                { t("termsAndConditions.serviceAvailabilityTitle") }
             </Typography>
             <Typography variant="body1" >
-                We strive to provide continuous and reliable access to the Service but do not guarantee uninterrupted availability. We may suspend or limit access for maintenance, security, or legal reasons without prior notice.
+                { t("termsAndConditions.serviceAvailabilityText") }
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                7. Limitation of Liability
+                { t("termsAndConditions.limitationLiabilityTitle") }
             </Typography>
             <Typography variant="body1" >
-                To the fullest extent permitted by law:
+                { t("termsAndConditions.limitationLiabilityIntro") }
                 <ul>
-                    <li>The Service is provided "AS IS" and "AS AVAILABLE" without warranties of any kind, express or implied.</li>
+                    <li>{ t("termsAndConditions.limitationLiabilityList1") }</li>
                     <li>
-                        We disclaim liability for any damages, direct or indirect, arising from:
+                        { t("termsAndConditions.limitationLiabilityIntro2") }
                         <ul>
-                            <li>Use or inability to use the Service;</li>
-                            <li>Errors, inaccuracies, or omissions in outputs generated by AI agents;</li>
-                            <li>Unauthorized access, hacking, or breaches of security;</li>
-                            <li>Third-party actions, integrations, or content.</li>
+                            <li>{ t("termsAndConditions.limitationLiabilitySubList1") }</li>
+                            <li>{ t("termsAndConditions.limitationLiabilitySubList2") }</li>
+                            <li>{ t("termsAndConditions.limitationLiabilitySubList3") }</li>
+                            <li>{ t("termsAndConditions.limitationLiabilitySubList4") }</li>
                         </ul>
                     </li>
-                    <li>In no event shall our aggregate liability exceed the total fees paid by you (if any) for the Service in the preceding three (3) months.</li>
+                    <li>{ t("termsAndConditions.limitationLiabilityAfterList") }</li>
                 </ul>
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                8. Indemnification
+                { t("termsAndConditions.indemnificationTitle") }
             </Typography>
             <Typography variant="body1" >
-                You agree to indemnify, defend, and hold harmless Telemetry Balkan doo, its officers, directors, employees, and affiliates from any claims, damages, or expenses arising from your use of the Service, your content, or your violation of these Terms.
+                { t("termsAndConditions.indemnificationIntro") }
+                <ul>
+                    <li>{ t("termsAndConditions.indemnificationList1") }</li>
+                    <li>{ t("termsAndConditions.indemnificationList2") }</li>
+                    <li>{ t("termsAndConditions.indemnificationList3") }</li>
+                </ul>
+            </Typography>
+                
+            <Divider sx={{ mt: 3, mb: 3 }}/>
+
+            <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
+                { t("termsAndConditions.thirdPartyServicesTitle") }
+            </Typography>
+            <Typography variant="body1" >
+            { t("termsAndConditions.thirdPartyServicesText") }            
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                9. Third-Party Services
+                { t("termsAndConditions.dataPrivacyTitle") }
             </Typography>
-            <Typography variant="body1" >
-                The Service may integrate with or link to third-party services (e.g., email providers, APIs). We are not responsible for the availability, content, or conduct of these third-party services.
-            </Typography>
-
-            <Divider sx={{ mt: 3, mb: 3 }}/>
-
-            <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                10. Data Privacy
-            </Typography>
-            <Typography variant="body1" >
-                We process personal data in accordance with our Privacy Policy. By using the Service, you consent to such processing and warrant that you have the necessary rights and permissions for all data you provide.
+            <Typography variant="body1" sx={{whiteSpace: 'pre-line'}} >
+                { t("termsAndConditions.dataPrivacyText") }
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                11. Modifications to the Service and Terms
+                { t("termsAndConditions.modificationsTitle") }
             </Typography>
-            <Typography variant="body1" >
-                We may update or discontinue the Service at any time. We reserve the right to amend these Terms, and we will notify you of material changes by updating the "Last updated" date. Your continued use of the Service constitutes acceptance of the revised Terms.
-            </Typography>
-
-            <Divider sx={{ mt: 3, mb: 3 }}/>
-
-            <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                12. Governing Law and Jurisdiction
-            </Typography>
-            <Typography variant="body1" >
-                These Terms are governed by the laws of the Republic of Serbia. Any disputes arising under or in connection with these Terms shall be subject to the exclusive jurisdiction of the courts of Belgrade, Serbia.
+            <Typography variant="body1" sx={{whiteSpace: 'pre-line'}}>
+                { t("termsAndConditions.modificationsText") }
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                13. Termination
+                { t("termsAndConditions.governingLawTitle") }
             </Typography>
             <Typography variant="body1" >
-                We may suspend or terminate your access to the Service if you violate these Terms or engage in harmful or unlawful activity. Upon termination, your right to use the Service ceases immediately, and you remain liable for all obligations incurred prior to termination.
+                { t("termsAndConditions.governingLawText") }
             </Typography>
 
             <Divider sx={{ mt: 3, mb: 3 }}/>
 
             <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
-                14. Contact
+                { t("termsAndConditions.terminationTitle") }
             </Typography>
-            <Typography variant="body1">
-                For questions or concerns about these Terms, please contact us at:<br />
-                <strong>Telemetry Balkan doo</strong><br />
-                11118, Cara Nikolaja II, 11, Belgrade, Serbia<br />
-                <a href="mailto:sergei@2lemetry.io">sergei@2lemetry.io</a>
+            <Typography variant="body1" sx={{whiteSpace: 'pre-line'}} >
+                { t("termsAndConditions.terminationText") }
             </Typography>
 
+            <Divider sx={{ mt: 3, mb: 3 }}/>
 
+            <Typography variant="h5" gutterBottom sx={{fontWeight: 'bold'}}>
+                { t("termsAndConditions.contactTitle") }
+            </Typography>
+            <Typography variant="body1" sx={{whiteSpace: 'pre-line'}}>
+                { t("termsAndConditions.contactText1") }<br />
+                <strong>{ t("termsAndConditions.contactText2") }</strong><br />
+                { t("termsAndConditions.contactText3") }<br />
+                <a href="mailto:support@2lemetry.io">support@2lemetry.io</a>
+            </Typography>
         </>
     );
 }

@@ -37,11 +37,8 @@ import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ViewListIcon from '@mui/icons-material/ViewList';
-import PowerIcon from '@mui/icons-material/Power';
-import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import PolicyIcon from '@mui/icons-material/Policy';
 import DescriptionIcon from '@mui/icons-material/Description';
-import CodeIcon from '@mui/icons-material/Code';
 import Auth from './components/Auth';
 import GlobalLoader from './components/GlobalLoader';
 import {
@@ -58,9 +55,8 @@ import Copyright from './components/Copyright';
 import PrivacyPolicy from "./components/PrivacyPolicy.tsx";
 import TermsAndConditions from "./components/TermsAndConditions";
 import TermsAndConditionAcceptanceDialog from "./components/TermsAndConditionAcceptanceDialog";
-import DevelopmentPage from './components/DevelopmentPage';
 import AddAgentDialog from "./components/CreateAgent.tsx";
-import ActorsPage from "./components/ActorsPage.tsx";
+import { useTranslation } from "react-i18next";
 
 interface Agent {
     key: React.ReactNode;
@@ -78,25 +74,24 @@ interface Agent {
     knowledge_base_id?: string;
     http_action_enabled: boolean;
     email_action_enabled: boolean;
-    generation_image_action_enabled: boolean;
-    process_image_action_enabled: boolean;
 }
 
 const Page = {
-    AGENTS: "My Agents",
-    ACTORS: "My Actors",
-    DEVELOPMENT: "Development",
-    SETTINGS: "Settings",
-    PRIVACY_POLICY: "Privacy Policy",
-    TERMS_AND_CONDITIONS: "Terms and Conditions",
-};
+    AGENTS: "AGENTS",
+    SETTINGS: "SETTINGS",
+    PRIVACY_POLICY: "PRIVACY_POLICY",
+    TERMS_AND_CONDITIONS: "TERMS_AND_CONDITIONS",
+} as const;
+
+type PageKey = keyof typeof Page;
 interface AppProps {
     setChatOpened?: (value: boolean) => void;
     setAgentDeployed?: (value: boolean) => void;
+    // если у вас есть другие пропсы от Root — добавьте их здесь
 }
 
 const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgentDeployed }) => {
-    const [cookies, setCookie, removeCookie] = useCookies(['authToken', 'isAnonymous']);
+    const [cookies, , removeCookie] = useCookies(['authToken']);
     const [globalLoading, setGlobalLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -109,8 +104,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [enableEmailAction, setEnableEmailAction] = useState(false);
     const [editEnableHttpAction, setEditEnableHttpAction] = useState(false);
     const [editEnableEmailAction, setEditEnableEmailAction] = useState(false);
-    const [enableImageGenerationAction, setEnableImageGenerationAction] = useState(false);
-    const [enablePhotoProccessAction, setPhotoProccessAction] = useState(false);
     const [newFile, setNewFile] = useState<File | null>(null);
     const [editFile, setEditFile] = useState<File | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -125,36 +118,27 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [selectedBlueprint, setSelectedBlueprint] = useState<string>('');
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
-    const [page, setPage] = useState<string>(Page.AGENTS);
+    const [page, setPage] = useState<PageKey>(Page.AGENTS);
     const [isTourOpen, setIsTourOpen] = useState(false);
     const { currentStep, setCurrentStep } = useTour()
-    const [openActorsDialogRequest, setOpenActorsDialogRequest] = useState(false);
     const { setIsOpen } = useTour();
     const [termsDialogOpen, setTermsDialogOpen] = useState(false);
     const messageListRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLDivElement | null>(null);
-    const [showNotification, setShowNotification] = useState(true);
+    const { t } = useTranslation();
+
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const SUPPORTED_EXTENSIONS = [
-        '.pdf', '.txt', '.doc', '.docx', '.csv', '.xls', '.xlsx',
-
-        '.png', '.jpg', '.jpeg', '.webp'
+        '.pdf', '.txt', '.doc', '.docx', '.csv', '.xls', '.xlsx'
     ];
-    const [attachedFileUploading, setAttachedFileUploading] = useState<boolean>(false);
-    const [attachedFileProgress, setAttachedFileProgress] = useState<number | null>(null); // 0..100 or null
-    const [attachedFileIsImage, setAttachedFileIsImage] = useState<boolean>(false);
-    const fileUrlMap = useRef<Record<string, string>>({});
-
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
     const deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
     const [messageListHeight, setMessageListHeight] = useState<number>(0);
     const tour = useTour() as any;
-    const props = {deviceType: deviceType, isPublic: false};
-
 
     useEffect(() => {
         if (!chatOpen) {
@@ -253,7 +237,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     setAgents(agentsData);
                 } catch (error: any) {
                     console.error('Error loading agents:', error);
-                    setErrorMessage('Failed to load agents');
+                    setErrorMessage(t('app.msgErrFailedLoadAgent'));
                 }
             };
             loadAgents();
@@ -293,8 +277,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error receiving agents:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in.'
-                    : 'Failed to load agents'
+                    ? t('loginRequired')
+                    : t('app.msgErrFailedLoadAgent')
             );
             return [];
         }
@@ -329,7 +313,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             const token = cookies.authToken;
             if (token) {
                 await axios.post(
-                    `${import.meta.env.VITE_API_GATEWAY_URL}/signout`,
+                    `${import.meta.env.VITE_API_GATEWAY_URL}/auth/signout`,
                     {},
                     {
                         headers: { Authorization: `Bearer ${token}` },
@@ -346,7 +330,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             setChatMessages([]);
             setSessionIds({});
             removeCookie('authToken', { path: '/' });
-            setCookie("isAnonymous", true, { path: "/" });
         }
     };
 
@@ -362,18 +345,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setNewAgent({ name: '', instructions: '' });
         setInitialKnowledgeBaseFile(null);
     };
-    const handleOpenAddDialogActors = () => {
-        setPage(Page.ACTORS);
-        setOpenActorsDialogRequest(true);
-        setErrorMessage(null);
-        setEnableHttpAction(false);
-        setEnableEmailAction(false);
-        setNewFile(null);
-        setSelectedBlueprint('');
-        setNewAgent({ name: '', instructions: '' });
-        setInitialKnowledgeBaseFile(null);
-    };
-
 
     const createAlias = async (agentId: string, agentName: string) => {
         setGlobalLoading(true);
@@ -390,8 +361,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error when creating alias:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in'
-                    : `Error when creating an alias: ${error.message || 'Unknown error'}`
+                    ? t('loginRequired')
+                    : t('aliasCreationError', { message: error.message || 'Unknown error' })
             );
         } finally {
             setGlobalLoading(false);
@@ -402,11 +373,9 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setEditAgent(agent);
         setEditEnableHttpAction(!!agent.http_action_enabled);
         setEditEnableEmailAction(!!agent.email_action_enabled);
-        setEnableImageGenerationAction(!!agent.generation_image_action_enabled);
-        setPhotoProccessAction(!!agent.process_image_action_enabled);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
-        setInitialKnowledgeBaseFile(agent.knowledge_base_id ? 'Knowledge base file exists' : null);
+        setInitialKnowledgeBaseFile(agent.knowledge_base_id ? t('app.initialKnowledgeBaseFile') : null);
         setOpenEditDialog(true);
     };
 
@@ -416,8 +385,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setErrorMessage(null);
         setEditEnableHttpAction(false);
         setEditEnableEmailAction(false);
-        setEnableImageGenerationAction(false);
-        setPhotoProccessAction(false);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
         setInitialKnowledgeBaseFile(null);
@@ -432,13 +399,13 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             !editAgent.instructions.trim() ||
             editAgent.instructions.length < 40
         ) {
-            setErrorMessage('Name and instructions (min. 40 characters) are required');
+            setErrorMessage(t('nameInstructionsRequired'));
             return;
         }
 
         const sanitizedName = editAgent.name.replace(/[^a-zA-Z0-9_-]/g, '');
         if (!sanitizedName) {
-            setErrorMessage('Invalid agent name');
+            setErrorMessage(t('invalidAgentName'));
             return;
         }
 
@@ -449,7 +416,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             const fileData = editFile ? await convertFileToBase64(editFile) : null;
             const fileName = editFile ? editFile.name : null;
             if (deleteKnowledgeBase && fileData) {
-                setErrorMessage('You cannot select a new file when deleting the knowledge base.');
+                setErrorMessage(t('app.cannotSelectNewFileWhileDeleting'));
                 return;
             }
 
@@ -463,8 +430,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     user_id,
                     enableHttpAction: editEnableHttpAction,
                     enableEmailAction: editEnableEmailAction,
-                    enableImageGenerationAction,
-                    enablePhotoProccessAction,
                     file: fileData,
                     fileName,
                     deleteKnowledgeBase: deleteKnowledgeBase,
@@ -478,8 +443,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error updating agent:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in'
-                    : `Error updating agent: ${error.message || 'Unknown error'}`
+                    ? t('loginRequired')
+                    : t('app.errorUpdatingAgent', {message: error.message || 'Unknown error'})
             );
         } finally {
             setGlobalLoading(false);
@@ -512,7 +477,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             const fileResponse = await fetch(presignedUrl);
             const blob = await fileResponse.blob();
             const fileName =
-                presignedUrl.split('/').pop()?.split('?')[0] || 'knowledge_base.pdf';
+                presignedUrl.split('/').pop()?.split('?')[0] || t('app.knowledgeBasePdf');
 
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -523,51 +488,12 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             URL.revokeObjectURL(link.href);
         } catch (error) {
             console.error('Error when downloading the knowledge base:', error);
-            setErrorMessage('Couldn\'t download knowledge base file');
+            setErrorMessage(t('app.couldntDownloadKbFile'));
         } finally {
             setGlobalLoading(false);
         }
     };
-    // Функция-помощник для конвертации файла в Base64
-    const fileToBase64 = (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result.split(',')[1]); // Убираем префикс "data:image/..."
-            reader.onerror = (error) => reject(error);
-        });
-    };
 
-    const uploadFile = async (file) => {
-        const token = getAuthToken();
-        setAttachedFileUploading(true);
-
-        try {
-            // 1. Конвертируем в Base64
-            const base64String = await fileToBase64(file);
-
-            // 2. Отправляем JSON
-            const resp = await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/upload-image`,
-                {
-                    image: base64String,
-                    mime: file.type // передаем тип явно
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json' // Важно: теперь мы шлем JSON
-                    }
-                }
-            );
-
-            return resp.data;
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setAttachedFileUploading(false);
-        }
-    };
     const sendChatMessage = async (text: string) => {
         if (!text.trim() && !attachedFile) return;
         if (!selectedAgent?.agent_id || !selectedAgent.alias_id) return;
@@ -576,20 +502,22 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         const hasFile = !!attachedFile;
         const fileNameForDisplay = attachedFileName || 'file';
 
+        // Формируем сообщение пользователя
         const userMessage: MessageModel = {
-            message: userText || fileNameForDisplay,
+            message: userText || fileNameForDisplay, // текст или имя файла
             sentTime: new Date().toISOString(),
             sender: 'user',
             direction: 'outgoing',
             position: 'single',
+            // Добавляем кастомное поле — chatscope его не трогает, но мы сможем использовать
             attachedFileName: hasFile ? fileNameForDisplay : undefined,
         };
 
+        // Сразу показываем сообщение в чате
         setChatMessages(prev => [...prev, userMessage]);
 
         let sessionId = sessionIds[selectedAgent.agent_id] ||
             `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
         setSessionIds(prev => ({ ...prev, [selectedAgent.agent_id]: sessionId }));
 
         try {
@@ -597,39 +525,16 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
             let fileBase64: string | null = null;
             let fileName: string | null = null;
-            let uploadedFileName: string | null = null;
 
             if (attachedFile) {
-                if (attachedFileIsImage) {
-                    // === ВАЖНОЕ ИЗМЕНЕНИЕ: сначала грузим на S3 ===
-                    try {
-                        const uploadResult = await uploadFile(attachedFile);
-                        uploadedFileName = uploadResult.file_name; // например: "upload/uuid.jpg"
-                        fileName = attachedFile.name; // для отображения/истории
-                    } catch (uploadErr: any) {
-                        throw new Error(
-                            `Upload failed: ${uploadErr?.response?.data?.error || uploadErr.message || uploadErr}`
-                        );
-                    }
-                } else {
-                    // Для НЕ-изображений — старая логика (base64)
-                    const dataUrl = await convertFileToBase64(attachedFile);
-                    const match = dataUrl.match(/^data:.+?;base64,(.*)$/);
-                    if (!match) throw new Error('Failed to encode file');
-
-                    fileBase64 = match[1];
-                    fileName = attachedFile.name;
-                }
+                const dataUrl = await convertFileToBase64(attachedFile);
+                const match = dataUrl.match(/^data:.+?;base64,(.*)$/);
+                if (!match) throw new Error('Failed to encode file');
+                fileBase64 = match[1];
+                fileName = attachedFile.name;
             }
-
-            // Очищаем UI после старта отправки
             setAttachedFile(null);
             setAttachedFileName(null);
-            setAttachedFileProgress(null);
-            setAttachedFileIsImage(false);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-
-            // === КЛЮЧЕВОЕ ИЗМЕНЕНИЕ В ЗАПРОСЕ /send ===
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/send`,
                 {
@@ -638,13 +543,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     aliasId: selectedAgent.alias_id,
                     sessionId,
                     user_id: user?.id,
-
-                    // Старый вариант (для не-изображений)
                     fileBase64,
                     fileName,
-
-                    // НОВОЕ ПОЛЕ ДЛЯ ИЗОБРАЖЕНИЙ:
-                    uploadedFileName, // <-- имя файла в S3
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -655,44 +555,32 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                 sender: 'bot',
                 direction: 'incoming',
                 position: 'single',
-                attachedFileName: 'Generated image.png',
             };
-
-            if (response.data.image?.url) {
-                fileUrlMap.current[botMessage.sentTime] = response.data.image.url;
-            }
-
             setChatMessages(prev => [...prev, botMessage]);
 
-            // === СОХРАНЕНИЕ В ИСТОРИИ (важно) ===
-            await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/save-message`,
-                {
-                    agent_id: selectedAgent.agent_id,
-                    session_id: sessionId,
-                    message: userText || `[File: ${fileName}]`,
-                    response: response.data.response,
-                    sender: 'user',
-                    user_id: user?.id,
-                    uploaded_file: uploadedFileName || null,
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            // Очищаем файл только после успешной отправки
 
-            await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/save-call`,
-                {
-                    agent_id: selectedAgent.agent_id,
-                    user_id: user?.id,
-                    status: 'success',
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            if (fileInputRef.current) fileInputRef.current.value = '';
+
+            // Сохраняем сообщение в истории (включая имя файла)
+            await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-message`, {
+                agent_id: selectedAgent.agent_id,
+                session_id: sessionId,
+                message: userText || `[File: ${fileName}]`,
+                sender: 'user',
+                user_id: user?.id,
+            }, { headers: { Authorization: `Bearer ${token}` } });
+
+            await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call`, {
+                agent_id: selectedAgent.agent_id,
+                user_id: user?.id,
+                status: 'success',
+            }, { headers: { Authorization: `Bearer ${token}` } });
 
         } catch (error: any) {
             console.error('Error sending message with file:', error);
 
-            let errorText = 'Error: Failed to send message';
+            let errorText = t('app.failedSendMsg');
             if (error.response?.data?.error) {
                 errorText = error.response.data.error;
             } else if (error.message) {
@@ -710,58 +598,42 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
             try {
                 const token = getAuthToken();
-                await axios.post(
-                    `${import.meta.env.VITE_API_GATEWAY_URL}/save-call`,
-                    {
-                        agent_id: selectedAgent.agent_id,
-                        user_id: user?.id,
-                        status: 'failure',
-                    },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-            } catch { }
+                await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-call`, {
+                    agent_id: selectedAgent.agent_id,
+                    user_id: user?.id,
+                    status: 'failure',
+                }, { headers: { Authorization: `Bearer ${token}` } });
+            } catch { /* ignore */ }
         }
     };
-
 
     const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
         if (!file) {
             setAttachedFile(null);
             setAttachedFileName(null);
-            setAttachedFileIsImage(false);
             return;
         }
 
         const lower = file.name.toLowerCase();
         const allowed = SUPPORTED_EXTENSIONS.some(ext => lower.endsWith(ext));
         if (!allowed) {
-            alert(`Unsupported file type. Allowed: ${SUPPORTED_EXTENSIONS.join(', ')}`);
+            t('app.unsupportedFileType', { extensions: SUPPORTED_EXTENSIONS.join(', ') })
             e.target.value = '';
             return;
         }
 
-        if (file.size > 25 * 1024 * 1024) { // увеличил лимит (примерно 25 MB) — подстройте под нужды
-            alert('File too large. Maximum 25 MB');
+        if (file.size > 3 * 1024 * 1024) { // ~9.5 MB
+            alert(t('app.fileTooLarge'));
             e.target.value = '';
             return;
         }
-
-        // Определяем, является ли файл изображением. Надёжнее — смотреть file.type
-        const isImage = file.type ? file.type.startsWith('image/') : /\.(png|jpe?g|webp|gif)$/i.test(file.name);
-        setAttachedFileIsImage(isImage);
 
         setAttachedFile(file);
         setAttachedFileName(file.name);
-        setAttachedFileProgress(null);
-        setAttachedFileUploading(false);
-
         e.target.value = ''; // чтобы можно было выбрать тот же файл снова
     };
 
-    const handleClearAddActorRequest = () => {
-        setOpenActorsDialogRequest(false);
-    };
     const handleOpenChat = (agent: Agent) => {
         // ваш существующий код открытия чата
         setSelectedAgent(agent);
@@ -798,7 +670,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             );
             const { publicUrl, apkKey } = response.data;
             setAgents((prev) => prev.map((a) => (a.id === agent.id ? { ...a, public_url: publicUrl } : a)));
-            alert(`Public URL: ${publicUrl}\nAPK Key: ${apkKey}\nCopy it and use it for access!`);
+            alert(t('app.publicInfo', { publicUrl, apkKey }));
 
             // Если Root передал setAgentDeployed — уведомим его, иначе просто продолжим
             if (typeof setAgentDeployed === 'function') {
@@ -817,8 +689,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error when dispatching the chat:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in'
-                    : `Error when dispatching the chat: ${error.message || 'Unknown error'}`
+                    ? t('loginRequired')
+                    : t('app.dispatchError', { message: error.message || 'Unknown error' })
             );
         } finally {
             setGlobalLoading(false);
@@ -841,8 +713,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error when revoking the chat:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in'
-                    : `Error when revoke chat: ${error.message || 'Unknown error'}`
+                    ? t('loginRequired')
+                    : t('app.revokeError', { message: error.message || 'Unknown error' })
             );
         } finally {
             setGlobalLoading(false);
@@ -861,7 +733,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
     const handleDeleteAgent = async () => {
         if (!agentToDelete?.agent_id || !agentToDelete.id || !user?.id) {
-            setErrorMessage('Agent cannot be deleted: necessary data is missing');
+            setErrorMessage(t('app.deleteMissingData'));
             handleCloseDeleteDialog();
             return;
         }
@@ -884,15 +756,15 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             console.error('Error deleting the agent:', error);
             setErrorMessage(
                 error.message === 'The authorization token is missing from the cookie'
-                    ? 'Please log in.'
-                    : `Error deleting the agent: ${error.message || 'Unknown error'}`
+                    ? t('loginRequired')
+                    : t('app.deleteError', { message: error.message || 'Unknown error' })
             );
         } finally {
             setGlobalLoading(false);
         }
     };
 
-    const pageContent = (page: any) => {
+    const pageContent = (page: PageKey) => {
         switch(page) {
             case Page.AGENTS: return (
                 <Box
@@ -935,7 +807,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                             textAlign: 'left',
                                         }}
                                     >
-                                        Agent
+                                        { t("app.agent") }
                                     </TableCell>
                                     {deviceType !== 'mobile' && (
                                         <TableCell
@@ -947,7 +819,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                 textAlign: 'center',
                                             }}
                                         >
-                                            Actions
+                                            { t("app.actions") }
                                         </TableCell>
                                     )}
                                 </TableRow>
@@ -1009,7 +881,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                         textAlign: 'left',
                                                                     }}
                                                                 >
-                                                                    <strong>Knowledge Base File:</strong>{' '}
+                                                                    <strong>{ t("app.knowledgeBaseFile") }</strong>{' '}
                                                                     <a
                                                                         href="#"
                                                                         onClick={(e) => {
@@ -1018,7 +890,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                         }}
                                                                         style={{ cursor: 'pointer', textDecoration: 'underline' }}
                                                                     >
-                                                                        Download Knowledge Base
+                                                                        { t("app.downloadKnowledgeBase") }
                                                                     </a>
                                                                 </Typography>
                                                             )}
@@ -1030,7 +902,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     textAlign: 'left',
                                                                 }}
                                                             >
-                                                                <strong>Month requests count:</strong> {agent.call_count || 0}
+                                                                <strong>{ t("app.monthRequestsCount") }</strong> {agent.call_count || 0}
                                                             </Typography>
                                                             <Typography
                                                                 sx={{
@@ -1040,7 +912,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     textAlign: 'left',
                                                                 }}
                                                             >
-                                                                <strong>Year requests count:</strong> {agent.call_count_year || 0}
+                                                                <strong>{ t("app.yearRequestsCount") }</strong> {agent.call_count_year || 0}
                                                             </Typography>
                                                             {agent.public_url && (
                                                             <Typography
@@ -1052,7 +924,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                 }}
                                                                 data-tour="public-link"
                                                             >
-                                                                <strong>Public Link:</strong>{' '}
+                                                                <strong>{ t("app.publicLink") }</strong>{' '}
                                                                 <Link
                                                                     href={agent.public_url}
                                                                     target="_blank"
@@ -1093,7 +965,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                         }}
                                                                                         data-tour="open-chat-button"
                                                                                     >
-                                                                                        Chat
+                                                                                        { t("app.buttonChat") }
                                                                                     </Button>
                                                                                     {!agent.public_url ? (
                                                                                         <Button
@@ -1109,7 +981,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                             }}
                                                                                             data-tour="deploy-button"
                                                                                         >
-                                                                                            Deploy
+                                                                                            { t("app.buttonDeploy") }
                                                                                         </Button>
                                                                                     ) : (
                                                                                         <Button
@@ -1124,7 +996,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                                 height: 32,
                                                                                             }}
                                                                                         >
-                                                                                            Revoke
+                                                                                            { t("app.buttonRevoke") }
                                                                                         </Button>
                                                                                     )}
                                                                                     <Button
@@ -1139,7 +1011,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                             height: 32,
                                                                                         }}
                                                                                     >
-                                                                                        Edit
+                                                                                        { t("app.buttonEdit") }
                                                                                     </Button>
                                                                                 </>
                                                                             ) : (
@@ -1155,7 +1027,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                         height: 32,
                                                                                     }}
                                                                                 >
-                                                                                    Create Alias
+                                                                                    { t("app.buttonCreateAlias") }
                                                                                 </Button>
                                                                             )}
                                                                             <Button
@@ -1170,7 +1042,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                     height: 32,
                                                                                 }}
                                                                             >
-                                                                                Delete
+                                                                                { t("buttonDelete") }
                                                                             </Button>
                                                                         </>
                                                                     )}
@@ -1213,7 +1085,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                     }}
                                                                                     data-tour="open-chat-button"
                                                                                 >
-                                                                                    Chat
+                                                                                    { t("app.buttonChat") }
                                                                                 </Button>
                                                                                 {!agent.public_url ? (
                                                                                     <Button
@@ -1228,7 +1100,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                         }}
                                                                                         data-tour="deploy-button"
                                                                                     >
-                                                                                        Deploy
+                                                                                        { t("app.buttonDeploy") }
                                                                                     </Button>
                                                                                 ) : (
                                                                                     <Button
@@ -1242,7 +1114,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                             width: deviceType === 'tablet' ? 140 : 160,
                                                                                         }}
                                                                                     >
-                                                                                        Revoke
+                                                                                        { t("app.buttonRevoke") }
                                                                                     </Button>
                                                                                 )}
                                                                                 <Button
@@ -1256,7 +1128,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                         width: deviceType === 'tablet' ? 140 : 160,
                                                                                     }}
                                                                                 >
-                                                                                    Edit
+                                                                                    { t("app.buttonEdit") }
                                                                                 </Button>
                                                                             </>
                                                                         ) : (
@@ -1271,7 +1143,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                     width: deviceType === 'tablet' ? 140 : 160,
                                                                                 }}
                                                                             >
-                                                                                Create Alias
+                                                                                { t("app.buttonCreateAlias") }
                                                                             </Button>
                                                                         )}
                                                                     </>
@@ -1287,7 +1159,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                         width: deviceType === 'tablet' ? 140 : 160,
                                                                     }}
                                                                 >
-                                                                    Delete
+                                                                    { t("buttonDelete") }
                                                                 </Button>
                                                             </>
                                                         </Box>
@@ -1333,7 +1205,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                     : '1rem',
                                                                     }}
                                                                 >
-                                                                    Integration Script
+                                                                    { t("app.integrationScript") }
                                                                 </Typography>
                                                             </AccordionSummary>
                                                             <AccordionDetails
@@ -1352,24 +1224,22 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                 : deviceType === 'tablet'
                                                                                     ? '0.85rem'
                                                                                     : '0.9rem',
-                                                                        whiteSpace: 'pre-wrap',
-                                                                        wordBreak: 'break-word',
-                                                                        overflowX: 'auto',
+                                                                        whiteSpace: 'pre-wrap',   // перенос строк
+                                                                        wordBreak: 'break-word',  // ломаем длинные слова
+                                                                        overflowX: 'auto',        // горизонтальный скролл, если совсем не помещается
                                                                         mb: 1,
-                                                                        maxWidth: '100%',
+                                                                        maxWidth: '100%',         // ограничиваем ширину
                                                                     }}
                                                                 >
                                                                     {`<script
-  src="https://${import.meta.env.VITE_WIDGET_SCRIPT}/embed.umd.js"
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
-  data-vert-align="bottom"
-  data-hor-align="right"
-  data-hor-offset-desktop="25"
-  data-vert-offset-desktop="25"
-  data-hor-offset-mobile="10"
-  data-vert-offset-mobile="10"
+  data-bottom-desktop="25"
+  data-right-desktop="25"
+  data-bottom-mobile="10"
+  data-right-mobile="10"
 ></script>`}
                                                                 </Box>
                                                                 <Button
@@ -1378,23 +1248,21 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     onClick={() => {
                                                                         navigator.clipboard
                                                                             .writeText(`<script
-  src="https://${import.meta.env.VITE_WIDGET_SCRIPT}/embed.umd.js"
+  src="https://d30ow9hy6abq9r.cloudfront.net/embed.umd.js"
   data-agent-name="${agent.name}"
   data-agent-id="${agent.agent_id}"
   data-api-key="${agent.key}"
-  data-vert-align="bottom"
-  data-hor-align="right"
-  data-hor-offset-desktop="25"
-  data-vert-offset-desktop="25"
-  data-hor-offset-mobile="10"
-  data-vert-offset-mobile="10"
+  data-bottom-desktop="25"
+  data-right-desktop="25"
+  data-bottom-mobile="10"
+  data-right-mobile="10"
 ></script>`)
                                                                             .then(() => {
-                                                                                alert('The script has been copied to the clipboard!');
+                                                                                alert(t('app.scriptCopied'));
                                                                             })
                                                                             .catch((err) => {
                                                                                 console.error('Copy error:', err);
-                                                                                alert('Error when copying the script');
+                                                                                alert(t('app.scriptCopyError'));
                                                                             });
                                                                     }}
                                                                     sx={{
@@ -1407,114 +1275,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                         textTransform: 'none',
                                                                     }}
                                                                 >
-                                                                    Copy script
-                                                                </Button>
-                                                            </AccordionDetails>
-                                                        </Accordion>
-                                                        <Accordion sx={{ mt: 2, width: '100%' }}>
-                                                            <AccordionSummary
-                                                                expandIcon={<ExpandMoreIcon />}
-                                                                aria-controls="api-credentials-content"
-                                                                id="api-credentials-header"
-                                                                sx={{
-                                                                    width: '100%',
-                                                                    height: '100%',
-                                                                    backgroundColor: '#f0f0f0',
-                                                                }}
-                                                            >
-                                                                <Typography
-                                                                    sx={{
-                                                                        fontWeight: 'bold',
-                                                                        fontSize:
-                                                                            deviceType === 'mobile'
-                                                                                ? '0.9rem'
-                                                                                : deviceType === 'tablet'
-                                                                                    ? '0.95rem'
-                                                                                    : '1rem',
-                                                                    }}
-                                                                >
-                                                                    API Credentials
-                                                                </Typography>
-                                                            </AccordionSummary>
-                                                            <AccordionDetails
-                                                                sx={{
-                                                                    backgroundColor: '#e0e0e0',
-                                                                    p: 2,
-                                                                    borderRadius: '4px',
-                                                                }}
-                                                            >
-                                                                <Box
-                                                                    sx={{
-                                                                        fontFamily: 'monospace',
-                                                                        fontSize:
-                                                                            deviceType === 'mobile'
-                                                                                ? '0.85rem'
-                                                                                : deviceType === 'tablet'
-                                                                                    ? '0.9rem'
-                                                                                    : '0.95rem',
-                                                                        lineHeight: 1.6,
-                                                                        mb: 2,
-                                                                    }}
-                                                                >
-                                                                    <div><strong>AGENT_ID</strong> = "{agent.agent_id}"</div>
-                                                                    <div><strong>API_KEY</strong> = "{agent.key}"</div>
-                                                                    <div><strong>API_ENDPOINT</strong> = {import.meta.env.VITE_API_GATEWAY_URL}</div>
-                                                                </Box>
-                                                                <Typography
-                                                                    variant="body2"
-                                                                    sx={{
-                                                                        fontSize:
-                                                                            deviceType === 'mobile'
-                                                                                ? '0.8rem'
-                                                                                : deviceType === 'tablet'
-                                                                                    ? '0.85rem'
-                                                                                    : '0.9rem',
-                                                                        color: 'text.secondary',
-                                                                        mb: 1,
-                                                                    }}
-                                                                >
-                                                                    <strong>Note:</strong> Check the{' '}
-                                                                    <Link
-                                                                        href="#"
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            setPage(Page.DEVELOPMENT);
-                                                                        }}
-                                                                        sx={{
-                                                                            color: '#1976d2',
-                                                                            textDecoration: 'underline',
-                                                                            cursor: 'pointer',
-                                                                            fontWeight: 500,
-                                                                        }}
-                                                                    >
-                                                                        Development page
-                                                                    </Link>{' '}
-                                                                     to learn how to programmatically access the agent.
-                                                                </Typography>
-                                                                <Button
-                                                                    variant="outlined"
-                                                                    size="small"
-                                                                    onClick={() => {
-                                                                        const credentials = `AGENT_ID = "${agent.agent_id}"
-API_KEY = "${agent.key}"
-API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
-                                                                        navigator.clipboard.writeText(credentials).then(() => {
-                                                                            alert('API credentials copied to clipboard!');
-                                                                        }).catch(() => {
-                                                                            alert('Failed to copy credentials');
-                                                                        });
-                                                                    }}
-                                                                    sx={{
-                                                                        fontSize:
-                                                                            deviceType === 'mobile'
-                                                                                ? '0.8rem'
-                                                                                : deviceType === 'tablet'
-                                                                                    ? '0.85rem'
-                                                                                    : '0.9rem',
-                                                                        textTransform: 'none',
-                                                                    }}
-                                                                >
-                                                                    Copy Credentials
+                                                                    { t("app.copyScript") }
                                                                 </Button>
                                                             </AccordionDetails>
                                                         </Accordion>
@@ -1526,7 +1287,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={deviceType === 'mobile' ? 1 : 2} sx={{ textAlign: 'left' }}>
-                                            No agents
+                                            { t("app.noAgents") }
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -1535,11 +1296,6 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                     </Box>
                 </Box>
             );
-            case Page.ACTORS:
-                return <ActorsPage {...{user, toggleDrawer, handleSignOut, setGlobalLoading}} openAddDialogRequest={openActorsDialogRequest}
-                                   onClearAddDialogRequest={handleClearAddActorRequest} />
-            case Page.DEVELOPMENT:
-                return <DevelopmentPage deviceType={deviceType} />;
             case Page.SETTINGS: return <Settings {...{
                 callCount: agents.reduce((callCount, agent) => {
                     callCount.month += agent.call_count || 0;
@@ -1548,12 +1304,11 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                 }, {month: 0, year: 0}),
                 deviceType,
                 user,
-                setUser,
                 setGlobalLoading
             }} />
             case Page.PRIVACY_POLICY:
                 return (
-                    <PrivacyPolicy {...props}/>
+                    <PrivacyPolicy {...{deviceType}}/>
                 );
             case Page.TERMS_AND_CONDITIONS:
                 return <TermsAndConditions />;
@@ -1579,6 +1334,12 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                     },
                 }}
             />
+            {/*<ChatWidget*/}
+            {/*    agents={agents}*/}
+            {/*    user={user}*/}
+            {/*    deviceType={deviceType}*/}
+            {/*    getAuthToken={getAuthToken} // Передайте функцию для авторизованных чатов, если нужно*/}
+            {/*/>*/}
             <Box
                 sx={{
                     display: 'flex',
@@ -1613,110 +1374,10 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                 onToggleDrawer: toggleDrawer,
                                 onSignOut: handleSignOut,
                                 page,
-                                onCreate: () => setOpenAddDialog(true),
-                                createLabel: 'Agent'
+                                onNewAgent: () => setOpenAddDialog(true)
                             }}
                         />
-                        {/*{showNotification &&*/}
-                        {/*    user?.plan_type === 'free' &&*/}
-                        {/*    !user?.action_used && (*/}
-                        {/*        <Alert*/}
-                        {/*            severity="warning"*/}
-                        {/*            sx={{*/}
-                        {/*                backgroundColor: '#fff8e1',*/}
-                        {/*                color: '#5d4037',*/}
-                        {/*                border: '1px solid #ffe082',*/}
-                        {/*                borderRadius: 2,*/}
-                        {/*                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',*/}
-                        {/*                p: deviceType === 'mobile' ? 2 : 2.5,*/}
-                        {/*                display: 'flex',*/}
-                        {/*                flexDirection: deviceType === 'mobile' ? 'column' : 'row',*/}
-                        {/*                alignItems: 'center',*/}
-                        {/*                justifyContent: 'space-between',*/}
-                        {/*                gap: deviceType === 'mobile' ? 1.5 : 2,*/}
-                        {/*                position: 'relative',*/}
-                        {/*            }}*/}
-                        {/*            action={*/}
-                        {/*                deviceType === 'mobile' ? (*/}
-                        {/*                    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 1.5 }}>*/}
-                        {/*                        <Button*/}
-                        {/*                            fullWidth*/}
-                        {/*                            variant="contained"*/}
-                        {/*                            color="primary"*/}
-                        {/*                            onClick={() => {*/}
-                        {/*                                setPage(Page.SETTINGS);*/}
-                        {/*                                setDrawerOpen(false);*/}
-                        {/*                                setShowNotification(false);*/}
-                        {/*                            }}*/}
-                        {/*                            sx={{*/}
-                        {/*                                fontWeight: 600,*/}
-                        {/*                                textTransform: 'none',*/}
-                        {/*                                borderRadius: 2,*/}
-                        {/*                            }}*/}
-                        {/*                        >*/}
-                        {/*                            Upgrade Now*/}
-                        {/*                        </Button>*/}
-                        {/*                    </Box>*/}
-                        {/*                ) : (*/}
-                        {/*                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>*/}
-                        {/*                        <Button*/}
-                        {/*                            variant="contained"*/}
-                        {/*                            color="primary"*/}
-                        {/*                            size="small"*/}
-                        {/*                            onClick={() => {*/}
-                        {/*                                setPage(Page.SETTINGS);*/}
-                        {/*                                setDrawerOpen(false);*/}
-                        {/*                                setShowNotification(false);*/}
-                        {/*                            }}*/}
-                        {/*                            sx={{*/}
-                        {/*                                fontWeight: 600,*/}
-                        {/*                                textTransform: 'none',*/}
-                        {/*                                borderRadius: 2,*/}
-                        {/*                            }}*/}
-                        {/*                        >*/}
-                        {/*                            Upgrade Now*/}
-                        {/*                        </Button>*/}
-                        {/*                        <IconButton*/}
-                        {/*                            aria-label="close"*/}
-                        {/*                            color="inherit"*/}
-                        {/*                            size="small"*/}
-                        {/*                            onClick={() => setShowNotification(false)}*/}
-                        {/*                            sx={{*/}
-                        {/*                                color: '#5d4037',*/}
-                        {/*                                transition: '0.2s',*/}
-                        {/*                                '&:hover': { color: '#3e2723' },*/}
-                        {/*                            }}*/}
-                        {/*                        >*/}
-                        {/*                            <CloseIcon fontSize="small" />*/}
-                        {/*                        </IconButton>*/}
-                        {/*                    </Box>*/}
-                        {/*                )*/}
-                        {/*            }*/}
-                        {/*        >*/}
-                        {/*            {deviceType === 'mobile' && (*/}
-                        {/*                <IconButton*/}
-                        {/*                    aria-label="close"*/}
-                        {/*                    color="inherit"*/}
-                        {/*                    size="small"*/}
-                        {/*                    onClick={() => setShowNotification(false)}*/}
-                        {/*                    sx={{*/}
-                        {/*                        position: 'absolute',*/}
-                        {/*                        top: 8,*/}
-                        {/*                        right: 8,*/}
-                        {/*                        color: '#5d4037',*/}
-                        {/*                        transition: '0.2s',*/}
-                        {/*                        '&:hover': { color: '#3e2723' },*/}
-                        {/*                    }}*/}
-                        {/*                >*/}
-                        {/*                    <CloseIcon fontSize="small" />*/}
-                        {/*                </IconButton>*/}
-                        {/*            )}*/}
-                        {/*            <Box sx={{ fontSize: 15, lineHeight: 1.5 }}>*/}
-                        {/*                <strong>You’re on the Free plan.</strong> To unlock more features and higher limits,*/}
-                        {/*                upgrade to the <strong>Personal plan</strong>. Enjoy a 3-month free trial — no credit card required.*/}
-                        {/*            </Box>*/}
-                        {/*        </Alert>*/}
-                        {/*    )}*/}
+
 
                         <Drawer
                             open={drawerOpen}
@@ -1736,18 +1397,9 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     <ListItemIcon>
                                         <AddIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary="Add agent" sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary={ t('page.addAgents') } sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
-                                <ListItemButton onClick={() => {
-                                    toggleDrawer();
-                                    handleOpenAddDialogActors();
-                                }}>
-                                    <ListItemIcon>
-                                        <AddIcon />
-                                    </ListItemIcon>
-                                    <ListItemText primary="Add actor" sx={{ textAlign: 'left' }} />
-                                </ListItemButton>
                                 <Divider />
 
                                 <ListItemButton onClick={() => {
@@ -1755,22 +1407,9 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     setPage(Page.AGENTS);
                                 }}>
                                     <ListItemIcon>
-                                        <SupportAgentIcon />
+                                        <ViewListIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary="Agents" sx={{ textAlign: 'left' }} />
-                                </ListItemButton>
-                                <ListItemButton onClick={() => {
-                                    toggleDrawer();
-                                    setPage(Page.ACTORS);
-                                }}>
-                                    <ListItemIcon>
-                                        <PowerIcon />
-                                    </ListItemIcon>
-                                    <ListItemText primary="Actors" sx={{ textAlign: 'left' }} />
-                                </ListItemButton>
-                                <ListItemButton onClick={() => { toggleDrawer(); setPage(Page.DEVELOPMENT); }}>
-                                    <ListItemIcon><CodeIcon /></ListItemIcon>
-                                    <ListItemText primary="Development" />
+                                    <ListItemText primary={ t(`page.${Page.AGENTS}`) } sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
                                 <ListItemButton onClick={() => {
@@ -1780,7 +1419,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     <ListItemIcon>
                                         <SettingsIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary={Page.SETTINGS} sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary={ t(`page.${Page.SETTINGS}`) } sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
                                 <ListItemButton onClick={() => {
@@ -1790,7 +1429,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     <ListItemIcon>
                                         <PolicyIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary={Page.PRIVACY_POLICY} sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary={ t(`page.${Page.PRIVACY_POLICY}`) } sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
 
                                 <ListItemButton onClick={() => {
@@ -1800,7 +1439,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     <ListItemIcon>
                                         <DescriptionIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary={Page.TERMS_AND_CONDITIONS} sx={{ textAlign: 'left' }} />
+                                    <ListItemText primary={ t(`page.${Page.TERMS_AND_CONDITIONS}`) } sx={{ textAlign: 'left' }} />
                                 </ListItemButton>
                             </List>
                         </Drawer>
@@ -1818,16 +1457,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
 
                     <AddAgentDialog
                         open={openAddDialog}
-                        onClose={() => {
-                            setOpenAddDialog(false);
-                            setNewAgent({ name: '', instructions: '' });
-                            setEnableHttpAction(false);
-                            setEnableEmailAction(false);
-                            setNewFile(null);
-                            setSelectedBlueprint('');
-                            setInitialKnowledgeBaseFile(null);
-                            setErrorMessage(null);
-                        }}
+                        onClose={() => setOpenAddDialog(false)}
                         onAddAgent={() => setOpenAddDialog(false)}
                         deviceType={deviceType}
                         getAuthToken={getAuthToken}
@@ -1837,8 +1467,10 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                         setAgents={setAgents}
                         fetchAgents={fetchAgents}
                         setAgentCreated={(value: boolean) => {
+                            // когда диалог сообщает, что агент создан — продвигаем тур
                             if (value) {
                                 try {
+                                    // 9 — тот индекс шага, на который вы раньше пытались переходить
                                     setCurrentStep(9);
                                 } catch (e) {
                                     console.warn('Не удалось установить шаг тура:', e);
@@ -1846,6 +1478,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                             }
                         }}
                     />
+
 
                     <Dialog
                         open={openEditDialog}
@@ -1859,7 +1492,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                 textAlign: 'left',
                             }}
                         >
-                            Edit agent
+                            { t("app.editAgent") }
                         </DialogTitle>
                         <DialogContent sx={{ textAlign: 'left', overflowX: 'hidden' }}>
                             {errorMessage && (
@@ -1885,17 +1518,17 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                             textAlign: 'left',
                                         }}
                                     >
-                                        General settings
+                                        { t("generalSettings") }
                                     </Typography>
                                     <TextField
                                         autoFocus
                                         margin="dense"
-                                        label="Name"
+                                        label={ t("labelName") }
                                         type="text"
                                         fullWidth
                                         value={editAgent.name}
                                         onChange={(e) => setEditAgent({ ...editAgent, name: e.target.value })}
-                                        helperText="Use only letters, numbers, _ or -"
+                                        helperText={ t("helperTextName") }
                                         sx={{
                                             mb: 2,
                                             '& .MuiInputBase-input': {
@@ -1906,14 +1539,14 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     />
                                     <TextField
                                         margin="dense"
-                                        label="Instructions"
+                                        label={ t("labelInstructions") }
                                         type="text"
                                         fullWidth
                                         multiline
                                         rows={deviceType === 'mobile' ? 3 : 4}
                                         value={editAgent.instructions}
                                         onChange={(e) => setEditAgent({ ...editAgent, instructions: e.target.value })}
-                                        helperText="Minimum length 40 characters"
+                                        helperText={ t("helperTextInstructions") }
                                         sx={{
                                             mb: 2,
                                             '& .MuiInputBase-input': {
@@ -1933,22 +1566,12 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     >
                                         <FormControlLabel
                                             control={<Checkbox checked={editEnableHttpAction} onChange={(e) => setEditEnableHttpAction(e.target.checked)} />}
-                                            label="Enable HTTP-action"
+                                            label={ t("labelHttpAction") }
                                             sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
                                         />
                                         <FormControlLabel
                                             control={<Checkbox checked={editEnableEmailAction} onChange={(e) => setEditEnableEmailAction(e.target.checked)} />}
-                                            label="Enable Email-action"
-                                            sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
-                                        />
-                                        <FormControlLabel
-                                            control={<Checkbox checked={enableImageGenerationAction} onChange={(e) => setEnableImageGenerationAction(e.target.checked)} />}
-                                            label="Enable Generation Photo"
-                                            sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
-                                        />
-                                        <FormControlLabel
-                                            control={<Checkbox checked={enablePhotoProccessAction} onChange={(e) => setPhotoProccessAction(e.target.checked)} />}
-                                            label="Enable Photo Processing"
+                                            label={ t("labelEmailAction") }
                                             sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
                                         />
                                     </Box>
@@ -1961,7 +1584,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                             textAlign: 'left',
                                         }}
                                     >
-                                        Knowledge base (optional)
+                                        { t("knowledgeBase") }
                                     </Typography>
                                     {initialKnowledgeBaseFile && (
                                         <Alert
@@ -1973,7 +1596,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                                 textAlign: 'left',
                                             }}
                                         >
-                                            {initialKnowledgeBaseFile}. You can upload a new file to update or leave it as is.
+                                            { t("app.fileMessage", { initialKnowledgeBaseFile }) }
                                         </Alert>
                                     )}
                                     <FormControlLabel
@@ -1986,7 +1609,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                                 }}
                                             />
                                         }
-                                        label="Delete knowledge base"
+                                        label={ t('app.labelDeleteKnowledgeBase') }
                                         sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
                                     />
                                     {!deleteKnowledgeBase && (
@@ -2012,8 +1635,8 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                         }}
                                     >
                                         {deleteKnowledgeBase
-                                            ? 'Selected knowledge base deleting. File selection is not possible.'
-                                            : 'Upload a new file (PDF or TXT) to update the knowledge base. If no file is selected, the current knowledge base will remain unchanged.'}
+                                            ? t('app.kbDeleting')
+                                            : t('app.kbUploadInfo')}
                                     </Typography>
                                 </>
                             )}
@@ -2024,14 +1647,14 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                 color="primary"
                                 sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
                             >
-                                Cancel
+                                { t("cancel") }
                             </Button>
                             <Button
                                 onClick={handleEditAgent}
                                 color="primary"
                                 sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
                             >
-                                Save
+                                { t("buttonSave") }
                             </Button>
                         </DialogActions>
                     </Dialog>
@@ -2048,7 +1671,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                 textAlign: 'left',
                             }}
                         >
-                            Confirm Deletion
+                            { t('app.confirmDeletion') }
                         </DialogTitle>
                         <DialogContent sx={{ textAlign: 'left', overflowX: 'hidden' }}>
                             {errorMessage && (
@@ -2070,7 +1693,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     textAlign: 'left',
                                 }}
                             >
-                                Are you sure you want to delete the agent "{agentToDelete?.name}"? This action cannot be undone.
+                                { t("app.deleteAgentConfirm", { name: agentToDelete?.name }) }
                             </Typography>
                         </DialogContent>
                         <DialogActions sx={{ justifyContent: 'center' }}>
@@ -2079,14 +1702,14 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                 color="primary"
                                 sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
                             >
-                                Cancel
+                                { t('cancel') }
                             </Button>
                             <Button
                                 onClick={handleDeleteAgent}
                                 color="error"
                                 sx={{ fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' }}
                             >
-                                Delete
+                                { t('buttonDelete') }
                             </Button>
                         </DialogActions>
                     </Dialog>
@@ -2160,21 +1783,18 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                             textAlign: 'left',
                                         }}
                                     >
-                                        Chat with {selectedAgent.name}
+                                        { t("app.chatWith", { name: selectedAgent.name }) }
                                     </Typography>
                                 </Box>
 
                                 <MessageList
                                     ref={messageListRef}
                                     style={{
-                                        height: messageListHeight > 0 ? messageListHeight : 0,
+                                        height: messageListHeight > 0 ? `${messageListHeight}px` : '0px',
                                         overflowY: 'auto',
                                         overflowX: 'hidden',
-                                        padding: deviceType === 'mobile' ? '8px' : '10px',
-                                        paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '0px',
-                                        WebkitTextSizeAdjust: '100%',
-                                        touchAction: 'pan-y',
-                                        overscrollBehavior: 'none',
+                                        padding: deviceType === 'mobile' ? '8px' : '12px',
+                                        paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '12px',
                                     }}
                                 >
                                     {chatMessages.map((msg, index) => {
@@ -2182,9 +1802,11 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                         const textMessage = msg.message?.trim();
                                         const isUserMessage = msg.direction === 'outgoing';
 
+                                        // 1. Текст + файл — два отдельных облачка
                                         if (isUserMessage && hasFile && textMessage) {
                                             return (
                                                 <React.Fragment key={index}>
+                                                    {/* Текстовое сообщение */}
                                                     <Message
                                                         model={{
                                                             message: textMessage,
@@ -2194,18 +1816,18 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                                         }}
                                                     />
 
-                                                    <Message
-                                                        model={{
-                                                            message: '',
-                                                            direction: 'outgoing',
-                                                            position: 'single',
-                                                            sender: 'user',
-                                                        }}
-                                                    >
                                                         <Message.CustomContent>
                                                             <Box
                                                                 sx={{
-                                                                    background: '#f5fbff',
+                                                                    display: 'flex',
+                                                                    justifyContent: 'flex-end',   // вот это главное — прижимает вправо
+                                                                    padding: '4px 0px 4px 0px', // отступы как у обычных сообщений справа
+                                                                    width: '100%',
+                                                                }}
+                                                            >
+                                                            <Box
+                                                                sx={{
+                                                                    background: '#ffffff',
                                                                     border: '1px solid #90caf9',
                                                                     borderRadius: 2,
                                                                     py: 1,
@@ -2213,7 +1835,6 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                                                     display: 'inline-flex',
                                                                     alignItems: 'center',
                                                                     gap: 1,
-                                                                    maxWidth: '220px',
                                                                     boxShadow: '0 1px 3px rgba(25,118,210,0.12)',
                                                                     fontSize: '0.85rem',
                                                                 }}
@@ -2233,12 +1854,13 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                                                     {(msg as any).attachedFileName}
                                                                 </Typography>
                                                             </Box>
+                                                            </Box>
                                                         </Message.CustomContent>
-                                                    </Message>
                                                 </React.Fragment>
                                             );
                                         }
 
+                                        // 2. Только файл (без текста)
                                         if (isUserMessage && hasFile && !textMessage) {
                                             return (
                                                 <Message
@@ -2284,65 +1906,8 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                                 </Message>
                                             );
                                         }
-// === BOT MESSAGE WITH FILE ===
-                                        // ✅ ПРАВИЛЬНО
-                                        if (!isUserMessage && hasFile) {
-                                            const fileUrl = fileUrlMap.current[msg.sentTime];
 
-                                            return (
-                                                <React.Fragment key={index}>
-                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                        {/* Текст ответа бота */}
-                                                        {msg.message && (
-                                                            <Message
-                                                                model={{
-                                                                    message: msg.message,
-                                                                    direction: 'incoming',
-                                                                    position: 'single',
-                                                                    sender: 'bot',
-                                                                }}
-                                                            />
-                                                        )}
-
-                                                        {/* Изображение от бота */}
-                                                        {fileUrl && (
-                                                            <Message
-                                                                model={{
-                                                                    message: '',
-                                                                    direction: 'incoming',
-                                                                    position: 'single',
-                                                                    sender: 'bot',
-                                                                }}
-                                                            >
-                                                                <Message.CustomContent>
-                                                                    <Box
-                                                                        component="img"
-                                                                        src={fileUrl}
-                                                                        alt="Generated image"
-                                                                        onClick={() => window.open(fileUrl, '_blank')}
-                                                                        sx={{
-                                                                            width: '100%',
-                                                                            maxWidth: 400,
-                                                                            height: 'auto',
-                                                                            maxHeight: 300,
-                                                                            borderRadius: 2,
-                                                                            cursor: 'pointer',
-                                                                            boxShadow: 2,
-                                                                            objectFit: 'contain',
-                                                                        }}
-                                                                        onError={(e) => {
-                                                                            const target = e.target as HTMLImageElement;
-                                                                            target.src = '/placeholder-image.png'; // или data URL
-                                                                        }}
-                                                                    />
-                                                                </Message.CustomContent>
-                                                            </Message>
-                                                        )}
-                                                    </Box>
-                                                </React.Fragment>
-                                            );
-                                        }
-
+                                        // 3. Обычное текстовое сообщение
                                         return (
                                             <Message
                                                 key={index}
@@ -2369,6 +1934,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     }}
                                     data-tour="chat-dialog"
                                 >
+                                    {/* Превью прикреплённого файла */}
                                     {attachedFileName && (
                                         <Box
                                             sx={{
@@ -2391,7 +1957,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                                         {attachedFileName}
                                                     </Typography>
                                                     <Typography fontSize="0.75rem" color="text.secondary">
-                                                        Ready to send
+                                                        { t('readySend') }
                                                     </Typography>
                                                 </Box>
                                             </Box>
@@ -2411,13 +1977,13 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                     <input
                                         ref={fileInputRef}
                                         type="file"
-                                        accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx, .png, .jpg, .jpeg, .webp"
+                                        accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx"
                                         onChange={handleFileSelected}
                                         style={{ display: 'none' }}
                                     />
 
                                     <MessageInput
-                                        placeholder="Enter a message...."
+                                        placeholder={ t('pHolderWriteMsg') }
                                         onSend={sendChatMessage}
                                         attachButton={true}
                                         onAttachClick={() => fileInputRef.current?.click()}
