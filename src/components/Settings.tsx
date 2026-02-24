@@ -76,15 +76,15 @@ const Settings: React.FC<SettingsProps> = ({ callCount, deviceType, user, setGlo
         }
         setGlobalLoading(true);
         const data = {
-            email: user.email,  // Добавлено для Lambda
-            first_name,
-            last_name,
-            date_of_birth: dateOfBirth
+            userID: user.id,          
+            firstName: first_name,    
+            lastName: last_name,     
+            dateOfBirth: dateOfBirth
         };
 
         try {
-            await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/save-setting`,
+            await axios.patch(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/account/settings`,
                 data,
                 {
                     headers: {
