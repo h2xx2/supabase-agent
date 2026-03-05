@@ -66,7 +66,6 @@ interface Agent {
     instructions: string;
     created_at: string;
     agent_id: string;
-    alias_id: string | null;
     status?: string;
     public_url?: string;
     call_count?: number;
@@ -346,29 +345,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setInitialKnowledgeBaseFile(null);
     };
 
-    const createAlias = async (agentId: string, agentName: string) => {
-        setGlobalLoading(true);
-        try {
-            const token = getAuthToken();
-            const user_id = getUserIdFromToken(token);
-            await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/create-alias`,
-                { agentId, agentName, user_id },
-                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-            );
-            await fetchAgents();
-        } catch (error: any) {
-            console.error('Error when creating alias:', error);
-            setErrorMessage(
-                error.message === 'The authorization token is missing from the cookie'
-                    ? t('loginRequired')
-                    : t('aliasCreationError', { message: error.message || 'Unknown error' })
-            );
-        } finally {
-            setGlobalLoading(false);
-        }
-    };
-
     const handleOpenEditDialog = (agent: Agent) => {
         setEditAgent(agent);
         setEditEnableHttpAction(!!agent.http_action_enabled);
@@ -428,11 +404,11 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     name: sanitizedName,
                     instructions: editAgent.instructions,
                     user_id,
-                    enableHttpAction: editEnableHttpAction,
-                    enableEmailAction: editEnableEmailAction,
-                    file: fileData,
-                    fileName,
-                    deleteKnowledgeBase: deleteKnowledgeBase,
+                    http_action_enabled: editEnableHttpAction,
+                    email_action_enabled: editEnableEmailAction,
+                    file_base: fileData,
+                    file_name: fileName,
+                    delete_vector_store: deleteKnowledgeBase,
                 }),
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
             );
@@ -496,7 +472,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
     const sendChatMessage = async (text: string) => {
         if (!text.trim() && !attachedFile) return;
-        if (!selectedAgent?.agent_id || !selectedAgent.alias_id) return;
+        if (!selectedAgent?.agent_id) return;
 
         const userText = text.trim();
         const hasFile = !!attachedFile;
@@ -516,9 +492,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         // Сразу показываем сообщение в чате
         setChatMessages(prev => [...prev, userMessage]);
 
-        let sessionId = sessionIds[selectedAgent.agent_id] ||
-            `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        setSessionIds(prev => ({ ...prev, [selectedAgent.agent_id]: sessionId }));
+        let sessionId = sessionIds[selectedAgent.agent_id] || null;
 
         try {
             const token = getAuthToken();
@@ -540,8 +514,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                 {
                     message: userText,
                     agentId: selectedAgent.agent_id,
-                    aliasId: selectedAgent.alias_id,
-                    sessionId,
+                    responseId: sessionId,
                     user_id: user?.id,
                     fileBase64,
                     fileName,
@@ -550,13 +523,14 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             );
 
             const botMessage: MessageModel = {
-                message: response.data.response,
+                message: response.data.message,
                 sentTime: new Date().toISOString(),
                 sender: 'bot',
                 direction: 'incoming',
                 position: 'single',
             };
             setChatMessages(prev => [...prev, botMessage]);
+            setSessionIds(prev => ({ ...prev, [selectedAgent.agent_id]: response.data.response_id }));
 
             // Очищаем файл только после успешной отправки
 
@@ -744,7 +718,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/delete-agent`,
                 JSON.stringify({
-                    agentId: agentToDelete.agent_id,
+                    agent_id: agentToDelete.agent_id,
                     user_id: user.id,
                 }),
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
@@ -949,8 +923,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                             >
                                                                 <>
                                                                     {agent.agent_id && (
-                                                                        <>
-                                                                            {agent.alias_id ? (
                                                                                 <>
                                                                                     <Button
                                                                                         variant="contained"
@@ -1014,21 +986,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                         { t("app.buttonEdit") }
                                                                                     </Button>
                                                                                 </>
-                                                                            ) : (
-                                                                                <Button
-                                                                                    variant="contained"
-                                                                                    color="secondary"
-                                                                                    onClick={() => createAlias(agent.agent_id, agent.name)}
-                                                                                    sx={{
-                                                                                        fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
-                                                                                        px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                        py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                        minWidth: 80,
-                                                                                        height: 32,
-                                                                                    }}
-                                                                                >
-                                                                                    { t("app.buttonCreateAlias") }
-                                                                                </Button>
                                                                             )}
                                                                             <Button
                                                                                 variant="contained"
@@ -1045,8 +1002,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                 { t("buttonDelete") }
                                                                             </Button>
                                                                         </>
-                                                                    )}
-                                                                </>
                                                             </Box>
                                                         )}
                                                     </Box>
@@ -1070,8 +1025,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                         >
                                                             <>
                                                                 {agent.agent_id && (
-                                                                    <>
-                                                                        {agent.alias_id ? (
                                                                             <>
                                                                                 <Button
                                                                                     variant="contained"
@@ -1131,22 +1084,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                     { t("app.buttonEdit") }
                                                                                 </Button>
                                                                             </>
-                                                                        ) : (
-                                                                            <Button
-                                                                                variant="contained"
-                                                                                color="secondary"
-                                                                                onClick={() => createAlias(agent.agent_id, agent.name)}
-                                                                                sx={{
-                                                                                    fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
-                                                                                    px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                                    py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                                    width: deviceType === 'tablet' ? 140 : 160,
-                                                                                }}
-                                                                            >
-                                                                                { t("app.buttonCreateAlias") }
-                                                                            </Button>
-                                                                        )}
-                                                                    </>
                                                                 )}
                                                                 <Button
                                                                     variant="contained"
