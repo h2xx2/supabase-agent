@@ -70,7 +70,7 @@ interface Agent {
     public_url?: string;
     call_count?: number;
     call_count_year?: number;
-    knowledge_base_id?: string;
+    vector_store_id?: string;
     http_action_enabled: boolean;
     email_action_enabled: boolean;
     generation_image_action_enabled: boolean;
@@ -361,7 +361,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setPhotoProccessAction(!!agent.process_image_action_enabled);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
-        setInitialKnowledgeBaseFile(agent.knowledge_base_id ? t('app.initialKnowledgeBaseFile') : null);
+        setInitialKnowledgeBaseFile(agent.vector_store_id ? t('app.initialKnowledgeBaseFile') : null);
         setOpenEditDialog(true);
     };
 
@@ -451,13 +451,13 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     };
 
     const downloadKnowledgeBase = async (agent: any) => {
-        if (!agent.knowledge_base_id || !agent.agent_id) return;
+        if (!agent.vector_store_id || !agent.agent_id) return;
 
         setGlobalLoading(true);
         try {
             const token = getAuthToken();
             const response = await axios.get(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/download-knowledge-base?knowledge_base_id=${agent.knowledge_base_id}&agent_id=${agent.agent_id}`,
+                `${import.meta.env.VITE_API_GATEWAY_URL}/download-knowledge-base?vector_store_id=${agent.vector_store_id}&agent_id=${agent.agent_id}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -889,7 +889,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                             >
                                                                 {agent.instructions}
                                                             </Typography>
-                                                            {agent.knowledge_base_id && (
+                                                            {agent.vector_store_id && (
                                                                 <Typography
                                                                     sx={{
                                                                         fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
