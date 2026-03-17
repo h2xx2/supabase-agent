@@ -16,6 +16,8 @@ export default {
         helperTextInstructions: 'Минимальная длина 40 символов',
         labelHttpAction: 'Включить HTTP-действие',
         labelEmailAction: 'Включить Email-действие',
+        labelGenerationAction: 'Включить генерацию изображений',
+        labelProcessingAction: 'Включить обработку фотографий',
         pHolderWriteMsg: 'Напишите сообщение или прикрепите файл...',
         readySend: 'Готов к отправке',
         navbar: {

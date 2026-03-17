@@ -32,6 +32,7 @@ import { useTranslation } from "react-i18next";
 import { i18n } from "../utils/i18n";
 import {ChatMessage} from "./ChatMessage.tsx";
 import TypingIndicator from "./TypingIndicator.tsx";
+import type {MessageModel} from "@chatscope/chat-ui-kit-react";
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
@@ -43,7 +44,6 @@ type Agent = {
     name: string;
     desc: string;
     agentId?: string;
-    aliasId?: string;
     key?: string;
     isNew?: boolean;
 };
@@ -91,8 +91,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         id: "youagent-master",
         name: i18n.t("auth.namePublicAgent"),
         desc: i18n.t("auth.descPublicAgent"),
-        agentId: "3QQS2QJUKY",
-        aliasId: "IRWADY4L5O",
         key: "TfnWzfQl-6jDKq7gSvFP",
     } as Agent;
 
@@ -111,17 +109,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 const id = String(a.id);
                 if (!copy[id]) {
                     copy[id] = []; // только если ещё нет
-                }
-            });
-            return copy;
-        });
-
-        setSessions((prev) => {
-            const copy = { ...prev };
-            agents.forEach((a) => {
-                const id = String(a.id);
-                if (!copy[id]) {
-                    copy[id] = generateSessionId();
                 }
             });
             return copy;
@@ -556,6 +543,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const [mobileChatOpen, setMobileChatOpen] = useState(false);
     const [mobileAgentListOpen, setMobileAgentListOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
     const [viewportHeight, setViewportHeight] = useState<number>(window.innerHeight);
     const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 900);
@@ -585,13 +573,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
     const handleAgentClick = (a: Agent) => {
         setSelectedAgent(a);
         // ensure sessionId exists
-        setSessions((prev) => {
-            const id = String(a.id);
-            if (!prev[id]) {
-                return { ...prev, [id]: generateSessionId() };
-            }
-            return prev;
-        });
         // Если выбран главный публичный агент — очищаем прикреплённый файл
         if (String(a.id) === String(MAIN_PUBLIC_AGENT.id)) {
             removeAttachedFile();
@@ -611,34 +592,17 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         }
 
         if (f) {
+            setAttachedFile(f);
             setAttachedFileName(f.name);
-        } else setAttachedFileName(null);
+        } else {
+            setAttachedFile(null);
+            setAttachedFileName(null);
+        }
     };
     const removeAttachedFile = () => {
         setAttachedFileName(null);
+        setAttachedFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
-    };
-
-    // helper: read file input to base64 (or null)
-    const readFileInputBase64 = async (): Promise<{ base64: string | null; fileName: string | null }> => {
-        try {
-            const input = fileInputRef.current;
-            if (!input || !input.files || input.files.length === 0) return { base64: null, fileName: null };
-            const file = input.files[0];
-            return await new Promise((res, rej) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const result = reader.result as string;
-                    const commaIdx = result.indexOf(",");
-                    const base64 = commaIdx >= 0 ? result.slice(commaIdx + 1) : result;
-                    res({ base64, fileName: file.name });
-                };
-                reader.onerror = (e) => rej(e);
-                reader.readAsDataURL(file);
-            });
-        } catch {
-            return { base64: null, fileName: null };
-        }
     };
 
     // core send function — добавляет сообщение в текущий чат и (если у агента есть публичный endpoint) делает public-send
@@ -658,8 +622,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
         setIsSendingByAgent(prev => ({ ...prev, [agentKey]: true }));
 
         const agentIdForApi = current.agentId;
-        const agentAliasID = current.aliasId;
-        const sessionId = sessions[agentKey] ?? generateSessionId();
+        const sessionId = sessions[agentKey] ?? null;
         const token = accessToken ?? cookies["authToken"];
 
         // Добавляем исходящее сообщение пользователя
@@ -682,14 +645,33 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
 
         // Очищаем прикреплённый файл и поле ввода (поле очищается через форму)
         removeAttachedFile();
+        const userId = cookies["userId"];
+        let image: string | null = null;
+        let file: string | null = null;
 
-        // Читаем файл (если был)
-        let fileBase64: string | null = null;
-        let fileName: string | null = null;
-        if (attachedFileName) {
-            const read = await readFileInputBase64();
-            fileBase64 = read.base64;
-            fileName = read.fileName;
+        if (attachedFile) {
+
+            const formData = new FormData();
+            formData.append("file", attachedFile);
+
+            const upload = await axios.post(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/upload-s3`,
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            const key = upload.data.key;
+            const type = attachedFile.type;
+
+            if (type.startsWith("image/")) {
+                image = key;
+            } else {
+                file = key;
+            }
         }
 
         try {
@@ -697,10 +679,10 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
             const payload = {
                 message: text,
                 agentId: agentIdForApi,
-                aliasId: agentAliasID,
-                sessionId,
-                fileBase64,
-                fileName,
+                userId,
+                responseId: sessionId,
+                imageKey: image,
+                fileKey: file
             };
 
             const res = await fetch(url, {
@@ -712,70 +694,91 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                 body: JSON.stringify(payload),
             });
 
-            const { sessionId: returnedSessionId } = await res.json();
+            const data = await res.json();
+
+            const returnedSessionId = data.response_id;
             const finalSessionId = returnedSessionId || sessionId;
+
             setSessions((s) => ({ ...s, [agentKey]: finalSessionId }));
 
-            // Запуск polling (как было)
-            const startPolling = (finalSessionId: string) => {
-                let attempts = 0;
-                let pollInterval: ReturnType<typeof setInterval> | null = null;
-
-                const poll = async () => {
-                    attempts++;
-                    try {
-                        const pollUrl = `${import.meta.env.VITE_API_GATEWAY_URL}/polling-message`;
-                        const pollRes = await fetch(pollUrl, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ sessionId: finalSessionId }),
-                        });
-                        const data = await pollRes.json();
-
-                        if (data?.response) {
-                            const incoming: Msg = {
-                                id: `in-${Date.now()}`,
-                                direction: "incoming",
-                                message: data.response,
-                                sentTime: new Date().toISOString(),
-                                sender: "bot",
-                            };
-                            setMessagesByAgent((prev) => ({
-                                ...prev,
-                                [agentKey]: [...(prev[agentKey] ?? []), incoming],
-                            }));
-
-                            if (String(current.id) === String(MAIN_PUBLIC_AGENT.id)) {
-                                const user_id = cookies["userId"];
-                                if (user_id) startAgentsPolling(user_id);
-                            }
-
-                            // Ответ получен — снимаем все блокировки
-                            setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: false }));
-                            setIsSendingByAgent((prev) => ({ ...prev, [agentKey]: false }));
-                            if (pollInterval) clearInterval(pollInterval);
-                            return;
-                        }
-
-                        if (data?.files) {
-                            setSessionFiles(finalSessionId, data.files);
-                        }
-                    } catch (pollErr) {
-                        console.error("Polling error:", pollErr);
-                    }
-
-                    if (attempts >= 150) {
-                        clearInterval(pollInterval!);
-                        setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: false }));
-                        setIsSendingByAgent((prev) => ({ ...prev, [agentKey]: false }));
-                    }
-                };
-
-                poll();
-                pollInterval = setInterval(poll, 2000);
+            const incoming: Msg = {
+                id: `in-${Date.now()}`,
+                direction: "incoming",
+                message: data.message,
+                sentTime: new Date().toISOString(),
+                sender: "bot",
             };
 
-            startPolling(finalSessionId);
+            setMessagesByAgent((prev) => ({
+                ...prev,
+                [agentKey]: [...(prev[agentKey] ?? []), incoming],
+            }));
+            setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: false }));
+            setIsSendingByAgent((prev) => ({ ...prev, [agentKey]: false }));
+            if (String(current.id) === String(MAIN_PUBLIC_AGENT.id)) {
+                                    const user_id = cookies["userId"];
+                                    if (user_id) startAgentsPolling(user_id);
+                                }
+            // Запуск polling (как было)
+            // const startPolling = (finalSessionId: string) => {
+            //     let attempts = 0;
+            //     let pollInterval: ReturnType<typeof setInterval> | null = null;
+            //
+            //     const poll = async () => {
+            //         attempts++;
+            //         try {
+            //             const pollUrl = `${import.meta.env.VITE_API_GATEWAY_URL}/polling-message`;
+            //             const pollRes = await fetch(pollUrl, {
+            //                 method: "POST",
+            //                 headers: { "Content-Type": "application/json" },
+            //                 body: JSON.stringify({ sessionId: finalSessionId }),
+            //             });
+            //             const data = await pollRes.json();
+            //
+            //             if (data?.response) {
+            //                 const incoming: Msg = {
+            //                     id: `in-${Date.now()}`,
+            //                     direction: "incoming",
+            //                     message: data.response,
+            //                     sentTime: new Date().toISOString(),
+            //                     sender: "bot",
+            //                 };
+            //                 setMessagesByAgent((prev) => ({
+            //                     ...prev,
+            //                     [agentKey]: [...(prev[agentKey] ?? []), incoming],
+            //                 }));
+            //
+            //                 if (String(current.id) === String(MAIN_PUBLIC_AGENT.id)) {
+            //                     const user_id = cookies["userId"];
+            //                     if (user_id) startAgentsPolling(user_id);
+            //                 }
+            //
+            //                 // Ответ получен — снимаем все блокировки
+            //                 setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: false }));
+            //                 setIsSendingByAgent((prev) => ({ ...prev, [agentKey]: false }));
+            //                 if (pollInterval) clearInterval(pollInterval);
+            //                 return;
+            //             }
+            //
+            //             if (data?.files) {
+            //                 setSessionFiles(finalSessionId, data.files);
+            //             }
+            //         } catch (pollErr) {
+            //             console.error("Polling error:", pollErr);
+            //         }
+            //
+            //         if (attempts >= 150) {
+            //             clearInterval(pollInterval!);
+            //             setIsTypingByAgent((prev) => ({ ...prev, [agentKey]: false }));
+            //             setIsSendingByAgent((prev) => ({ ...prev, [agentKey]: false }));
+            //         }
+            //     };
+            //
+            //     poll();
+            //     pollInterval = setInterval(poll, 2000);
+            // };
+            //
+            // startPolling(finalSessionId);
 
         } catch (err: any) {
             // Ошибка отправки

@@ -62,6 +62,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     const [newAgent, setNewAgent] = useState({ name: '', instructions: '' });
     const [enableHttpAction, setEnableHttpAction] = useState(false);
     const [enableEmailAction, setEnableEmailAction] = useState(false);
+    const [enableImageGenerationAction, setEnableImageGenerationAction] = useState(false);
+    const [enablePhotoProccessAction, setPhotoProccessAction] = useState(false);
     const [newFile, setNewFile] = useState<File | null>(null);
     const [selectedBlueprint, setSelectedBlueprint] = useState<string>('');
     const [blueprintInteracted, setBlueprintInteracted] = useState(false);
@@ -203,43 +205,6 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     };
     const intendedTourStepRef = useRef<number | null>(null);
 
-    const createAlias = async (agentId: string, agentName: string) => {
-        setGlobalLoading(true);
-        try {
-            const token = getAuthToken();
-            await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/create-alias`,
-                { agentId, agentName, user_id: userId },
-                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-            );
-            await fetchAgents();
-        } catch (error: any) {
-            console.error('Error creating alias:', error);
-            setErrorMessage(
-                error.message === 'Authorization token missing in cookies'
-                    ? t('loginRequired')
-                    : t('aliasCreationError', { message: error.message || 'Unknown error' })
-            );
-        } finally {
-            setGlobalLoading(false);
-        }
-    };
-
-    const fetchAgentStatus = async (agentId: string): Promise<string> => {
-        try {
-            const token = getAuthToken();
-            const response = await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/get-agent-status`,
-                { agentId, user_id: userId },
-                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-            );
-            return response.data.statusInDb || 'UNKNOWN';
-        } catch (error: any) {
-            console.error('Error fetching agent status:', error);
-            throw error;
-        }
-    };
-
     const handleAddAgent = async () => {
         if (!newAgent.name.trim() || !newAgent.instructions.trim() || newAgent.instructions.length < 40) {
             setErrorMessage(t('nameInstructionsRequired'));
@@ -268,45 +233,18 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                     name: sanitizedName,
                     instructions: newAgent.instructions,
                     user_id: userId,
-                    enableHttpAction,
-                    enableEmailAction,
-                    enableUserInputAction: true,
+                    http_action_enabled: enableHttpAction,
+                    email_action_enabled: enableEmailAction,
+                    generation_image_action_enabled: enableImageGenerationAction,
+                    process_image_action_enabled: enablePhotoProccessAction,
+                    file_base_64: fileData,
+                    file_name: newFile?.name
                 }),
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
             );
 
             const createdAgentId = agentResponse.data.agentId;
             if (!createdAgentId) throw new Error(t('createAgent.agentIdMissing'));
-
-            let knowledgeBaseId = null;
-            if (fileData) {
-                const kbResponse = await axios.post(
-                    `${import.meta.env.VITE_API_GATEWAY_URL}/create-knowledgebase`,
-                    JSON.stringify({
-                        agentId: createdAgentId,
-                        fileData,
-                        user_id: userId,
-                    }),
-                    { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-                );
-
-                knowledgeBaseId = kbResponse.data.knowledgeBaseId;
-                if (!knowledgeBaseId) throw new Error(t('createAgent.knowledgeBaseIdMissing'));
-            }
-
-            const waitForPrepared = async (agentId: string) => {
-                for (let i = 0; i < 20; i++) {
-                    const status = await fetchAgentStatus(agentId);
-                    if (status === 'PREPARED') return true;
-                    await new Promise((r) => setTimeout(r, 4000));
-                }
-                return false;
-            };
-
-            const isPrepared = await waitForPrepared(createdAgentId);
-            if (!isPrepared) throw new Error(t('createAgent.statusNotPrepared'));
-
-            await createAlias(createdAgentId, sanitizedName);
             onClose();
             const updatedAgents = await fetchAgents();
             setAgents(updatedAgents);
@@ -342,6 +280,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             setNewAgent({ name: '', instructions: '' });
             setEnableHttpAction(false);
             setEnableEmailAction(false);
+            setEnableImageGenerationAction(false);
+            setPhotoProccessAction(false)
             setNewFile(null);
         }
 
@@ -379,6 +319,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
         setNewAgent({ name: '', instructions: '' });
         setEnableHttpAction(false);
         setEnableEmailAction(false);
+        setEnableImageGenerationAction(false);
+        setPhotoProccessAction(false)
         setNewFile(null);
         setBlueprintInteracted(true);
         try {
@@ -522,6 +464,14 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                     <FormControlLabel
                         control={<Checkbox checked={enableEmailAction} onChange={(e) => setEnableEmailAction(e.target.checked)} />}
                         label={ t("labelEmailAction") }
+                    />
+                    <FormControlLabel
+                        control={<Checkbox checked={enableImageGenerationAction} onChange={(e) => setEnableImageGenerationAction(e.target.checked)} />}
+                        label={ t("labelGenerationAction") }
+                    />
+                    <FormControlLabel
+                        control={<Checkbox checked={enablePhotoProccessAction} onChange={(e) => setPhotoProccessAction(e.target.checked)} />}
+                        label={ t("labelProcessingAction") }
                     />
                 </Box>
 

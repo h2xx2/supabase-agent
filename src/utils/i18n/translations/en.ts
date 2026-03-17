@@ -16,6 +16,8 @@ export default {
         helperTextInstructions: 'Minimum length 40 characters',
         labelHttpAction: 'Enable HTTP Action',
         labelEmailAction: 'Enable Email Action',
+        labelGenerationAction: 'Enable Generation Action',
+        labelProcessingAction: 'Enable Processing Action',
         pHolderWriteMsg: 'Write a message or attach a file...',
         readySend: 'Ready to send',
         navbar: {

@@ -66,14 +66,15 @@ interface Agent {
     instructions: string;
     created_at: string;
     agent_id: string;
-    alias_id: string | null;
     status?: string;
     public_url?: string;
     call_count?: number;
     call_count_year?: number;
-    knowledge_base_id?: string;
+    vector_store_id?: string;
     http_action_enabled: boolean;
     email_action_enabled: boolean;
+    generation_image_action_enabled: boolean;
+    process_image_action_enabled: boolean;
 }
 
 const Page = {
@@ -104,6 +105,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [enableEmailAction, setEnableEmailAction] = useState(false);
     const [editEnableHttpAction, setEditEnableHttpAction] = useState(false);
     const [editEnableEmailAction, setEditEnableEmailAction] = useState(false);
+    const [enableImageGenerationAction, setEnableImageGenerationAction] = useState(false);
+    const [enablePhotoProccessAction, setPhotoProccessAction] = useState(false);
     const [newFile, setNewFile] = useState<File | null>(null);
     const [editFile, setEditFile] = useState<File | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -126,12 +129,16 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const messageListRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLDivElement | null>(null);
     const { t } = useTranslation();
+    const fileUrlMap = useRef<Record<string, string>>({});
+
 
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const SUPPORTED_EXTENSIONS = [
-        '.pdf', '.txt', '.doc', '.docx', '.csv', '.xls', '.xlsx'
+        '.pdf', '.txt', '.doc', '.docx', '.csv', '.xls', '.xlsx',
+
+        '.png', '.jpg', '.jpeg', '.webp'
     ];
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -346,36 +353,15 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setInitialKnowledgeBaseFile(null);
     };
 
-    const createAlias = async (agentId: string, agentName: string) => {
-        setGlobalLoading(true);
-        try {
-            const token = getAuthToken();
-            const user_id = getUserIdFromToken(token);
-            await axios.post(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/create-alias`,
-                { agentId, agentName, user_id },
-                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-            );
-            await fetchAgents();
-        } catch (error: any) {
-            console.error('Error when creating alias:', error);
-            setErrorMessage(
-                error.message === 'The authorization token is missing from the cookie'
-                    ? t('loginRequired')
-                    : t('aliasCreationError', { message: error.message || 'Unknown error' })
-            );
-        } finally {
-            setGlobalLoading(false);
-        }
-    };
-
     const handleOpenEditDialog = (agent: Agent) => {
         setEditAgent(agent);
         setEditEnableHttpAction(!!agent.http_action_enabled);
         setEditEnableEmailAction(!!agent.email_action_enabled);
+        setEnableImageGenerationAction(!!agent.generation_image_action_enabled);
+        setPhotoProccessAction(!!agent.process_image_action_enabled);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
-        setInitialKnowledgeBaseFile(agent.knowledge_base_id ? t('app.initialKnowledgeBaseFile') : null);
+        setInitialKnowledgeBaseFile(agent.vector_store_id ? t('app.initialKnowledgeBaseFile') : null);
         setOpenEditDialog(true);
     };
 
@@ -385,6 +371,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         setErrorMessage(null);
         setEditEnableHttpAction(false);
         setEditEnableEmailAction(false);
+        setEnableImageGenerationAction(false);
+        setPhotoProccessAction(false);
         setEditFile(null);
         setDeleteKnowledgeBase(false);
         setInitialKnowledgeBaseFile(null);
@@ -403,7 +391,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             return;
         }
 
-        const sanitizedName = editAgent.name.replace(/[^a-zA-Z0-9_-]/g, '');
+        const sanitizedName = editAgent.name.replace(/[^a-zA-Z0-9а-яА-ЯёЁ_-]/g, '');
         if (!sanitizedName) {
             setErrorMessage(t('invalidAgentName'));
             return;
@@ -428,11 +416,13 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                     name: sanitizedName,
                     instructions: editAgent.instructions,
                     user_id,
-                    enableHttpAction: editEnableHttpAction,
-                    enableEmailAction: editEnableEmailAction,
-                    file: fileData,
-                    fileName,
-                    deleteKnowledgeBase: deleteKnowledgeBase,
+                    http_action_enabled: editEnableHttpAction,
+                    email_action_enabled: editEnableEmailAction,
+                    generation_image_action_enabled: enableImageGenerationAction,
+                    process_image_action_enabled: enablePhotoProccessAction,
+                    file_base: fileData,
+                    file_name: fileName,
+                    delete_vector_store: deleteKnowledgeBase,
                 }),
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
             );
@@ -461,13 +451,13 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     };
 
     const downloadKnowledgeBase = async (agent: any) => {
-        if (!agent.knowledge_base_id || !agent.agent_id) return;
+        if (!agent.vector_store_id || !agent.agent_id) return;
 
         setGlobalLoading(true);
         try {
             const token = getAuthToken();
             const response = await axios.get(
-                `${import.meta.env.VITE_API_GATEWAY_URL}/download-knowledge-base?knowledge_base_id=${agent.knowledge_base_id}&agent_id=${agent.agent_id}`,
+                `${import.meta.env.VITE_API_GATEWAY_URL}/download-knowledge-base?vector_store_id=${agent.vector_store_id}&agent_id=${agent.agent_id}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -496,7 +486,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
 
     const sendChatMessage = async (text: string) => {
         if (!text.trim() && !attachedFile) return;
-        if (!selectedAgent?.agent_id || !selectedAgent.alias_id) return;
+        if (!selectedAgent?.agent_id) return;
 
         const userText = text.trim();
         const hasFile = !!attachedFile;
@@ -516,47 +506,73 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
         // Сразу показываем сообщение в чате
         setChatMessages(prev => [...prev, userMessage]);
 
-        let sessionId = sessionIds[selectedAgent.agent_id] ||
-            `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        setSessionIds(prev => ({ ...prev, [selectedAgent.agent_id]: sessionId }));
+        let sessionId = sessionIds[selectedAgent.agent_id] || null;
 
         try {
             const token = getAuthToken();
-
-            let fileBase64: string | null = null;
-            let fileName: string | null = null;
+            let image = null;
+            let file = null;
 
             if (attachedFile) {
-                const dataUrl = await convertFileToBase64(attachedFile);
-                const match = dataUrl.match(/^data:.+?;base64,(.*)$/);
-                if (!match) throw new Error('Failed to encode file');
-                fileBase64 = match[1];
-                fileName = attachedFile.name;
+
+                const formData = new FormData();
+                formData.append("file", attachedFile);
+
+                const upload = await axios.post(
+                    `${import.meta.env.VITE_API_GATEWAY_URL}/upload-s3`,
+                    formData,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                );
+
+                const key = upload.data.key;
+                const type = attachedFile.type;
+
+                if (type.startsWith("image/")) {
+                    image = key;
+                } else {
+                    file = key;
+                }
             }
             setAttachedFile(null);
             setAttachedFileName(null);
+            console.log({
+                message: userText,
+                agentId: selectedAgent.agent_id,
+                responseId: sessionId,
+                user_id: user?.id,
+                imageKey: image,
+                fileKey: file
+            });
             const response = await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/send`,
                 {
                     message: userText,
                     agentId: selectedAgent.agent_id,
-                    aliasId: selectedAgent.alias_id,
-                    sessionId,
+                    responseId: sessionId,
                     user_id: user?.id,
-                    fileBase64,
-                    fileName,
+                    imageKey: image,
+                    fileKey: file
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
             const botMessage: MessageModel = {
-                message: response.data.response,
+                message: response.data.message,
                 sentTime: new Date().toISOString(),
                 sender: 'bot',
                 direction: 'incoming',
                 position: 'single',
+                attachedFileName: 'Generated image.png'
             };
+            if (response.data.image?.url) {
+                fileUrlMap.current[botMessage.sentTime] = response.data.image.url;
+            }
             setChatMessages(prev => [...prev, botMessage]);
+            setSessionIds(prev => ({ ...prev, [selectedAgent.agent_id]: response.data.response_id }));
 
             // Очищаем файл только после успешной отправки
 
@@ -565,8 +581,9 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             // Сохраняем сообщение в истории (включая имя файла)
             await axios.post(`${import.meta.env.VITE_API_GATEWAY_URL}/save-message`, {
                 agent_id: selectedAgent.agent_id,
-                session_id: sessionId,
-                message: userText || `[File: ${fileName}]`,
+                response_id: sessionId,
+                response: response.data.message,
+                message: userText || `[File: ${image || file}]`,
                 sender: 'user',
                 user_id: user?.id,
             }, { headers: { Authorization: `Bearer ${token}` } });
@@ -744,7 +761,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             await axios.post(
                 `${import.meta.env.VITE_API_GATEWAY_URL}/delete-agent`,
                 JSON.stringify({
-                    agentId: agentToDelete.agent_id,
+                    agent_id: agentToDelete.agent_id,
                     user_id: user.id,
                 }),
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
@@ -872,7 +889,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                             >
                                                                 {agent.instructions}
                                                             </Typography>
-                                                            {agent.knowledge_base_id && (
+                                                            {agent.vector_store_id && (
                                                                 <Typography
                                                                     sx={{
                                                                         fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '1rem',
@@ -949,8 +966,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                             >
                                                                 <>
                                                                     {agent.agent_id && (
-                                                                        <>
-                                                                            {agent.alias_id ? (
                                                                                 <>
                                                                                     <Button
                                                                                         variant="contained"
@@ -1014,21 +1029,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                         { t("app.buttonEdit") }
                                                                                     </Button>
                                                                                 </>
-                                                                            ) : (
-                                                                                <Button
-                                                                                    variant="contained"
-                                                                                    color="secondary"
-                                                                                    onClick={() => createAlias(agent.agent_id, agent.name)}
-                                                                                    sx={{
-                                                                                        fontSize: deviceType === 'mobile' ? '0.8rem' : '0.85rem',
-                                                                                        px: deviceType === 'mobile' ? 1 : 1.5,
-                                                                                        py: deviceType === 'mobile' ? 0.5 : 0.75,
-                                                                                        minWidth: 80,
-                                                                                        height: 32,
-                                                                                    }}
-                                                                                >
-                                                                                    { t("app.buttonCreateAlias") }
-                                                                                </Button>
                                                                             )}
                                                                             <Button
                                                                                 variant="contained"
@@ -1045,8 +1045,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                 { t("buttonDelete") }
                                                                             </Button>
                                                                         </>
-                                                                    )}
-                                                                </>
                                                             </Box>
                                                         )}
                                                     </Box>
@@ -1070,8 +1068,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                         >
                                                             <>
                                                                 {agent.agent_id && (
-                                                                    <>
-                                                                        {agent.alias_id ? (
                                                                             <>
                                                                                 <Button
                                                                                     variant="contained"
@@ -1131,22 +1127,6 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                                     { t("app.buttonEdit") }
                                                                                 </Button>
                                                                             </>
-                                                                        ) : (
-                                                                            <Button
-                                                                                variant="contained"
-                                                                                color="secondary"
-                                                                                onClick={() => createAlias(agent.agent_id, agent.name)}
-                                                                                sx={{
-                                                                                    fontSize: deviceType === 'tablet' ? '0.85rem' : '0.9rem',
-                                                                                    px: deviceType === 'tablet' ? 1.5 : 2,
-                                                                                    py: deviceType === 'tablet' ? 0.75 : 1,
-                                                                                    width: deviceType === 'tablet' ? 140 : 160,
-                                                                                }}
-                                                                            >
-                                                                                { t("app.buttonCreateAlias") }
-                                                                            </Button>
-                                                                        )}
-                                                                    </>
                                                                 )}
                                                                 <Button
                                                                     variant="contained"
@@ -1574,6 +1554,16 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                             label={ t("labelEmailAction") }
                                             sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
                                         />
+                                        <FormControlLabel
+                                            control={<Checkbox checked={enableImageGenerationAction} onChange={(e) => setEnableImageGenerationAction(e.target.checked)} />}
+                                            label={ t("labelGenerationAction") }
+                                            sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
+                                        />
+                                        <FormControlLabel
+                                            control={<Checkbox checked={enablePhotoProccessAction} onChange={(e) => setPhotoProccessAction(e.target.checked)} />}
+                                            label={ t("labelProcessingAction") }
+                                            sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
+                                        />
                                     </Box>
                                     <Divider sx={{ my: 2 }} />
                                     <Typography
@@ -1790,11 +1780,14 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                 <MessageList
                                     ref={messageListRef}
                                     style={{
-                                        height: messageListHeight > 0 ? `${messageListHeight}px` : '0px',
+                                        height: messageListHeight > 0 ? messageListHeight : 0,
                                         overflowY: 'auto',
                                         overflowX: 'hidden',
-                                        padding: deviceType === 'mobile' ? '8px' : '12px',
-                                        paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '12px',
+                                        padding: deviceType === 'mobile' ? '8px' : '10px',
+                                        paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '0px',
+                                        WebkitTextSizeAdjust: '100%',
+                                        touchAction: 'pan-y',
+                                        overscrollBehavior: 'none',
                                     }}
                                 >
                                     {chatMessages.map((msg, index) => {
@@ -1802,11 +1795,9 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                         const textMessage = msg.message?.trim();
                                         const isUserMessage = msg.direction === 'outgoing';
 
-                                        // 1. Текст + файл — два отдельных облачка
                                         if (isUserMessage && hasFile && textMessage) {
                                             return (
                                                 <React.Fragment key={index}>
-                                                    {/* Текстовое сообщение */}
                                                     <Message
                                                         model={{
                                                             message: textMessage,
@@ -1816,18 +1807,18 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                         }}
                                                     />
 
+                                                    <Message
+                                                        model={{
+                                                            message: '',
+                                                            direction: 'outgoing',
+                                                            position: 'single',
+                                                            sender: 'user',
+                                                        }}
+                                                    >
                                                         <Message.CustomContent>
                                                             <Box
                                                                 sx={{
-                                                                    display: 'flex',
-                                                                    justifyContent: 'flex-end',   // вот это главное — прижимает вправо
-                                                                    padding: '4px 0px 4px 0px', // отступы как у обычных сообщений справа
-                                                                    width: '100%',
-                                                                }}
-                                                            >
-                                                            <Box
-                                                                sx={{
-                                                                    background: '#ffffff',
+                                                                    background: '#f5fbff',
                                                                     border: '1px solid #90caf9',
                                                                     borderRadius: 2,
                                                                     py: 1,
@@ -1835,6 +1826,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     display: 'inline-flex',
                                                                     alignItems: 'center',
                                                                     gap: 1,
+                                                                    maxWidth: '220px',
                                                                     boxShadow: '0 1px 3px rgba(25,118,210,0.12)',
                                                                     fontSize: '0.85rem',
                                                                 }}
@@ -1854,13 +1846,12 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                                                     {(msg as any).attachedFileName}
                                                                 </Typography>
                                                             </Box>
-                                                            </Box>
                                                         </Message.CustomContent>
+                                                    </Message>
                                                 </React.Fragment>
                                             );
                                         }
 
-                                        // 2. Только файл (без текста)
                                         if (isUserMessage && hasFile && !textMessage) {
                                             return (
                                                 <Message
@@ -1907,7 +1898,63 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                             );
                                         }
 
-                                        // 3. Обычное текстовое сообщение
+                                        if (!isUserMessage && hasFile) {
+                                            const fileUrl = fileUrlMap.current[msg.sentTime];
+
+                                            return (
+                                                <React.Fragment key={index}>
+                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                        {/* Текст ответа бота */}
+                                                        {msg.message && (
+                                                            <Message
+                                                                model={{
+                                                                    message: msg.message,
+                                                                    direction: 'incoming',
+                                                                    position: 'single',
+                                                                    sender: 'bot',
+                                                                }}
+                                                            />
+                                                        )}
+
+                                                        {/* Изображение от бота */}
+                                                        {fileUrl && (
+                                                            <Message
+                                                                model={{
+                                                                    message: '',
+                                                                    direction: 'incoming',
+                                                                    position: 'single',
+                                                                    sender: 'bot',
+                                                                }}
+                                                            >
+                                                                <Message.CustomContent>
+                                                                    <Box
+                                                                        component="img"
+                                                                        src={fileUrl}
+                                                                        alt="Generated image"
+                                                                        onClick={() => window.open(fileUrl, '_blank')}
+                                                                        sx={{
+                                                                            width: '100%',
+                                                                            maxWidth: 400,
+                                                                            height: 'auto',
+                                                                            maxHeight: 300,
+                                                                            borderRadius: 2,
+                                                                            cursor: 'pointer',
+                                                                            boxShadow: 2,
+                                                                            objectFit: 'contain',
+                                                                        }}
+                                                                        onError={(e) => {
+                                                                            const target = e.target as HTMLImageElement;
+                                                                            target.src = '/placeholder-image.png'; // или data URL
+                                                                        }}
+                                                                    />
+                                                                </Message.CustomContent>
+                                                            </Message>
+                                                        )}
+                                                    </Box>
+                                                </React.Fragment>
+                                            );
+                                        }
+
                                         return (
                                             <Message
                                                 key={index}
@@ -1977,7 +2024,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                                     <input
                                         ref={fileInputRef}
                                         type="file"
-                                        accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx"
+                                        accept=".pdf,.txt,.doc,.docx,.csv,.xls,.xlsx, .png, .jpg, .jpeg, .webp"
                                         onChange={handleFileSelected}
                                         style={{ display: 'none' }}
                                     />
