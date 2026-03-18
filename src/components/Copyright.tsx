@@ -16,6 +16,7 @@ const Copyright: React.FC = () => {
                 backgroundColor: { xs: 'background.paper', md: 'transparent' },
                 py: { xs: 1, md: 0 },
                 zIndex: 1000,
+                whiteSpace: 'pre-line'
             }}
         >            <Typography
                 variant="body2"
