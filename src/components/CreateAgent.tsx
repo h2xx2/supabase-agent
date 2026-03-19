@@ -22,6 +22,7 @@ import { useTranslation } from "react-i18next";
 interface Blueprint {
     blueprint_name: string;
     agent_name: string;
+    agent_instructions: string;
     email_action: boolean;
     http_request_action: boolean;
     kb_required: boolean;
@@ -74,6 +75,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
         {
             blueprint_name: t("createAgent.translatorAgent.blueprintName"),
             agent_name: t("createAgent.translatorAgent.agentName"),
+            agent_instructions: t("createAgent.translatorAgent.agentInstructions"),
             email_action: false,
             http_request_action: false,
             kb_required: false,
@@ -83,6 +85,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
         {
             blueprint_name: t("createAgent.personalAssistant.blueprintName"),
             agent_name: t("createAgent.personalAssistant.agentName"),
+            agent_instructions: t("createAgent.personalAssistant.agentInstructions"),
             email_action: true,
             http_request_action: false,
             kb_required: false,
@@ -92,6 +95,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
         {
             blueprint_name: t("createAgent.salesAgent.blueprintName"),
             agent_name: t("createAgent.salesAgent.agentName"),
+            agent_instructions: t("createAgent.salesAgent.agentInstructions"),
             email_action: true,
             http_request_action: false,
             kb_required: true,
@@ -151,6 +155,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
         {
             blueprint_name: t("createAgent.citiesAgent.blueprintName"),
             agent_name: t("createAgent.citiesAgent.agentName"),
+            agent_instructions: t("createAgent.citiesAgent.agentInstructions"),
             email_action: false,
             http_request_action: false,
             kb_required: false,
@@ -160,6 +165,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
         {
             blueprint_name: t("createAgent.jokeAgent.blueprintName"),
             agent_name: t("createAgent.jokeAgent.agentName"),
+            agent_instructions: t("createAgent.jokeAgent.agentInstructions"),
             email_action: false,
             http_request_action: false,
             kb_required: false,
@@ -169,6 +175,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
         {
             blueprint_name: t("createAgent.baristaAgent.blueprintName"),
             agent_name: t("createAgent.baristaAgent.agentName"),
+            agent_instructions: t("createAgent.baristaAgent.agentInstructions"),
             email_action: true,
             http_request_action: false,
             kb_required: false,
@@ -178,6 +185,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
         {
             blueprint_name: t("createAgent.helpAgent.blueprintName"),
             agent_name: t("createAgent.helpAgent.agentName"),
+            agent_instructions: t("createAgent.helpAgent.agentInstructions"),
             email_action: true,
             http_request_action: false,
             kb_required: false,
@@ -263,7 +271,7 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
         const selected = blueprints.find((b) => b.blueprint_name === blueprintName);
 
         if (selected) {
-            setNewAgent({ name: selected.agent_name, instructions: '' });
+            setNewAgent({ name: selected.agent_name, instructions: selected.agent_instructions });
             setEnableHttpAction(selected.http_request_action);
             setEnableEmailAction(selected.email_action);
             setNewFile(null);
