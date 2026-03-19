@@ -190,7 +190,7 @@ export default {
                 title: 'Personal',
                 desc1: 'Unlimited agents',
                 desc2: 'Up to 1,000 requests/month',
-                buttonText: 'Contact Us',
+                buttonText: 'Try it for free',
             },
             customTiers: {
                 title: 'Custom',
