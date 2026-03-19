@@ -182,16 +182,6 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             kb_filename: null,
             kb_content: null,
         },
-        {
-            blueprint_name: t("createAgent.helpAgent.blueprintName"),
-            agent_name: t("createAgent.helpAgent.agentName"),
-            agent_instructions: t("createAgent.helpAgent.agentInstructions"),
-            email_action: true,
-            http_request_action: false,
-            kb_required: false,
-            kb_filename: null,
-            kb_content: null
-        }
     ];
 
     // helpers

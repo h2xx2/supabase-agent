@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 const tiers = [
     {
         title: 'pricing.freeTiers.title',
-        price: '0',
+        price: 'pricing.priceFree',
         description: [
             'pricing.freeTiers.desc1',
             'pricing.freeTiers.desc2',
@@ -32,7 +32,7 @@ const tiers = [
     },
     {
         title: 'pricing.personalTiers.title',
-        price: '15',
+        price: 'pricing.pricePersonal',
         description: [
             'pricing.personalTiers.desc1',
             'pricing.personalTiers.desc2'
@@ -206,7 +206,7 @@ const Pricing: React.FC = () => {
                                         ]}
                                     >
                                         <Typography component="h3" variant="h2">
-                                            ${tier.price}
+                                            { t(tier.price) }
                                         </Typography>
                                         <Typography component="h3" variant="h6">
                                             &nbsp;{ t('pricing.perMonth') }

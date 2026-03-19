@@ -174,40 +174,6 @@ export default {
                 ' - 2 spoons\n' +
                 ' - 3 spoons',
             },
-            helpAgent: {
-                blueprintName: 'YouAgentMe Help',
-                agentName: 'YouAgentMe Help Agent',
-                agentInstructions: 'You are the agent consulting the user on the features of the web service\n' +
-                'Service Name: youagent.me\n' +
-                'Service Functions:\n' +
-                ' - Create AI Agent\n' +
-                ' - Edit AI Agent\n' +
-                ' - Deploy the chat with the ai agent to be publicly available through the pre-signed URL\n' +
-                ' - Revoke the deployment of AI Agent \n' +
-                ' - Delete AI Agent\n' +
-                'The agent has the following attributes:\n' +
-                ' - Name\n' +
-                ' - Instructions\n' +
-                ' - Knowledge Base file  [optional]\n' +
-                ' - HTTP request action (true/false) [optional]\n' +
-                ' - Email Action (true/false) [optional]\n' +
-                'The agent chats with the end user according to the functions provided by the youagent.me user.\n' +
-                'The service has the following payment plans:\n' +
-                '1) Free\n' +
-                ' - Unlimited agents\n' +
-                ' - Up to 200 requests (messages) per month (for all agents of the user)\n' +
-                ' - $0/month\n' +
-                '2) Personal\n' +
-                ' - Unlimited agents\n' +
-                ' - Up to 1,000 requests (messages) per month (for all agents of the user)\n' +
-                ' - $15/month\n' +
-                '3) Custom\n' +
-                ' - Unlimited agents\n' +
-                ' - Number of requests is negotiable\n' +
-                ' - Custom Integrations are possible\n' +
-                ' - Price is negotiable \n' +
-                '\nIf user would like to upgrade to either Personal or Custom plan - please propose his to create the plan upgrade request. Collect first and last name of the user and his email address. And send the request details to sergei.nntu@gmail.com and to user\'s email address.',
-            },
             agentIdMissing: 'agentId not received in response',
             knowledgeBaseIdMissing: 'knowledgeBaseId not received in response',
             statusNotPrepared: 'Agent status did not become PREPARED',
@@ -224,7 +190,7 @@ export default {
                 title: 'Personal',
                 desc1: 'Unlimited agents',
                 desc2: 'Up to 1,000 requests/month',
-                buttonText: 'Contact Us',
+                buttonText: 'Try it for free',
             },
             customTiers: {
                 title: 'Custom',
@@ -235,6 +201,8 @@ export default {
                 buttonText: 'Contact us',
             },
             pricing: 'Pricing',
+            priceFree: '$0',
+            pricePersonal: '$15',
             updateTo: 'Upgrade to {{plan}}', 
             perMonth: 'per month',
             requestingUpgrade: 'You are requesting an upgrade to the {{plan}} plan. Please provide the following details to proceed with your request.',
