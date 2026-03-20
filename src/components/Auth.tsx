@@ -831,6 +831,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                 position: "fixed",
                                 left: 24,
                                 top: 24,
+                                maxHeight: "90vh",
                                 bottom: 24,
                                 right: `${AUTH_PANEL_WIDTH + 48}px`,
                                 borderRadius: 2,
@@ -871,7 +872,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                             >
                                                 <ListItemText
                                                     primary={<Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{a.name}</Typography>}
-                                                    secondary={<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{a.desc}</Typography>}
+                                                    secondary={<Typography variant="body2"  color="text.secondary" sx={{ mt: 0.5 }}>{a.desc}</Typography>}
                                                 />
                                             </ListItem>
                                         );
@@ -1089,8 +1090,22 @@ const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
                                         <Typography variant="subtitle2">{selectedAgent?.name}</Typography>
-                                        <Typography variant="body2" color="text.secondary" noWrap>
-                                            {currentMessages.length ? (currentMessages[currentMessages.length - 1].message ?? currentMessages[currentMessages.length - 1].attachedFileName ?? "") : ""}
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            sx={{
+                                                display: "-webkit-box",
+                                                WebkitLineClamp: 1,
+                                                WebkitBoxOrient: "vertical",
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                            }}
+                                        >
+                                            {currentMessages.length
+                                                ? (currentMessages[currentMessages.length - 1].message ??
+                                                    currentMessages[currentMessages.length - 1].attachedFileName ??
+                                                    "")
+                                                : ""}
                                         </Typography>
                                     </Box>
                                 </Box>
