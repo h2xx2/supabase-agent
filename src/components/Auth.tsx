@@ -32,10 +32,12 @@ import { useCookies } from "react-cookie";
 import {ChatMessage} from "./ChatMessage.tsx";
 import TypingIndicator from "./TypingIndicator.tsx";
 import { AuthForm } from "./UserAuthorization.tsx";
+import MicIcon from "@mui/icons-material/Mic";
 
 interface AuthProps {
     onAuthChange: (user: any) => void;
     onSignOut?: () => void;
+    copyrightHeight?: number;
 }
 const theme = createTheme();
 type Agent = {
@@ -62,7 +64,7 @@ type Msg = {
     sentTime?: string;
     sender?: string;
 };
-const Auth: React.FC<AuthProps> = ({ onAuthChange }) => {
+const Auth: React.FC<AuthProps> = ({ onAuthChange, copyrightHeight = 32  }) => {
     // -----------------------
     // AUTH STATE / LOGIC
     // -----------------------
@@ -868,7 +870,7 @@ Just tell me **what you want your agent to do**, or ask any question about how y
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <Box sx={{ height: "calc(95vh - 64px)", overflow: "hidden" }}>
+            <Box sx={{ height: `calc(100dvh - ${copyrightHeight}px - 24px)`, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                 {!isMobile && (
                     <>
                         <Box
@@ -876,7 +878,7 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                 position: "fixed",
                                 left: 24,
                                 top: 40,
-                                bottom: 40,
+                                bottom: copyrightHeight + 40,
                                 right: `${AUTH_PANEL_WIDTH + 48}px`,
                                 borderRadius: 2,
                                 boxShadow: 3,
@@ -1008,7 +1010,13 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                                 </Typography>
                                             )}
                                         </Box>
-
+                                        <IconButton
+                                            sx={{ p: "8px"}}
+                                            onClick={() => {}}
+                                            disabled={true}
+                                        >
+                                            <MicIcon />
+                                        </IconButton>
                                         <Divider sx={{ height: 28, mr: 1 }} orientation="vertical" />
                                         <IconButton
                                             type="submit"
@@ -1255,7 +1263,13 @@ Just tell me **what you want your agent to do**, or ask any question about how y
                                                 </Typography>
                                             )}
                                         </Box>
-
+                                        <IconButton
+                                            sx={{ p: "8px"}}
+                                            onClick={() => {}}
+                                            disabled={true}
+                                        >
+                                            <MicIcon />
+                                        </IconButton>
                                         <Divider sx={{ height: 28, mr: 1 }} orientation="vertical" />
                                         <IconButton
                                             type="submit"

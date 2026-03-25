@@ -1,7 +1,11 @@
 import React from 'react';
 import { Box } from '@mui/material';
 
-const TypingIndicator: React.FC = () => {
+type TypingIndicatorProps = {
+    anon?: boolean
+}
+
+const TypingIndicator: React.FC<TypingIndicatorProps> = ({anon = true}) => {
     return (
         <Box
             sx={{
@@ -11,7 +15,7 @@ const TypingIndicator: React.FC = () => {
                 px: 2,
                 py: 1,
                 borderRadius: '16px 16px 16px 6px',
-                bgcolor: '#f5f7fa',
+                bgcolor: anon ? '#f5f7fa' : '#c6e3fa' ,
                 color: 'text.primary',
                 maxWidth: '100%',
                 boxShadow: 1,

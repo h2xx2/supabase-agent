@@ -48,9 +48,9 @@ export const AuthForm: React.FC<AuthFormProps> = (props) => {
     return (
         <Box sx={{ width: "100%" }}>
             <img
-                src="/youagent_me_logo.jpg"
+                src="/youagent_me_logo.png"
                 alt="youagent.me"
-                style={{ width: "100%", borderRadius: 10, marginBottom: 12 }}
+                style={{ width: "100%", borderRadius: 10, maxHeight: 160, objectFit: "cover", marginBottom: 12, background: "transparent" }}
             />
             <Container
                 component="main"
