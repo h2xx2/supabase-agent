@@ -42,8 +42,10 @@ import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import PolicyIcon from '@mui/icons-material/Policy';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CodeIcon from '@mui/icons-material/Code';
+import MicIcon from '@mui/icons-material/Mic';
 import Auth from './components/Auth';
 import GlobalLoader from './components/GlobalLoader';
+import TypingIndicator from './components/TypingIndicator';
 import {
     MessageList,
     Message,
@@ -146,15 +148,23 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [attachedFileProgress, setAttachedFileProgress] = useState<number | null>(null); // 0..100 or null
     const [attachedFileIsImage, setAttachedFileIsImage] = useState<boolean>(false);
     const fileUrlMap = useRef<Record<string, string>>({});
+    const [isTypingByAgent, setIsTypingByAgent] = useState<Record<string, boolean>>({});
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
     const deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
     const [messageListHeight, setMessageListHeight] = useState<number>(0);
+    const [copyrightHeight, setCopyrightHeight] = useState(32);
+    const copyrightRef = useRef<HTMLDivElement>(null);
     const tour = useTour() as any;
     const props = {deviceType: deviceType, isPublic: false};
 
+    useEffect(() => {
+        if (copyrightRef.current) {
+            setCopyrightHeight(copyrightRef.current.offsetHeight);
+        }
+    }, []);
 
     useEffect(() => {
         if (!chatOpen) {
@@ -571,6 +581,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const sendChatMessage = async (text: string) => {
         if (!text.trim() && !attachedFile) return;
         if (!selectedAgent?.agent_id || !selectedAgent.alias_id) return;
+        setIsTypingByAgent((prev) => ({ ...prev, [selectedAgent?.agent_id]: true }));
 
         const userText = text.trim();
         const hasFile = !!attachedFile;
@@ -663,6 +674,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             }
 
             setChatMessages(prev => [...prev, botMessage]);
+            setIsTypingByAgent((prev) => ({ ...prev, [selectedAgent?.agent_id]: false }));
 
             // === СОХРАНЕНИЕ В ИСТОРИИ (важно) ===
             await axios.post(
@@ -707,6 +719,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
                 position: 'single',
             };
             setChatMessages(prev => [...prev, errMsg]);
+            setIsTypingByAgent((prev) => ({ ...prev, [selectedAgent?.agent_id]: false }));
 
             try {
                 const token = getAuthToken();
@@ -1596,7 +1609,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
 
                 <Container
                     sx={{
-                        mt: 10,
+                        mt: user ? 10 : 0,
                         flex: 1,
                         maxWidth: deviceType === 'mobile' ? '100% !important' : deviceType === 'tablet' ? '90% !important' : '80% !important',
                         px: deviceType === 'mobile' ? 1 : deviceType === 'tablet' ? 2 : 3,
@@ -1605,7 +1618,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                     }}
                 >
                     {!user ? (
-                        <Auth onAuthChange={setUser} onSignOut={handleSignOut} />
+                        <Auth onAuthChange={setUser} onSignOut={handleSignOut} copyrightHeight={copyrightHeight} />
                     ) : (<>
                         <AppNavbar
                             {...{
@@ -1807,8 +1820,9 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
 
                         {pageContent(page)}
                     </>)}
-                    <Copyright />
-
+                    <div ref={copyrightRef}>
+                        <Copyright />
+                    </div>
                     <TermsAndConditionAcceptanceDialog
                         isUserLoggedIn={!!user}
                         user={user}
@@ -2355,6 +2369,11 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                             />
                                         );
                                     })}
+                                    {isTypingByAgent[String(selectedAgent?.agent_id ?? "")] && (
+                                        <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
+                                            <TypingIndicator anon={false}/>
+                                        </Box>
+                                    )}
                                 </MessageList>
 
                                 <Box
@@ -2416,14 +2435,24 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                         style={{ display: 'none' }}
                                     />
 
-                                    <MessageInput
-                                        placeholder="Enter a message...."
-                                        onSend={sendChatMessage}
-                                        attachButton={true}
-                                        onAttachClick={() => fileInputRef.current?.click()}
-                                        sendButton={true}
-                                        autoFocus={deviceType !== 'mobile'}
-                                    />
+                                    <Box sx={{ display: "flex", alignItems: "flex-end", gap: 0.5 }}>
+                                        <Box sx={{ flex: 1 }}>
+                                            <MessageInput
+                                                placeholder="Enter a message...."
+                                                onSend={sendChatMessage}
+                                                attachButton={true}
+                                                onAttachClick={() => fileInputRef.current?.click()}
+                                                sendButton={true}
+                                                autoFocus={deviceType !== 'mobile'}
+                                            />
+                                        </Box>
+                                        <IconButton
+                                            onClick={() => { /* логика микрофона */ }}
+                                            disabled={true}
+                                        >
+                                            <MicIcon />
+                                        </IconButton>
+                                    </Box>
                                 </Box>
                             </Box>
                         </>
