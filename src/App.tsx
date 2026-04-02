@@ -135,6 +135,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const [termsDialogOpen, setTermsDialogOpen] = useState(false);
     const messageListRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLDivElement | null>(null);
+    const canUseKnowledgeBase = user?.plan_type === 'personal' || user?.plan_type === 'custom';
+    const [openUpgradeModal, setOpenUpgradeModal] = useState(false);
     const [showNotification, setShowNotification] = useState(true);
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
@@ -309,7 +311,9 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             return [];
         }
     };
-
+    const handleNavigateToSettings = () => {
+        setPage(Page.SETTINGS);
+    };
     const handleCloseChat = () => {
         setChatOpen(false);
         setAttachedFile(null);
@@ -1847,6 +1851,8 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                         getAuthToken={getAuthToken}
                         userId={user?.id || ''}
                         setGlobalLoading={setGlobalLoading}
+                        userPlan={user?.plan_type}
+                        onNavigateToSettings={handleNavigateToSettings}
                         setErrorMessage={setErrorMessage}
                         setAgents={setAgents}
                         fetchAgents={fetchAgents}
@@ -1990,7 +1996,7 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                             {initialKnowledgeBaseFile}. You can upload a new file to update or leave it as is.
                                         </Alert>
                                     )}
-                                    <FormControlLabel
+                                    {editAgent.knowledge_base_id && (<FormControlLabel
                                         control={
                                             <Checkbox
                                                 checked={deleteKnowledgeBase}
@@ -2002,17 +2008,29 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                         }
                                         label="Delete knowledge base"
                                         sx={{ '& .MuiTypography-root': { fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem' } }}
-                                    />
+                                    />)}
+
                                     {!deleteKnowledgeBase && (
                                         <input
                                             type="file"
                                             accept=".pdf,.txt"
-                                            onChange={(e) => setEditFile(e.target.files ? e.target.files[0] : null)}
+                                            onClick={(e) => {
+                                                if (!canUseKnowledgeBase) {
+                                                    e.preventDefault();
+                                                    setOpenUpgradeModal(true);
+                                                }
+                                            }}
+                                            onChange={(e) => {
+                                                if (!canUseKnowledgeBase) return;
+                                                setNewFile(e.target.files ? e.target.files[0] : null);
+                                            }}
                                             style={{
                                                 margin: '16px 0',
                                                 width: '100%',
                                                 boxSizing: 'border-box',
                                                 fontSize: deviceType === 'mobile' ? '0.9rem' : deviceType === 'tablet' ? '0.95rem' : '0.9rem',
+                                                opacity: canUseKnowledgeBase ? 1 : 0.5,
+                                                cursor: canUseKnowledgeBase ? 'pointer' : 'not-allowed',
                                             }}
                                             disabled={deleteKnowledgeBase}
                                         />
@@ -2048,6 +2066,28 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                 Save
                             </Button>
                         </DialogActions>
+                        <Dialog open={openUpgradeModal} onClose={() => setOpenUpgradeModal(false)}>
+                            <DialogTitle>Upgrade Required</DialogTitle>
+                            <DialogContent>
+                                <Typography>
+                                    Knowledge Base is available only on <b>Personal</b> or <b>Custom</b> plans.
+                                </Typography>
+                            </DialogContent>
+                            <DialogActions>
+                                <Button onClick={() => setOpenUpgradeModal(false)}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    onClick={() => {
+                                        handleCloseEditDialog();
+                                        setPage(Page.SETTINGS);
+                                    }}
+                                >
+                                    Upgrade Plan
+                                </Button>
+                            </DialogActions>
+                        </Dialog>
                     </Dialog>
 
                     <Dialog

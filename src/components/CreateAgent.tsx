@@ -34,7 +34,9 @@ interface AddAgentDialogProps {
     onClose: () => void;
     onAddAgent: () => void;
     deviceType: 'mobile' | 'tablet' | 'desktop';
+    userPlan: 'free' | 'personal' | 'custom';
     getAuthToken: () => string;
+    onNavigateToSettings: () => void;
     userId: string;
     setGlobalLoading: (loading: boolean) => void;
     setErrorMessage: (message: string | null) => void;
@@ -50,6 +52,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                                                            deviceType,
                                                            getAuthToken,
                                                            userId,
+                                                           userPlan,
+                                                           onNavigateToSettings,
                                                            setGlobalLoading,
                                                            setErrorMessage,
                                                            fetchAgents,
@@ -64,10 +68,10 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     const [newFile, setNewFile] = useState<File | null>(null);
     const [selectedBlueprint, setSelectedBlueprint] = useState<string>('');
     const [blueprintInteracted, setBlueprintInteracted] = useState(false);
-
+    const canUseKnowledgeBase = userPlan === 'personal' || userPlan === 'custom';
     const skipBlueprintRef = useRef<() => void>(() => {});
     const tour = useTour() as any; // reactour typings vary; cast to any for flexibility
-
+    const [openUpgradeModal, setOpenUpgradeModal] = useState(false);
     const blueprints: Blueprint[] = [
         {
             blueprint_name: 'Translator',
@@ -280,7 +284,10 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
             setErrorMessage('Name and instructions (min. 40 characters) are required');
             return;
         }
-
+        if (newFile && !canUseKnowledgeBase) {
+            setErrorMessage('Knowledge Base requires Personal or Custom plan');
+            return;
+        }
         const sanitizedName = newAgent.name.replace(/[^a-zA-Z0-9_-]/g, '');
         if (!sanitizedName) {
             setErrorMessage('Invalid agent name');
@@ -368,7 +375,10 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     // This function will be used by both onChange and MenuItem.onClick
     const handleBlueprintSelect = (blueprintName: string) => {
         const selected = blueprints.find((b) => b.blueprint_name === blueprintName);
-
+        if (selected?.blueprint_name === 'Sales Agent' && userPlan === 'free') {
+            setOpenUpgradeModal(true);
+            return;
+        }
         if (selected) {
             setNewAgent({ name: selected.agent_name, instructions: selected.agent_instructions });
             setEnableHttpAction(selected.http_request_action);
@@ -592,9 +602,22 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                 <input
                     type="file"
                     accept=".pdf,.txt"
-                    onChange={(e) => setNewFile(e.target.files ? e.target.files[0] : null)}
-                    style={{ margin: '16px 0', width: '100%' }}
-                    data-tour="kb-section"
+                    onClick={(e) => {
+                        if (!canUseKnowledgeBase) {
+                            e.preventDefault();
+                            setOpenUpgradeModal(true);
+                        }
+                    }}
+                    onChange={(e) => {
+                        if (!canUseKnowledgeBase) return;
+                        setNewFile(e.target.files ? e.target.files[0] : null);
+                    }}
+                    style={{
+                        margin: '16px 0',
+                        width: '100%',
+                        opacity: canUseKnowledgeBase ? 1 : 0.5,
+                        cursor: canUseKnowledgeBase ? 'pointer' : 'not-allowed',
+                    }}
                 />
 
                 <Typography variant="caption" color="textSecondary">
@@ -610,7 +633,31 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                     Add
                 </Button>
             </DialogActions>
+            <Dialog open={openUpgradeModal} onClose={() => setOpenUpgradeModal(false)}>
+                <DialogTitle>Upgrade Required</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        The knowledge base is available to the agent only on <b>Personal</b> or <b>Custom</b> plans.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenUpgradeModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={() => {
+                            setOpenUpgradeModal(false);
+                            onClose(); // Закрываем сам диалог создания агента
+                            onNavigateToSettings();
+                        }}
+                    >
+                        Upgrade Plan
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Dialog>
+
     );
 };
 
