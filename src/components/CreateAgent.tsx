@@ -70,6 +70,8 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     const [blueprintInteracted, setBlueprintInteracted] = useState(false);
     const canUseKnowledgeBase = userPlan === 'personal' || userPlan === 'custom';
     const skipBlueprintRef = useRef<() => void>(() => {});
+    const MAX_FILE_SIZE_MB = 10;
+    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
     const tour = useTour() as any; // reactour typings vary; cast to any for flexibility
     const [openUpgradeModal, setOpenUpgradeModal] = useState(false);
     const blueprints: Blueprint[] = [
@@ -610,7 +612,22 @@ const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
                     }}
                     onChange={(e) => {
                         if (!canUseKnowledgeBase) return;
-                        setNewFile(e.target.files ? e.target.files[0] : null);
+
+                        const file = e.target.files ? e.target.files[0] : null;
+                        if (!file) {
+                            setNewFile(null);
+                            return;
+                        }
+
+                        if (file.size > MAX_FILE_SIZE_BYTES) {
+                            setErrorMessage(`File too large. Maximum ${MAX_FILE_SIZE_MB} MB`);
+                            e.target.value = '';
+                            setNewFile(null);
+                            return;
+                        }
+
+                        setErrorMessage(null);
+                        setNewFile(file);
                     }}
                     style={{
                         margin: '16px 0',

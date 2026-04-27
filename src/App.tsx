@@ -137,6 +137,8 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
     const inputRef = useRef<HTMLDivElement | null>(null);
     const canUseKnowledgeBase = user?.plan_type === 'personal' || user?.plan_type === 'custom';
     const [openUpgradeModal, setOpenUpgradeModal] = useState(false);
+    const MAX_FILE_SIZE_MB = 10;
+    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
     const [showNotification, setShowNotification] = useState(true);
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
@@ -758,7 +760,7 @@ const App: React.FC<AppProps> = ({ setChatOpened: setChatOpenedFromRoot, setAgen
             return;
         }
 
-        if (file.size > 25 * 1024 * 1024) { // увеличил лимит (примерно 25 MB) — подстройте под нужды
+        if (file.size > 10 * 1024 * 1024) { // увеличил лимит (примерно 25 MB) — подстройте под нужды
             alert('File too large. Maximum 25 MB');
             e.target.value = '';
             return;
@@ -2022,7 +2024,22 @@ API_ENDPOINT = "${import.meta.env.VITE_API_GATEWAY_URL}"`;
                                             }}
                                             onChange={(e) => {
                                                 if (!canUseKnowledgeBase) return;
-                                                setNewFile(e.target.files ? e.target.files[0] : null);
+
+                                                const file = e.target.files ? e.target.files[0] : null;
+                                                if (!file) {
+                                                    setNewFile(null);
+                                                    return;
+                                                }
+
+                                                if (file.size > MAX_FILE_SIZE_BYTES) {
+                                                    setErrorMessage(`File too large. Maximum ${MAX_FILE_SIZE_MB} MB`);
+                                                    e.target.value = '';
+                                                    setNewFile(null);
+                                                    return;
+                                                }
+
+                                                setErrorMessage(null);
+                                                setNewFile(file);
                                             }}
                                             style={{
                                                 margin: '16px 0',
